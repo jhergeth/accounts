@@ -21,18 +21,42 @@ micronaut {
 
 dependencies {
     annotationProcessor("org.projectlombok:lombok")
-    annotationProcessor("io.micronaut.security:micronaut-security-annotations")
+    annotationProcessor('io.micronaut.security:micronaut-security-annotations:2.5.0')
+
+    // Apache commons
+    compileOnly "org.apache.commons:commons-email:1.5"
+    compileOnly "commons-validator:commons-validator:1.7"
+// https://mvnrepository.com/artifact/commons-io/commons-io
+    implementation 'commons-io:commons-io:2.11.0'
+
+// https://mvnrepository.com/artifact/org.wso2.orbit.org.apache.commons/commons-compress
+    implementation 'org.wso2.orbit.org.apache.commons:commons-compress:1.18.0.wso2v1'
+
+    // google: guava, gson
+    implementation("com.google.guava:guava:30.1.1-jre")
+    implementation ("com.google.code.gson:gson:2.8.6")
+
     implementation("io.micronaut:micronaut-http-client")
     implementation("io.micronaut:micronaut-runtime")
     implementation("io.micronaut.security:micronaut-security-jwt")
     implementation("javax.annotation:javax.annotation-api")
     implementation("org.apache.logging.log4j:log4j-core:2.14.1")
-    compileOnly("org.projectlombok:lombok")
+
+// https://mvnrepository.com/artifact/org.apache.directory.api/api-all
+    implementation group: 'org.apache.directory.api', name: 'api-all', version: '2.0.1'
+
+    // https://mvnrepository.com/artifact/com.github.lookfirst/sardine
+    implementation group: 'com.github.lookfirst', name: 'sardine', version: '5.0'
+
+    compileOnly('org.projectlombok:lombok:1.18.20')
     runtimeOnly("org.apache.logging.log4j:log4j-api:2.14.1")
     runtimeOnly("org.apache.logging.log4j:log4j-slf4j-impl:2.14.1")
-    compileOnly("org.graalvm.nativeimage:svm")
+    compileOnly('org.graalvm.nativeimage:svm:21.2.0')
 
-    implementation("io.micronaut:micronaut-validation")
+    // jackson and xml
+    implementation("io.micronaut.xml:micronaut-jackson-xml")
+
+    implementation('io.micronaut:micronaut-validation:2.5.11')
 
 }
 
@@ -44,6 +68,22 @@ java {
     sourceCompatibility = JavaVersion.toVersion("11")
     targetCompatibility = JavaVersion.toVersion("11")
 }
+
+
+// generate a small Java class holding the current version from gradle.properties
+task genJavaVer(type:Copy) {
+    group = 'Generate Java Source'
+    description = 'Generates the java source to display the version in the application.'
+
+    def javaSrcContext = [version: project.version]
+    inputs.properties javaSrcContext // for gradle up-to-date check
+    from 'src/template/java'
+    into "$buildDir/generated/java"
+    expand javaSrcContext
+}
+sourceSets.main.java.srcDir "$buildDir/generated/java" // add the extra source dir
+compileJava.dependsOn genJavaVer // wire the generateJava task into the DAG
+
 
 
 
