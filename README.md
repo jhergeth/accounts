@@ -20,3 +20,6 @@
 
 - [https://projectlombok.org/features/all](https://projectlombok.org/features/all)
 
+## Feature openrewrite documentation
+
+- [https://docs.openrewrite.org/](https://docs.openrewrite.org/)

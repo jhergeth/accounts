@@ -1,0 +1,1 @@
+<#if vp.statt??>Vertretung für ${vp.statt.absLehrer} eingeplant.<#else>Freigesetzt, da ${vp.frei.absKlassen} abwesend.</#if>

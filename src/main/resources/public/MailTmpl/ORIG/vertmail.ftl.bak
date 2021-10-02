@@ -1,0 +1,159 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+        "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml">
+<head>
+    <title>Vertretungen für {zeitraum}</title>
+
+    <meta http-equiv="Content-Type" content="text/html; charset=UTF-8"/>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+
+    <link href='http://fonts.googleapis.com/css?family=Roboto' rel='stylesheet' type='text/css'>
+
+    <!-- use the font -->
+    <style>
+        .color-primary-0 { color: #B8CBED }	/* Main Primary color */
+        .color-primary-1 { color: #E5EDFB }
+        .color-primary-2 { color: #CFDDF5 }
+        .color-primary-3 { color: #A0B8E2 }
+        .color-primary-4 { color: #88A4D4 }
+
+        body {
+            font-family: 'Roboto', sans-serif;
+            font-size: 48px;
+			margin: 0;
+			padding: 0;
+        }
+
+		th,
+		td {
+			padding: 0 1em 0 1em;
+		}
+
+
+        .evenRow {
+            background-color: #E5EDFB;
+        }
+        .oddRow{
+            background-color: white ;
+        }
+    </style>
+	
+	
+</head>
+<body style="margin: 0; padding: 0;">
+
+<#setting date_format="dd.MM.yyyy">
+<#setting datetime_format="dd.MM.yyyy">
+
+<table align="center" border="0" cellpadding="0" cellspacing="0" width="800" style="border-collapse: collapse;">
+    <tr>
+        <td bgcolor="#ffffff" style="padding: 20px 20px 20px 20px;">
+            <p>Sehr geehrte<#if geschlecht==2>r</#if> ${vorname} ${nachname},</p>
+            <p>wir möchten Sie über die für Sie geplanten Vertretungen und Präsenzen informieren.</p>
+            <#if verts?size gt 0>
+                <p>Folgende Vertretungen sind für ${zeitraum} für Sie geplant:</p>
+                <table  border="1" cellpadding="0 0 0 10" cellspacing="0" align="center" width="790">
+                    <tr bgcolor="#eaeaea">
+                        <th>Tag</th>
+                        <th>Stunde</th>
+                        <th>Klasse</th>
+                        <th>Raum (war)</th>
+                        <th>Fach (war)</th>
+                        <th>KuK (war)</th>
+                        <th>Bemerkungen</th>
+                    </tr>
+                    <#list verts as v>
+                        <tr class="${v?item_parity}Row" align="center">
+                            <td>${v.datumS}</td>
+                            <td>${v.stunde}</td>
+                            <td>${v.vertKlassen}</td>
+                            <#if v.vertRaum == v.absRaum>
+                                <td>${v.vertRaum}</td>
+                            <#else>
+                                <td>${v.vertRaum}(${v.absRaum})</td>
+                            </#if>
+                            <#if v.vertFach == v.absFach>
+                                <td>${v.vertFach}</td>
+                            <#else>
+                                <td>${v.vertFach}(${v.absFach})</td>
+                            </#if>
+                            <td>${v.absLehrer}</td>
+                            <td align="left">${v.vertText}</td>
+                        </tr>
+                    </#list>
+                </table>
+            </#if>
+            <#if praes?size gt 0>
+                <p>Folgende Präsenzen sind für ${zeitraum} für Sie geplant:</p>
+                <table  border="1" cellpadding="0" cellspacing="0" align="center" width="790">
+                    <tr bgcolor="#eaeaea">
+                        <th width="15%">Tag</th>
+                        <th width="15%">Stunde</th>
+                        <th>Bemerkungen</th>
+                    </tr>
+                    <#list praes as v>
+                        <tr class="${v?item_parity}Row" align="center">
+                            <td width="15%">${v.datumS}</td>
+                            <td width="15%">${v.stunde}</td>
+                            <td align="left">
+                                <#if v.vertText?length gt 0>
+                                    ${v.vertText}
+                                <#else>
+                                    <#if v.absGrund?contains("KPra") || v.absGrund?contains("VKab") || v.absGrund?contains("KKa")>
+                                        Klasse ${v.absKlassen} fehlt.
+                                    </#if>
+                                </#if>
+                                </td>
+                        </tr>
+                    </#list>
+                </table>
+            </#if>
+            <#if zeitraum == "kommende Woche" && vertanz gt 0>
+                <p>In der kommenden Woche können bis zu ${vertanz} Vertretungen für Sie geplant werden.</p>
+            </#if>
+            <#if vertsneu?size gt 0>
+                <p>Folgende Änderungen in Vertretungen haben sich ergeben:</p>
+                <table  border="1" cellpadding="0" cellspacing="0" align="center" width="790">
+                    <tr bgcolor="#eaeaea">
+                        <th>Tag</th>
+                        <th>Stunde</th>
+                        <th>Klasse</th>
+                        <th>Raum (war)</th>
+                        <th>Fach (war)</th>
+                        <th>KuK (war)</th>
+                        <th>Bemerkungen</th>
+                    </tr>
+                    <#list vertsneu as v>
+                        <tr class="${v?item_parity}Row" align="center">
+                            <td>${v.datumS}</td>
+                            <td>${v.stunde}</td>
+                            <td>${v.vertKlassen}</td>
+                            <#if v.vertRaum == v.absRaum>
+                                <td>${v.vertRaum}</td>
+                            <#else>
+                                <td>${v.vertRaum}(${v.absRaum})</td>
+                            </#if>
+                            <#if v.vertFach == v.absFach>
+                                <td>${v.vertFach}</td>
+                            <#else>
+                                <td>${v.vertFach}(${v.absFach})</td>
+                            </#if>
+                            <td>${v.absLehrer}</td>
+                            <td align="left">${v.vertText}</td>
+                        </tr>
+                    </#list>
+                </table>
+            </#if>
+        </td>
+    </tr>
+    <tr>
+        <td bgcolor="#ffffff" style="padding: 0px 20px 20px 20px;">
+            <p>Vielen Dank</p>
+            <p>Das Vertretungsteam</br>
+            GIL, KOE, TRA, GEH</p>
+        </td>
+    </tr>
+</table>
+
+</body>
+</html>

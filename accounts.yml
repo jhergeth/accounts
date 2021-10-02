@@ -11,7 +11,9 @@ micronaut:
     netty:
       worker:
         threads: 8
-      childOptions: true
+      childOptions:
+        autoRead: true
+
   router:
     static-resources:
       public:

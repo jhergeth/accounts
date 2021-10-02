@@ -1,0 +1,1 @@
+${heute}/${user}: Aktualisierte Vertretungsdaten fuer <#if zeitraum=="kommende Woche">die kommende Woche (ab dem ${ab})<#else>die laufende Woche</#if>

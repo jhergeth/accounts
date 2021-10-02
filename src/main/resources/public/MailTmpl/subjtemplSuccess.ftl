@@ -1,0 +1,1 @@
+Mail erfolgreich weitergeleitet: ${subject}

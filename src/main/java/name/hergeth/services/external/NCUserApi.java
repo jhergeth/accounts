@@ -3,7 +3,7 @@ package name.hergeth.services.external;
 import com.fasterxml.jackson.dataformat.xml.XmlMapper;
 import io.micronaut.http.HttpRequest;
 import io.micronaut.http.MutableHttpRequest;
-import io.micronaut.http.client.RxHttpClient;
+import io.micronaut.http.client.HttpClient;
 import io.micronaut.http.uri.UriBuilder;
 import name.hergeth.domain.Account;
 import name.hergeth.services.external.io.NCGroupResp;
@@ -20,12 +20,12 @@ import java.util.List;
 public class NCUserApi extends NCHttpIO implements IUserApi {
     private static final Logger LOG = LoggerFactory.getLogger(NCUserApi.class);
 
-	private RxHttpClient httpClient;
+//	private HttpClient httpClient;
 
 	public NCUserApi(String bu, String uu, String pw) throws MalformedURLException {
 		super(bu, uu, pw);
 
-		httpClient = getHttpClient();
+//		httpClient = getHttpClient();
 	}
 
 	@Override

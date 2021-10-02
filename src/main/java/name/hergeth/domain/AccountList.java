@@ -1,11 +1,14 @@
 package name.hergeth.domain;
 
+import io.micronaut.context.annotation.Bean;
+
 import javax.validation.constraints.NotNull;
 import java.util.List;
 import java.util.Optional;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 
+@Bean
 public class AccountList extends DomainList<Account> {
     public AccountList(){
 

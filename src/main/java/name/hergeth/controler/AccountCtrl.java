@@ -1,5 +1,6 @@
 package name.hergeth.controler;
 
+import io.micronaut.core.async.annotation.SingleResult;
 import io.micronaut.http.HttpResponse;
 import io.micronaut.http.HttpStatus;
 import io.micronaut.http.MediaType;
@@ -8,21 +9,26 @@ import io.micronaut.http.annotation.Controller;
 import io.micronaut.http.annotation.Get;
 import io.micronaut.http.annotation.Post;
 import io.micronaut.http.multipart.StreamingFileUpload;
+
+
 import io.micronaut.security.annotation.Secured;
 import io.micronaut.security.rules.SecurityRule;
-import io.reactivex.Single;
+import jakarta.inject.Inject;
 import name.hergeth.config.Configuration;
 import name.hergeth.domain.Account;
 import name.hergeth.services.IAccountSrvc;
 import org.reactivestreams.Publisher;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import reactor.core.publisher.Mono;
 
-import javax.inject.Inject;
 import java.io.File;
 import java.io.IOException;
 import java.util.List;
 
+import static io.micronaut.http.HttpStatus.CONFLICT;
+import static io.micronaut.http.MediaType.MULTIPART_FORM_DATA;
+import static io.micronaut.http.MediaType.TEXT_PLAIN;
 
 @Secured(SecurityRule.IS_ANONYMOUS)
 @Controller("/account")
@@ -40,8 +46,28 @@ public class AccountCtrl {
     }
 
     @Post(value = "/load", consumes = MediaType.MULTIPART_FORM_DATA)
-    public Single<HttpResponse<String>> uploadAccounts(StreamingFileUpload upload) throws IOException {
-        File tempFile = File.createTempFile(upload.getFilename(), "temp");
+    @SingleResult
+    public Publisher<HttpResponse<String>> uploadAccounts(StreamingFileUpload file) {
+        File tempFile;
+        try {
+            tempFile = File.createTempFile(file.getFilename(), "temp");
+        } catch (IOException e) {
+            return Mono.error(e);
+        }
+        Publisher<Boolean> uploadPublisher = file.transferTo(tempFile);
+
+        return Mono.from(uploadPublisher)
+                .map(success -> {
+                    if (success) {
+                        return HttpResponse.ok("Uploaded");
+                    } else {
+                        return HttpResponse.<String>status(CONFLICT)
+                                .body("Upload Failed");
+                    }
+                });
+    }
+
+/*        File tempFile = File.createTempFile(upload.getFilename(), "temp");
         Publisher<Boolean> uploadPublisher = upload.transferTo(tempFile);
         return Single.fromPublisher(uploadPublisher)
                 .map(success -> {
@@ -62,6 +88,8 @@ public class AccountCtrl {
                     }
                 });
     }
+    */
+
 
     @Get(value = "/getaccounts")
     public List<Account> getAccounts() {

@@ -1,6 +1,7 @@
 package name.hergeth.services;
 
 import io.micronaut.scheduling.annotation.Scheduled;
+import jakarta.inject.Singleton;
 import name.hergeth.config.Configuration;
 import name.hergeth.domain.Account;
 import name.hergeth.domain.AccountList;
@@ -14,7 +15,6 @@ import org.apache.directory.api.ldap.model.exception.LdapException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import javax.inject.Singleton;
 import java.io.File;
 import java.io.IOException;
 import java.net.MalformedURLException;
@@ -203,7 +203,7 @@ public class AccountSrvc implements IAccountSrvc {
                         create a Dir and a share
 
      */
-    @Scheduled(fixedDelay = "2m")
+//    @Scheduled(fixedDelay = "2m")
     public void run() {
         initCmd();;
 

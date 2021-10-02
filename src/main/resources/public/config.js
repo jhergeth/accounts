@@ -1,0 +1,1 @@
+var THE_SERVER_BASE = "";

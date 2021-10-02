@@ -6,11 +6,11 @@ import io.micronaut.core.type.Argument;
 import io.micronaut.http.HttpRequest;
 import io.micronaut.http.MediaType;
 import io.micronaut.http.MutableHttpRequest;
-import io.micronaut.http.client.RxHttpClient;
+import io.micronaut.http.client.HttpClient;
 import io.micronaut.http.uri.UriBuilder;
-import io.reactivex.Flowable;
 import name.hergeth.services.external.io.Meta;
 import name.hergeth.services.external.io.NCCreateResp;
+import org.reactivestreams.Publisher;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -32,7 +32,7 @@ public class NCHttpIO {
     private String baseUser = null;
     private String basePW = null;
 
-    private RxHttpClient httpClient;
+    private HttpClient httpClient;
     private Consumer<Meta> errorHndler = null;
 
     public NCHttpIO(String bu, String uu, String pw) throws MalformedURLException {
@@ -40,7 +40,7 @@ public class NCHttpIO {
         baseUser = uu;
         basePW = pw;
 
-        httpClient = RxHttpClient.create(new URL(baseUrl));
+        httpClient = HttpClient.create(new URL(baseUrl));
     }
 
     public void atError(Consumer<Meta> ehdl){
@@ -72,8 +72,7 @@ public class NCHttpIO {
     }
 
     protected String askNC(MutableHttpRequest<?> req){
-        Flowable<String> flowable = httpClient.retrieve(req, Argument.of(String.class));
-        String s = flowable.blockingFirst();
+        String s = httpClient.toBlocking().retrieve(req, Argument.of(String.class));
 //		LOG.debug("getElements from {}: ", s);
         return s;
     }
@@ -139,7 +138,7 @@ public class NCHttpIO {
         return basePW;
     }
 
-    public RxHttpClient getHttpClient() {
-        return httpClient;
-    }
+//    public HttpClient getHttpClient() {
+//        return httpClient;
+//    }
 }
