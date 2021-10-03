@@ -1,6 +1,7 @@
 micronaut:
   application:
     name: accounts
+
   server:
     port: 80
     max-request-size: '100MB'
@@ -8,6 +9,8 @@ micronaut:
       enabled: true
     multipart:
       max-file-size: '256MB'
+    ssl:
+      enabled: 'true'
     netty:
       worker:
         threads: 8
@@ -29,14 +32,30 @@ micronaut:
           secret:
             generator:
               secret: '"${JWT_GENERATOR_SIGNATURE_SECRET:pleaseChangeThisSecretForANewOne}"'
+    intercept-url-map:
+      - pattern: /**
+        http-method: GET
+        access:
+          - isAnonymous()
+      - pattern: /books
+        access:
+          - isAuthenticated()
+      - pattern: /books/grails
+        http-method: POST
+        access:
+          - ROLE_GRAILS
+          - ROLE_GROOVY
+      - pattern: /books/grails
+        http-method: PUT
+        access:
+          - ROLE_ADMIN
 
 logger:
   levels:
     'name.hergeth': DEBUG
-    'org.codehaus.jackson': DEBUG
-    'io.micronaut.http': INFO
-    'io.micronaut.context': INFO
-    'io.micronaut.core': INFO
+    'org.codehaus.jackson': INFO
+    'io.micronaut': INFO
+    'io.micronaut.security': INFO
 
 accounts:
   configpfad: 'accounts.json'
