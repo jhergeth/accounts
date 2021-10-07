@@ -1,5 +1,7 @@
 package name.hergeth.config;
 
+import java.util.Map;
+
 public interface Configuration {
     public String getConfigpfad();
 
@@ -15,5 +17,5 @@ public interface Configuration {
 
     void merge(String j);
 
-    String load();
+    Map<String,String> load();
 }

@@ -51,6 +51,8 @@ public class AccountSrvc implements IAccountSrvc {
         this.vmConfig = vmConfig;
         this.accList = accList;
         this.status = status;
+
+        initCmd();
     }
 
     //
@@ -307,6 +309,8 @@ public class AccountSrvc implements IAccountSrvc {
         moodleServer = vmConfig.get("accMoodleURL", "schulen-online");
         moodleUser = vmConfig.get("accMoodleAcc", "admin");
         moodlePW = vmConfig.get("accMoodlePW", "");
+
+        vmConfig.save();;
 
         Consumer<Meta> handleErrors = m -> status.stop("ERROR " + m.getStatusCode() + ": " + m.getMessage());
 

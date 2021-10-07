@@ -1,8 +1,8 @@
 package name.hergeth.config;
 
-import com.google.gson.Gson;
-import com.google.gson.GsonBuilder;
-import com.google.gson.reflect.TypeToken;
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.core.type.TypeReference;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import io.micronaut.context.annotation.ConfigurationProperties;
 import io.micronaut.context.annotation.Property;
 import io.micronaut.context.event.ApplicationEventPublisher;
@@ -16,13 +16,13 @@ import javax.annotation.PostConstruct;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.OutputStreamWriter;
-import java.lang.reflect.Type;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.TreeMap;
 
 @Singleton
 @ConfigurationProperties("accounts")
@@ -34,9 +34,7 @@ public class ConfigurationImp implements Configuration {
     ApplicationEventPublisher eventPublisher;
 
     private static final Logger LOG = LoggerFactory.getLogger(ConfigurationImp.class);
-
-     private Map<String, String> conf = new HashMap<>();
-
+    private Map<String, String> conf = new TreeMap<>();
     private static String dataPath = null;
 
     @PostConstruct
@@ -53,68 +51,31 @@ public class ConfigurationImp implements Configuration {
         save("configuration", configpfad, conf);
     }
 
-    public static void save(String name, Object obj) {
-        String path = dataPath + "/" + name;
-        save(name, path, obj);
-    }
-
-    public static void save(String name, String path, Object obj){
-        Gson gson = new GsonBuilder().setPrettyPrinting().create();
-        String jsonOutput = gson.toJson(obj);
-        try {
-            try (OutputStreamWriter out =  new OutputStreamWriter( new FileOutputStream(path), StandardCharsets.UTF_8)) {
-
-                out.write(jsonOutput);
-            }
-        }catch(IOException e) {
-            LOG.error("Could not write data [{}] to {} ({}).", name, path, e.getLocalizedMessage());
-        }
-    }
-
     @Override
     public void merge(String json){
         // convert String to map
-        Map<String,String> src = new Gson().fromJson(json, new TypeToken<HashMap<String, String>>(){}.getType());
+        Map<String,String> src = null; try {
+            src = getStringStringMap(json);
+        } catch (JsonProcessingException e) {
+            e.printStackTrace();
+        }
 
         // add known config
         conf.putAll(src);
-        conf = src;
-        save();
+        save("configuration", configpfad, conf);
 
         // publish event
         eventPublisher.publishEvent(new ConfigChangedEvent(this));
     }
 
     @Override
-    public String load(){
-        conf = (Map<String, String>) load("configuration", configpfad, new TypeToken<HashMap<String, String>>(){}.getType());
+    public Map<String,String>  load(){
+        conf = load("configuration", configpfad);
         if(conf == null){
             LOG.error("Could not read configuration, stopping system.");
             System.exit(-1);
         }
-        Gson gson = new GsonBuilder().setPrettyPrinting().create();
-        return gson.toJson(conf);
-    }
-
-    public static Object load(String name, Type type) {
-        String path = dataPath + "/" + name;
-        return load(name, path, type);
-    }
-
-    private static Object load(String name, String sPath, Type type) {
-        String fStr = "";
-        try {
-            Path path = Paths.get(sPath);
-            fStr = new String(Files.readAllBytes(path), StandardCharsets.UTF_8);
-            Object obj = new Gson().fromJson(fStr, type);
-            LOG.info("Read {} from {}).", name, path.toUri());
-            return obj;
-        }
-        catch(IOException e) {
-            LOG.error("Could not read {} from {} ({}).", name, sPath, e.getLocalizedMessage());
-        }
-
-        return null;
+        return conf;
     }
 
     @Override
@@ -132,6 +93,7 @@ public class ConfigurationImp implements Configuration {
         String res = conf.get(k);
         if(res == null || res.length() == 0){
             res = d;
+            conf.put(k, res);
         }
         return res;
     }
@@ -145,4 +107,57 @@ public class ConfigurationImp implements Configuration {
     public void setConfigpfad(String configpfad) {
         this.configpfad = configpfad;
     }
+
+    private String save(String name, String path, Map<String, String> map){
+        String jsonResult = mapToJson(map);
+        try {
+            try (OutputStreamWriter out =  new OutputStreamWriter( new FileOutputStream(path), StandardCharsets.UTF_8)) {
+
+                out.write(jsonResult);
+            }
+        }catch(IOException e) {
+            LOG.error("Could not write data [{}] to {} ({}).", name, path, e.getLocalizedMessage());
+        }
+
+        return jsonResult;
+    }
+
+    private String mapToJson(Map<String,String> map){
+        ObjectMapper mapper = new ObjectMapper();
+        String jsonResult = null;
+        try {
+            jsonResult = mapper.writerWithDefaultPrettyPrinter()
+                    .writeValueAsString(map);
+        } catch (JsonProcessingException e) {
+            e.printStackTrace();
+        }
+        return jsonResult;
+    }
+
+    private Map<String,String> load(String name, String sPath) {
+        String fStr = "";
+        try {
+            Path path = Paths.get(sPath);
+            fStr = new String(Files.readAllBytes(path), StandardCharsets.UTF_8);
+
+            Map<String, String> map = getStringStringMap(fStr);
+
+            LOG.info("Read {} from {}).", name, path.toUri());
+            return new TreeMap<String,String>(map);
+        }
+        catch(IOException e) {
+            LOG.error("Could not read {} from {} ({}).", name, sPath, e.getLocalizedMessage());
+        }
+
+        return null;
+    }
+
+    private Map<String, String> getStringStringMap(String fStr) throws JsonProcessingException {
+        ObjectMapper mapper = new ObjectMapper();
+        TypeReference<HashMap<String, String>> typeRef
+                = new TypeReference<HashMap<String, String>>() {};
+        Map<String, String> map = mapper.readValue(fStr, typeRef);
+        return map;
+    }
+
 }
