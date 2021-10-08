@@ -15,7 +15,9 @@ public interface Configuration {
 
     void save();
 
-    void merge(String j);
+    void save(Map<String,String> j);
+
+    void merge(Map<String,String> j);
 
     Map<String,String> load();
 }

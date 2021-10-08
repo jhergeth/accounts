@@ -1,20 +1,19 @@
 package name.hergeth.controler;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import io.micronaut.core.annotation.Introspected;
 import io.micronaut.http.HttpResponse;
 import io.micronaut.http.MediaType;
 import io.micronaut.http.annotation.*;
 import io.micronaut.security.annotation.Secured;
 import io.micronaut.security.rules.SecurityRule;
-import lombok.AllArgsConstructor;
-import lombok.Getter;
 import name.hergeth.config.Configuration;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.util.Map;
+import java.util.TreeMap;
 
 @Secured(SecurityRule.IS_ANONYMOUS)
 @Controller("/api/domain/konfig")
@@ -27,18 +26,37 @@ public class ConfigCtrl {
         this.config = config;
     }
 
+
+    ;
+
     @Consumes(MediaType.APPLICATION_JSON)
-    @Post(value = "/write ")
+    @Post(value = "/write")
     public HttpResponse saveJSON(@Body String json) {
         LOG.info("Saving Configuration via json: {}", json );
 
-        config.merge(json);
+        config.save(datatableToMap(json));
 
         return HttpResponse.ok();
     }
 
 
-//    @Consumes(MediaType.APPLICATION_FORM_URLENCODED)
+    private Map<String, String> datatableToMap(String fStr){
+        ObjectMapper mapper = new ObjectMapper();
+        TypeReference<Entry[]> typeRef = new TypeReference<>() {};
+        Entry[] entries = new Entry[0];
+        Map<String, String> map = new TreeMap<>();
+        try {
+            entries = mapper.readValue(fStr, typeRef);
+            for(Entry e : entries){
+                map.put(e.name, e.value);
+            }
+        } catch (JsonProcessingException e) {
+            e.printStackTrace();
+        }
+        return map;
+    }
+
+    //    @Consumes(MediaType.APPLICATION_FORM_URLENCODED)
 //    @Post(value = "/urle")
 //    public HttpResponse saveURLE(String mailBetreff, String mailText, String mailTag) {
 //        LOG.info("Saving Configuration via urle: {}", mailBetreff );
@@ -77,16 +95,11 @@ public class ConfigCtrl {
 
     private String mapToDatatable(Map<String,String> map){
 
-        @Getter
-        @AllArgsConstructor
-        class Entry {
-            String name;
-            String value;
-        };
         Entry[] entries = new Entry[map.size()];
         int idx = 0;
         for (var entry : map.entrySet()) {
-            entries[idx++] = new Entry(entry.getKey(), entry.getValue());
+            entries[idx] = new Entry(idx, entry.getKey(), entry.getValue());
+            idx++;
         }
         ObjectMapper mapper = new ObjectMapper();
         String jsonResult = null;

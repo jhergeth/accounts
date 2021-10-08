@@ -9,6 +9,7 @@ import io.micronaut.context.event.ApplicationEventPublisher;
 import jakarta.inject.Inject;
 import jakarta.inject.Singleton;
 import name.hergeth.BuildInfo;
+import name.hergeth.controler.ConfigCtrl;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -52,14 +53,13 @@ public class ConfigurationImp implements Configuration {
     }
 
     @Override
-    public void merge(String json){
-        // convert String to map
-        Map<String,String> src = null; try {
-            src = getStringStringMap(json);
-        } catch (JsonProcessingException e) {
-            e.printStackTrace();
-        }
+    public void save(Map<String,String> src) {
+        conf = new TreeMap(src);
+        save();
+    }
 
+    @Override
+    public void merge(Map<String,String> src){
         // add known config
         conf.putAll(src);
         save("configuration", configpfad, conf);
@@ -140,7 +140,7 @@ public class ConfigurationImp implements Configuration {
             Path path = Paths.get(sPath);
             fStr = new String(Files.readAllBytes(path), StandardCharsets.UTF_8);
 
-            Map<String, String> map = getStringStringMap(fStr);
+            Map<String, String> map = jsonToMap(fStr);
 
             LOG.info("Read {} from {}).", name, path.toUri());
             return new TreeMap<String,String>(map);
@@ -151,13 +151,10 @@ public class ConfigurationImp implements Configuration {
 
         return null;
     }
-
-    private Map<String, String> getStringStringMap(String fStr) throws JsonProcessingException {
+    private Map<String, String> jsonToMap(String fStr) throws JsonProcessingException {
         ObjectMapper mapper = new ObjectMapper();
-        TypeReference<HashMap<String, String>> typeRef
-                = new TypeReference<HashMap<String, String>>() {};
-        Map<String, String> map = mapper.readValue(fStr, typeRef);
+        TypeReference<TreeMap<String,String>> typeRef = new TypeReference<>() {};
+        Map<String,String> map = mapper.readValue(fStr, typeRef);
         return map;
     }
-
 }
