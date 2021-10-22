@@ -82,8 +82,8 @@ public class LDAPUserApi implements IUserApi{
             entry.add( "givenName", a.getVorname());
             entry.add( "mail", email);
             entry.add( "displayName", a.getAnzeigeName());
-            entry.add( "employeeNumber", a.getUniqueId());
-            entry.add( "uid", a.getUniqueId());
+            entry.add( "employeeNumber", a.getId());
+            entry.add( "uid", a.getId());
             entry.add( "businessCategory", a.getKlasse());
             entry.add( "pager", a.getGeburtstag());
             entry.add( "roomNumber", LocalDate.now().format(DateTimeFormatter.ISO_LOCAL_DATE));   // created

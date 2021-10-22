@@ -1,6 +1,5 @@
 package name.hergeth.services;
 
-import io.micronaut.scheduling.annotation.Scheduled;
 import jakarta.inject.Singleton;
 import name.hergeth.config.Configuration;
 import name.hergeth.domain.Account;
@@ -16,23 +15,23 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.io.File;
-import java.io.IOException;
 import java.net.MalformedURLException;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 import java.util.Optional;
+import java.util.function.BiFunction;
 import java.util.function.Consumer;
 
 
 @Singleton
-public class AccountSrvc implements IAccountSrvc {
+public class DataSrvc implements IDataSrvc {
 
     private final String SJ ="SJ2021";
     private final String SKLASSENDIR = "KLASSEN/" + SJ;
 
-    private static final Logger LOG = LoggerFactory.getLogger(AccountSrvc.class);
+    private static final Logger LOG = LoggerFactory.getLogger(DataSrvc.class);
 
     private Configuration vmConfig;
     private AccountList accList;
@@ -47,7 +46,7 @@ public class AccountSrvc implements IAccountSrvc {
     private IUserApi usrNCCmd = null;
     private NCFileApi fileCmd = null;
 
-    public AccountSrvc(Configuration vmConfig, AccountList accList, StatusSrvc status) {
+    public DataSrvc(Configuration vmConfig, AccountList accList, StatusSrvc status) {
         this.vmConfig = vmConfig;
         this.accList = accList;
         this.status = status;
@@ -58,15 +57,15 @@ public class AccountSrvc implements IAccountSrvc {
     //
     // load student accounts from SchILD-Export
     //
-    public void loadAccounts(File file, String oname) throws IOException{
+    public boolean loadData(File file, String oname){
         int lines = 0;
-        status.start(0, Utils.countLines(file.getAbsolutePath(), LOG), "Reading accounts from file " + oname);
-        if(oname.toLowerCase().contains(".csv")){
+        status.start(0, Utils.countLines(file, LOG), "Reading data from file " + oname);
+
+        BiFunction<AccountList, String[], Boolean> scanner = AccountList.getScanner(file);
+        if(scanner != null){
             AccountList nAccList = new AccountList();
-            lines = Utils.readLines(file.getAbsolutePath(), ar -> {
-                if(ar[0].compareToIgnoreCase("class") != 0){
-                    nAccList.scanLine(ar);
-                }
+            lines = Utils.readLines(file, ar -> {
+                scanner.apply(nAccList, ar);
                 status.inc("Reading accounts from file " + oname);
             }, LOG);
             accList = nAccList;
@@ -74,7 +73,9 @@ public class AccountSrvc implements IAccountSrvc {
             status.update(lines, "Reading accounts from file " + oname);
             vmConfig.set("accountsLoaded", LocalDateTime.now().toString());
             vmConfig.save();
+            return true;
         }
+        return false;
     }
 
     //
@@ -140,7 +141,7 @@ public class AccountSrvc implements IAccountSrvc {
             }
             else{
                 for(Account aZiel : dstAcc){
-                    Optional<Account> opt = curAccLDAP.stream().filter(a -> aZiel.getUniqueId().compareToIgnoreCase(a.getUniqueId())==0).findFirst();
+                    Optional<Account> opt = curAccLDAP.stream().filter(a -> aZiel.getId().compareToIgnoreCase(a.getId())==0).findFirst();
                     if(opt.isPresent()){
                         Account aIst = opt.get();
                         if(aIst.changed(aZiel)){

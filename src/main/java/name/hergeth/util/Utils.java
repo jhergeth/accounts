@@ -41,11 +41,10 @@ public class Utils {
         }
     }
 
-    public static int readLines(String strFile, Consumer<String[]> func, Logger LOG) {
+    public static int readLines(File file, Consumer<String[]> func, Logger LOG) {
         int lines = 0;
 
         try {
-            File file = new File(strFile);
             String line ="";
 
             String pattern = "";
@@ -72,21 +71,49 @@ public class Utils {
 
                 lines++;
                 if(lines%100 == 0){
-                    LOG.info("Read {} lines from {}.", lines, strFile);
+                    LOG.info("Read {} lines from {}.", lines, file.getAbsolutePath());
                 }
             }
-            LOG.info("Read {} lines from {}.", lines, strFile);
+            LOG.info("Read {} lines from {}.", lines, file.getAbsolutePath());
         } catch (Exception e) {
             LOG.error("Exception during {} reading: {} after {} lines.",
-                    strFile, e.getMessage(), lines);
+                    file.getAbsolutePath(), e.getMessage(), lines);
         }
 
         return lines;
     }
 
-    public static int countLines(String fName, Logger LOG){
+    public static String[] readFirstLine(File file, Logger LOG) {
+        try {
+            String line ="";
+
+            String pattern = "";
+            BufferedReader br = new BufferedReader(new FileReader(file, StandardCharsets.UTF_8));
+            line = br.readLine();
+            char[] cs = line.toCharArray();
+            int cc = 0;
+            int sc = 0;
+            for(char c : cs){
+                if(c == ',') cc++;
+                if(c == ';') sc++;
+            }
+            pattern = cc > sc ? "," : ";" + "(?=([^\"]*\"[^\"]*\")*[^\"]*$)";
+
+            String[] elm = line.split(pattern, -1);
+            for(int i = 0; i < elm.length; i++){
+                elm[i] = elm[i].replace("\"", "");
+            }
+            return elm;
+        } catch (Exception e) {
+            LOG.error("Exception during {} reading: {} in first line.",
+                    file.getAbsolutePath(), e.getMessage());
+        }
+        return null;
+    }
+
+    public static int countLines(File file, Logger LOG){
         try{
-            LineNumberReader lineNumberReader = new LineNumberReader(new FileReader(fName));
+            LineNumberReader lineNumberReader = new LineNumberReader(new FileReader(file));
 
             int data = lineNumberReader.read();
             while(data != -1){
@@ -98,9 +125,18 @@ public class Utils {
         }
         catch(Exception e){
             LOG.error("Exception {}during counting lines of {}.",
-                    e.getMessage(), fName);
+                    e.getMessage(), file.getAbsolutePath());
         }
         return 0;
+    }
+
+    public static int inArray(String[] elm, String s){
+        for(int i = 0; i < elm.length; i++){
+            if(elm[i].contains(s)){
+                return i;
+            }
+        }
+        return -1;
     }
 
     private static final int SALT_LENGTH = 4;

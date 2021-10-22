@@ -9,7 +9,7 @@ import lombok.Data;
 @Introspected
 @AllArgsConstructor
 public class Account {
-    private String uniqueId;
+    private String id;
 
     @NonNull
     private String klasse;

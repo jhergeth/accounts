@@ -2,7 +2,6 @@ package name.hergeth.controler;
 
 import io.micronaut.core.async.annotation.SingleResult;
 import io.micronaut.http.HttpResponse;
-import io.micronaut.http.HttpStatus;
 import io.micronaut.http.MediaType;
 import io.micronaut.http.annotation.Body;
 import io.micronaut.http.annotation.Controller;
@@ -16,7 +15,7 @@ import io.micronaut.security.rules.SecurityRule;
 import jakarta.inject.Inject;
 import name.hergeth.config.Configuration;
 import name.hergeth.domain.Account;
-import name.hergeth.services.IAccountSrvc;
+import name.hergeth.services.IDataSrvc;
 import org.reactivestreams.Publisher;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -27,25 +26,23 @@ import java.io.IOException;
 import java.util.List;
 
 import static io.micronaut.http.HttpStatus.CONFLICT;
-import static io.micronaut.http.MediaType.MULTIPART_FORM_DATA;
-import static io.micronaut.http.MediaType.TEXT_PLAIN;
 
 @Secured(SecurityRule.IS_ANONYMOUS)
-@Controller("/account")
-public class AccountCtrl {
-    private static final Logger LOG = LoggerFactory.getLogger(AccountCtrl.class);
+@Controller("/api/data")
+public class DataCtrl {
+    private static final Logger LOG = LoggerFactory.getLogger(DataCtrl.class);
 
     @Inject
     private Configuration vmConfig;
     @Inject
-    private IAccountSrvc accSrvc;
+    private IDataSrvc dataSrvc;
 
-    public AccountCtrl(Configuration vMailerConfig, IAccountSrvc accSrvc) {
+    public DataCtrl(Configuration vMailerConfig, IDataSrvc dataSrvc) {
         this.vmConfig = vMailerConfig;
-        this.accSrvc = accSrvc;
+        this.dataSrvc = dataSrvc;
     }
 
-    @Post(value = "/load", consumes = MediaType.MULTIPART_FORM_DATA)
+    @Post(value = "/write", consumes = MediaType.MULTIPART_FORM_DATA)
     @SingleResult
     public Publisher<HttpResponse<String>> uploadAccounts(StreamingFileUpload file) {
         File tempFile;
@@ -59,11 +56,13 @@ public class AccountCtrl {
         return Mono.from(uploadPublisher)
                 .map(success -> {
                     if (success) {
-                        return HttpResponse.ok("Uploaded");
-                    } else {
-                        return HttpResponse.<String>status(CONFLICT)
-                                .body("Upload Failed");
+                        LOG.info("Got file {}.", file.getFilename());
+                        if(dataSrvc.loadData(tempFile, file.getFilename())){
+                            return HttpResponse.ok("Uploaded");
+                        };
                     }
+                    return HttpResponse.<String>status(CONFLICT)
+                            .body("Upload Failed");
                 });
     }
 
@@ -91,36 +90,36 @@ public class AccountCtrl {
     */
 
 
-    @Get(value = "/getaccounts")
+    @Get(value = "/read")
     public List<Account> getAccounts() {
-        return accSrvc.getAccounts();
+        return dataSrvc.getAccounts();
     }
 
     @Get(value = "/getlogins")
     public List<String> getLogins() {
-        return accSrvc.getLogins();
+        return dataSrvc.getLogins();
     }
 
     @Get(value = "/getklassen")
     public List<String> getKlassen() {
-        return accSrvc.getKlassen();
+        return dataSrvc.getKlassen();
     }
 
     @Post(value = "/ncadd", consumes = MediaType.APPLICATION_JSON)
     public HttpResponse putNCAdd(@Body String[] klassen) {
-        int anz = accSrvc.addExtAccounts(klassen);
+        int anz = dataSrvc.addExtAccounts(klassen);
         return HttpResponse.ok("{ \"anz\": \"" + Integer.toString(anz) + "\" }");
     }
 
     @Post(value = "/ncminus", consumes = MediaType.APPLICATION_JSON)
     public HttpResponse putNCMinus(@Body String[] klassen) {
-        int anz = accSrvc.delExtAccounts(klassen);
+        int anz = dataSrvc.delExtAccounts(klassen);
         return HttpResponse.ok("{ \"anz\": \"" + Integer.toString(anz) + "\" }");
     }
 
     @Post(value = "/moodle", consumes = MediaType.APPLICATION_JSON)
     public HttpResponse putMoodle(@Body String[] klassen) {
-        int anz = accSrvc.putMoodleAccounts(klassen);
+        int anz = dataSrvc.putMoodleAccounts(klassen);
         return HttpResponse.ok("{ \"anz\": \"" + Integer.toString(anz) + "\" }");
     }
 
