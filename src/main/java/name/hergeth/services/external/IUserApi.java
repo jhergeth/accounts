@@ -1,15 +1,15 @@
 package name.hergeth.services.external;
 
-import name.hergeth.domain.Account;
+import name.hergeth.domain.SUSAccount;
 import name.hergeth.services.external.io.Meta;
 
 import java.util.List;
 import java.util.function.Consumer;
 
 public interface IUserApi {
-    boolean createUser(Account a, String pw, String quota);
+    boolean createUser(SUSAccount a, String pw, String quota);
 
-    boolean updateUser(Account a);
+    boolean updateUser(SUSAccount a);
 
     boolean deleteUser(String user);
 
@@ -25,7 +25,9 @@ public interface IUserApi {
 
     List<String> getExternalGroups();
 
-    List<Account> getExternalAccounts(String[] klassen);
+    List<SUSAccount> getExternalAccounts(String[] klassen);
 
-    List<Account> getExternalAccounts(String klasse);
+    List<SUSAccount> getExternalAccounts(String klasse);
+
+    List<SUSAccount> getExternalAccounts();
 }

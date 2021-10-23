@@ -16,7 +16,7 @@ import java.util.Map;
 import java.util.TreeMap;
 
 @Secured(SecurityRule.IS_ANONYMOUS)
-@Controller("/api/domain/konfig")
+@Controller("/api/konfig")
 public class ConfigCtrl {
     private static final Logger LOG = LoggerFactory.getLogger(ConfigCtrl.class);
 

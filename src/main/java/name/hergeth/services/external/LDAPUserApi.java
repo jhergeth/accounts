@@ -1,6 +1,6 @@
 package name.hergeth.services.external;
 
-import name.hergeth.domain.Account;
+import name.hergeth.domain.SUSAccount;
 import name.hergeth.services.external.io.Meta;
 import name.hergeth.util.Utils;
 import org.apache.directory.api.ldap.model.cursor.CursorException;
@@ -54,7 +54,7 @@ public class LDAPUserApi implements IUserApi{
     }
 
     @Override
-    public boolean createUser(Account a, String pw, String quota) {
+    public boolean createUser(SUSAccount a, String pw, String quota) {
         return createLDAPUser(a, BASE_SUS_DN, pw, quota);
     }
 
@@ -62,7 +62,7 @@ public class LDAPUserApi implements IUserApi{
         errorHndler = ehdl;
     }
 
-    private boolean createLDAPUser(Account a, String bdn, String pw, String quota) {
+    private boolean createLDAPUser(SUSAccount a, String bdn, String pw, String quota) {
         Entry entry = null;
         String dn = "cn=" + a.getLoginName() + "," + bdn;
         try {
@@ -108,7 +108,7 @@ public class LDAPUserApi implements IUserApi{
     }
 
     @Override
-    public boolean updateUser(Account a){
+    public boolean updateUser(SUSAccount a){
         Entry ue = getFirstEntry(a.getLoginName(), SEARCH_USER);
         if(ue == null){
             LOG.error("Cannot find LDAP-account of user {} for update!", a.getLoginName());
@@ -281,21 +281,21 @@ public class LDAPUserApi implements IUserApi{
         return getLDAPStrings(SEARCH_GROUP, "cn");
     }
 
-    public List<Account> getExternalAccounts(String[] klassen){
-        List<Account> all = new ArrayList<>();
+    public List<SUSAccount> getExternalAccounts(String[] klassen){
+        List<SUSAccount> all = new ArrayList<>();
         for(String kla : klassen) {
             all.addAll(getExternalAccounts(kla));
         }
         return all;
     }
 
-    public List<Account> getExternalAccounts(String klasse){
+    public List<SUSAccount> getExternalAccounts(String klasse){
         Dn grp = getFirstDN(klasse, SEARCH_GROUP);
         if(grp != null){
             //(&(objectClass=inetOrgPerson)(seeAlso="cn=2020.ITM1,ou=Klassen,dc=bkest,dc=schule"))
             return getLDAPEntries("(&"+SEARCH_USER+"(seeAlso="+grp.getName()+"))", null, e -> {
-                        Account res = null;
-                        res =  new Account(
+                        SUSAccount res = null;
+                        res =  new SUSAccount(
                                 getAttribute(e, "uid"),
                                 getAttribute(e, "businessCategory"),        // Klasse
                                 getAttribute(e, "sn"),
@@ -310,6 +310,26 @@ public class LDAPUserApi implements IUserApi{
         }
         return new ArrayList<>();
     }
+
+    public List<SUSAccount> getExternalAccounts(){
+        //(&(objectClass=inetOrgPerson)(seeAlso="cn=2020.ITM1,ou=Klassen,dc=bkest,dc=schule"))
+        return getLDAPEntries("(&"+SEARCH_USER+")", null, e -> {
+            SUSAccount res = null;
+            res =  new SUSAccount(
+                    getAttribute(e, "uid"),
+                    getAttribute(e, "businessCategory"),        // Klasse
+                    getAttribute(e, "sn"),
+                    getAttribute(e, "givenName"),
+                    getAttribute(e, "pager"),
+                    getAttribute(e, "displayName"),
+                    getAttribute(e, "cn"),
+                    getAttribute(e, "mail")
+            );
+            return res;
+        });
+    }
+
+
     private List<String> getLDAPStrings(String filter, String attr) {
             return getLDAPEntries(filter, attr, e -> {
                 String res = "";

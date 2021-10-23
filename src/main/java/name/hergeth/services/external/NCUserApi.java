@@ -3,9 +3,8 @@ package name.hergeth.services.external;
 import com.fasterxml.jackson.dataformat.xml.XmlMapper;
 import io.micronaut.http.HttpRequest;
 import io.micronaut.http.MutableHttpRequest;
-import io.micronaut.http.client.HttpClient;
 import io.micronaut.http.uri.UriBuilder;
-import name.hergeth.domain.Account;
+import name.hergeth.domain.SUSAccount;
 import name.hergeth.services.external.io.NCGroupResp;
 import name.hergeth.services.external.io.NCUserResp;
 import org.slf4j.Logger;
@@ -29,7 +28,7 @@ public class NCUserApi extends NCHttpIO implements IUserApi {
 	}
 
 	@Override
-	public boolean createUser(Account a, String pw, String quota){
+	public boolean createUser(SUSAccount a, String pw, String quota){
 		try{
 			UriBuilder ub = UriBuilder.of(getBASE_USR_URL())
 					.path("users")
@@ -122,12 +121,15 @@ public class NCUserApi extends NCHttpIO implements IUserApi {
 	}
 
 
-	public List<Account> getExternalAccounts(String[] klassen){
-		return new ArrayList<Account>();
+	public List<SUSAccount> getExternalAccounts(String[] klassen){
+		return new ArrayList<SUSAccount>();
 	}
-	public List<Account> getExternalAccounts(String klassen){
-		return new ArrayList<Account>();
+	public List<SUSAccount> getExternalAccounts(String klassen){
+		return new ArrayList<SUSAccount>();
 	}
-	public boolean updateUser(Account a){return false;}
+	public List<SUSAccount> getExternalAccounts(){
+		return new ArrayList<SUSAccount>();
+	}
+	public boolean updateUser(SUSAccount a){return false;}
 
 }

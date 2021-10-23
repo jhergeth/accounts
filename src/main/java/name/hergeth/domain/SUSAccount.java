@@ -8,7 +8,7 @@ import lombok.Data;
 @Data
 @Introspected
 @AllArgsConstructor
-public class Account {
+public class SUSAccount {
     private String id;
 
     @NonNull
@@ -32,7 +32,7 @@ public class Account {
     @NonNull
     private String email;
 
-    public boolean changed(Account n){
+    public boolean changed(SUSAccount n){
         return this.klasse.compareToIgnoreCase(n.klasse) != 0
                 || this.anzeigeName.compareToIgnoreCase(n.anzeigeName) != 0
                 || this.loginName.compareToIgnoreCase(n.loginName) != 0

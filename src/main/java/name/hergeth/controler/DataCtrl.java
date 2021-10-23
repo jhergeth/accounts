@@ -14,7 +14,7 @@ import io.micronaut.security.annotation.Secured;
 import io.micronaut.security.rules.SecurityRule;
 import jakarta.inject.Inject;
 import name.hergeth.config.Configuration;
-import name.hergeth.domain.Account;
+import name.hergeth.domain.SUSAccount;
 import name.hergeth.services.IDataSrvc;
 import org.reactivestreams.Publisher;
 import org.slf4j.Logger;
@@ -91,7 +91,7 @@ public class DataCtrl {
 
 
     @Get(value = "/read")
-    public List<Account> getAccounts() {
+    public List<SUSAccount> getAccounts() {
         return dataSrvc.getAccounts();
     }
 

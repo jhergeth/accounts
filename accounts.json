@@ -1,8 +1,4 @@
 {
-  "Hier" : "nicht",
-  "Lugineo" : "Italien",
-  "Noch" : "Was",
-  "Zacharias" : "Test",
   "accLDAPAcc" : "cn=admin,dc=bkest,dc=schule",
   "accLDAPPW" : "pHtSL4MhUlaTBaevsmka",
   "accLDAPURL" : "ldap.learn.berufskolleg-geilenkirchen.de",
@@ -13,8 +9,6 @@
   "accNCPW" : "dW4ZB-szLx9-oWEjr-xQrLq-bbqsN",
   "accNCURL" : "https://learn.berufskolleg-geilenkirchen.de",
   "accUserSize" : "",
-  "accountsLoaded" : "2021-10-22T18:24:08.618852400",
-  "datadir" : ".",
-  "nachname" : "Hergeth34",
-  "vorname" : "Joachim6644"
+  "accountsLoaded" : "2021-10-23T17:02:26.979568900",
+  "datadir" : "."
 }
