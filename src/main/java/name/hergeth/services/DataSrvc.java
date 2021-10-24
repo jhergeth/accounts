@@ -33,7 +33,7 @@ public class DataSrvc implements IDataSrvc {
 
     private static final Logger LOG = LoggerFactory.getLogger(DataSrvc.class);
 
-    private Configuration vmConfig;
+    private Configuration configuration;
     private SUSAccList susAccListCSV;
     private SUSAccList susAccListLDAP;
     private StatusSrvc status;
@@ -47,8 +47,8 @@ public class DataSrvc implements IDataSrvc {
     private IUserApi usrNCCmd = null;
     private NCFileApi fileCmd = null;
 
-    public DataSrvc(Configuration vmConfig, SUSAccList susAccListCSV, SUSAccList susAccListLDAP, StatusSrvc status) {
-        this.vmConfig = vmConfig;
+    public DataSrvc(Configuration configuration, SUSAccList susAccListCSV, SUSAccList susAccListLDAP, StatusSrvc status) {
+        this.configuration = configuration;
         this.susAccListCSV = susAccListCSV;
         this.susAccListLDAP = susAccListLDAP;
         this.status = status;
@@ -72,9 +72,9 @@ public class DataSrvc implements IDataSrvc {
             }, LOG);
             susAccListCSV = nAccList;
             LOG.debug("Found "+ lines +" accounts");
-            status.update(lines, "Reading accounts from file " + oname);
-            vmConfig.set("accountsLoaded", LocalDateTime.now().toString());
-            vmConfig.save();
+            status.update(lines, "Read accounts from file " + oname);
+            configuration.set("accountsLoaded", LocalDateTime.now().toString());
+            configuration.save();
             return true;
         }
         return false;
@@ -299,21 +299,21 @@ public class DataSrvc implements IDataSrvc {
         String usrLDAP = null;
         String pwLDAP = null;
 
-        serverNC = vmConfig.get("accNCURL", "https://learn.berufskolleg-geilenkirchen.de");
-        usrNC = vmConfig.get("accNCAcc", "admin");
-        pwNC = vmConfig.get("accNCPW", "dW4ZB-szLx9-oWEjr-xQrLq-bbqsN");
+        serverNC = configuration.get("accNCURL", "https://learn.berufskolleg-geilenkirchen.de");
+        usrNC = configuration.get("accNCAcc", "admin");
+        pwNC = configuration.get("accNCPW", "dW4ZB-szLx9-oWEjr-xQrLq-bbqsN");
 
-        serverLDAP = vmConfig.get("accLDAPURL", "ldap.learn.berufskolleg-geilenkirchen.de");
-        usrLDAP = vmConfig.get("accLDAPAcc", "cn=admin,dc=bkest,dc=schule");
-        pwLDAP = vmConfig.get("accLDAPPW", "pHtSL4MhUlaTBaevsmka");
+        serverLDAP = configuration.get("accLDAPURL", "ldap.learn.berufskolleg-geilenkirchen.de");
+        usrLDAP = configuration.get("accLDAPAcc", "cn=admin,dc=bkest,dc=schule");
+        pwLDAP = configuration.get("accLDAPPW", "pHtSL4MhUlaTBaevsmka");
 
-        accUserSize = vmConfig.get("accUserSize", "");
+        accUserSize = configuration.get("accUserSize", "");
 
-        moodleServer = vmConfig.get("accMoodleURL", "schulen-online");
-        moodleUser = vmConfig.get("accMoodleAcc", "admin");
-        moodlePW = vmConfig.get("accMoodlePW", "");
+        moodleServer = configuration.get("accMoodleURL", "schulen-online");
+        moodleUser = configuration.get("accMoodleAcc", "admin");
+        moodlePW = configuration.get("accMoodlePW", "");
 
-        vmConfig.save();;
+        configuration.save();;
 
         Consumer<Meta> handleErrors = m -> status.stop("ERROR " + m.getStatusCode() + ": " + m.getMessage());
 
