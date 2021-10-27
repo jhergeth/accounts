@@ -266,8 +266,6 @@ public class LDAPUserApi implements IUserApi{
                 LOG.error("Could not remove user {} [{}] from group {} [{}]: {}.", u, usr.getName(), g, grp.getName(), e.getMessage());
             }
         }
-        LOG.error("Could not remove unknown user {} [{}] from group {} [{}].", u, usr.getName(), g, grp.getName());
-
         return false;
     }
 
@@ -314,17 +312,20 @@ public class LDAPUserApi implements IUserApi{
     public List<SUSAccount> getExternalAccounts(){
         //(&(objectClass=inetOrgPerson)(seeAlso="cn=2020.ITM1,ou=Klassen,dc=bkest,dc=schule"))
         return getLDAPEntries("(&"+SEARCH_USER+")", null, e -> {
+            String uid = getAttribute(e, "uid");
             SUSAccount res = null;
-            res =  new SUSAccount(
-                    getAttribute(e, "uid"),
-                    getAttribute(e, "businessCategory"),        // Klasse
-                    getAttribute(e, "sn"),
-                    getAttribute(e, "givenName"),
-                    getAttribute(e, "pager"),
-                    getAttribute(e, "displayName"),
-                    getAttribute(e, "cn"),
-                    getAttribute(e, "mail")
-            );
+            if(uid != null && uid.length() > 1) {
+                res = new SUSAccount(
+                        getAttribute(e, "uid"),
+                        getAttribute(e, "businessCategory"),        // Klasse
+                        getAttribute(e, "sn"),
+                        getAttribute(e, "givenName"),
+                        getAttribute(e, "pager"),
+                        getAttribute(e, "displayName"),
+                        getAttribute(e, "cn"),
+                        getAttribute(e, "mail")
+                );
+            }
             return res;
         });
     }
@@ -378,7 +379,7 @@ public class LDAPUserApi implements IUserApi{
                 {
                     Entry resultEntry = ( ( SearchResultEntry ) response ).getEntry();
                     T r = func.apply(resultEntry);
-                    res.add(r);
+                    if(r != null) res.add(r);
                 }
                 else{
                     LOG.error("Got not a SearchResultEntry from LDAP-Search.");

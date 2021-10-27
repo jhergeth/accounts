@@ -105,6 +105,11 @@ public class NCUserApi extends NCHttpIO implements IUserApi {
 	}
 
 	@Override
+	public boolean disconnectUserAndGroup(String u, String g){
+		return false;
+	}
+
+	@Override
 	public List<String> getExternalUsers(){
 		return getElements("users", s -> {
 			XmlMapper xmlM = new XmlMapper();

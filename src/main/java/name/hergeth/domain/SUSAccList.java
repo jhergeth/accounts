@@ -21,6 +21,10 @@ public class SUSAccList extends DomainList<SUSAccount> {
 
     }
 
+    public SUSAccList(List<SUSAccount> seed){
+        addAll(seed);
+    }
+
     public Optional<SUSAccount> findById(@NotNull Long id) {
         return findBy(a -> {
             return id.equals(a.getId());

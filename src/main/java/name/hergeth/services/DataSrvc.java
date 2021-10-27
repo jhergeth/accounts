@@ -1,7 +1,10 @@
 package name.hergeth.services;
 
 import jakarta.inject.Singleton;
+import lombok.AllArgsConstructor;
+import lombok.Data;
 import name.hergeth.config.Configuration;
+import name.hergeth.controler.response.AccUpdate;
 import name.hergeth.domain.SUSAccount;
 import name.hergeth.domain.SUSAccList;
 import name.hergeth.services.external.IUserApi;
@@ -10,6 +13,8 @@ import name.hergeth.services.external.NCFileApi;
 import name.hergeth.services.external.NCUserApi;
 import name.hergeth.services.external.io.Meta;
 import name.hergeth.util.Utils;
+import org.apache.commons.collections4.MapIterator;
+import org.apache.commons.collections4.map.HashedMap;
 import org.apache.directory.api.ldap.model.exception.LdapException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -17,10 +22,7 @@ import org.slf4j.LoggerFactory;
 import java.io.File;
 import java.net.MalformedURLException;
 import java.time.LocalDateTime;
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.List;
-import java.util.Optional;
+import java.util.*;
 import java.util.function.BiFunction;
 import java.util.function.Consumer;
 
@@ -31,11 +33,42 @@ public class DataSrvc implements IDataSrvc {
     private final String SJ ="SJ2021";
     private final String SKLASSENDIR = "KLASSEN/" + SJ;
 
+    @Data
+    private class AccPair {
+        String key;
+        SUSAccount accCSV;
+        SUSAccount accLDAP;
+
+        Boolean same = false;
+        Boolean changed = true;
+        Boolean newLogin = true;
+
+        public AccPair(String key, SUSAccount csv, SUSAccount ldap){
+            this.key = key;
+            this.accCSV = csv;
+            this.accLDAP = ldap;
+        }
+        public void compare(){
+            if(accCSV != null && accLDAP != null){
+                same = !accCSV.changed(accLDAP);
+                newLogin = accCSV.getLoginName().compareToIgnoreCase(accLDAP.getLoginName()) != 0;
+                changed = !same && !newLogin;
+            }
+            else{
+                same = false;
+                changed = true;
+                newLogin = true;
+            }
+        }
+    }
     private static final Logger LOG = LoggerFactory.getLogger(DataSrvc.class);
 
     private Configuration configuration;
     private SUSAccList susAccListCSV;
     private SUSAccList susAccListLDAP;
+    private HashedMap<String,AccPair> accPairs;
+    private AccUpdate accUpdate = null;
+
     private StatusSrvc status;
 
     private String moodleServer = null;
@@ -83,12 +116,12 @@ public class DataSrvc implements IDataSrvc {
     //
     //  get accountlist
     //
-    public List<SUSAccount> getAccounts(){
+    public List<SUSAccount> getCSVAccounts(){
         return susAccListCSV;
     }
 
     //  get list of login names
-    public List<String> getLogins(){
+    public List<String> getCSVLogins(){
         List<String> res = Collections.emptyList();
         if(susAccListCSV != null){
             res = susAccListCSV.getAll(SUSAccount::getLoginName);
@@ -97,12 +130,160 @@ public class DataSrvc implements IDataSrvc {
     }
 
     // get list of klassen
-    public List<String> getKlassen(){
+    public List<String> getCSVKlassen(){
         List<String> res = Collections.emptyList();
         if(susAccListCSV != null){
             res = susAccListCSV.getAllDistinct(SUSAccount::getKlasse);
         }
         return res;
+    }
+
+    public boolean loadExtAccounts(){
+        initLDAP();
+        susAccListLDAP = new SUSAccList(usrLDAPCmd.getExternalAccounts());
+        LOG.debug("Read "+ susAccListLDAP.size() +" user accounts from LDAP system.");
+        status.update("Read " + susAccListLDAP.size() + " Accounts from LDAP.");
+        return true;
+    }
+
+    public AccUpdate compareAccounts(){
+        accUpdate = new AccUpdate();
+
+        if( susAccListCSV == null
+            || susAccListLDAP == null
+            || susAccListCSV.size() == 0
+            || susAccListLDAP.size() == 0){
+            LOG.debug("Cannot compare empty accountlists");
+            status.update("Keine Kontenlisten vorhanden!");
+            return accUpdate;
+        }
+        LOG.debug("Create map of account pairs.");
+        status.update("Neue Accounts auslesen.");
+        accPairs = new HashedMap<>();
+
+        for(SUSAccount acc : susAccListCSV){
+            if(accPairs.containsKey(acc.getId())){
+                LOG.debug("ID: " + acc.getId() + " multiple times in CSV-List.");
+                status.update("Doppelter Eintrag in CSV-Liste!");
+                return accUpdate;
+            }
+            accPairs.put(acc.getId(), new AccPair(acc.getId(),acc, null));
+        }
+        LOG.debug("CSV-Accounts read, inserting LDAP-Accounts.");
+        status.update("... füge vorhandene Accounts hinzu...");
+
+        for(SUSAccount acc : susAccListLDAP){
+            if(accPairs.containsKey(acc.getId())){
+                AccPair ap = accPairs.get(acc.getId());
+                ap.accLDAP = acc;
+//                accPairs.put(acc.getId(), new AccPair(acc.getId(), ap.accCSV, acc));
+            }
+            else{
+                accPairs.put(acc.getId(), new AccPair(acc.getId(), null, acc));
+            }
+        }
+        LOG.debug("All accounts in one map (" + accPairs.size() + ")");
+        status.update("... LDAP-Accounts hinzugefügt...");
+
+        int cntPairs = 0;
+        int cntCSV = 0;
+        int cntLDAP = 0;
+        MapIterator<String,AccPair> it = accPairs.mapIterator();
+        while (it.hasNext()) {
+            String key = it.next();
+            AccPair ap = it.getValue();
+            if(ap.accCSV != null && ap.accLDAP != null){
+                cntPairs++;
+                ap.accCSV.setAnzeigeName(ap.accLDAP.getAnzeigeName());
+                ap.accCSV.setLoginName(ap.accLDAP.getLoginName());
+                ap.compare();
+                if(ap.getChanged()){
+                    accUpdate.getToChange().add(ap.accCSV);
+                    accUpdate.getToCOld().add(ap.accLDAP);
+                }
+            }
+            else if(ap.accCSV == null && ap.accLDAP != null){
+                cntLDAP++;
+                accUpdate.getToDelete().add(ap.accLDAP);
+            }
+            else if(ap.accCSV != null && ap.accLDAP == null){
+                ap.accCSV.setAnzeigeName(ap.accCSV.getVorname() + " " + ap.accCSV.getNachname());
+
+                String vor = Utils.flattenToAscii(Utils.replaceUmlaut(ap.accCSV.getVorname()));
+                String nach = Utils.flattenToAscii(Utils.replaceUmlaut(ap.accCSV.getNachname()));
+                vor = vor.replaceAll("\\s","") ;
+                nach = nach.replaceAll("\\s","") ;
+                String login = nach.substring(0,Math.min(8,nach.length())) + vor.substring(0, Math.min(4,vor.length()));
+                ap.accCSV.setLoginName(login.toLowerCase(Locale.ROOT));
+
+                cntCSV++;
+                accUpdate.getToCreate().add(ap.accCSV);
+            }
+            else {
+                LOG.debug("ID: " + key + " has no CSV or LDAP entry?");
+                status.update("ID ohne jedwedes Konto gefunden???");
+            }
+        }
+        accUpdate.setUnchanged(cntPairs-accUpdate.getToChange().size());
+        LOG.debug("pairs=" + cntPairs + " LDAP=" + cntLDAP + " CSV=" + cntCSV);
+        status.update("... " + cntPairs + " Konten neu&vorhanden; " + cntCSV + " Konten neu; " + cntLDAP + " Konten zu löschen.");
+
+        return accUpdate;
+    }
+
+    public void updateAccounts(){
+        int anz = 0;
+        int noCreated = 0;
+        int deleted = 0;
+
+        List<String> klassenLDAP = usrLDAPCmd.getExternalGroups();
+
+        for(SUSAccount a: accUpdate.getToChange()){
+            usrLDAPCmd.updateUser(a);
+            LOG.debug("User {} already in external system.", a.getLoginName());
+            status.inc("Account for (" + a.getKlasse() + ") " + a.getLoginName() + " already in external system");
+
+            String eKlasse = toEKlasse(a.getKlasse());
+            if (!klassenLDAP.contains(eKlasse)) {
+                LOG.debug("Klasse {} not in external system.", eKlasse);
+                status.update("Creating group " + eKlasse);
+                usrLDAPCmd.createGroup(eKlasse);     // create user group
+                klassenLDAP.add(eKlasse);
+            }
+            usrLDAPCmd.connectUserAndGroup(a.getLoginName(), eKlasse);
+            anz++;
+        }
+
+        for(SUSAccount a: accUpdate.getToCreate()){
+            if(usrLDAPCmd.createUser(a,"bkest2021" + a.getKlasse(), accUserSize)){
+                LOG.debug("User {} created.", a.getLoginName());
+                status.inc("Created account (" + a.getKlasse() + ") " +  a.getLoginName() + " in external system ...");
+
+                String eKlasse = toEKlasse(a.getKlasse());
+                if (!klassenLDAP.contains(eKlasse)) {
+                    LOG.debug("Klasse {} not in external system.", eKlasse);
+                    status.update("Creating group " + eKlasse);
+                    usrLDAPCmd.createGroup(eKlasse);     // create user group
+                    klassenLDAP.add(eKlasse);
+                }
+                usrLDAPCmd.connectUserAndGroup(a.getLoginName(), eKlasse);
+                noCreated++;
+            }
+            else{
+                LOG.debug("Could not create user {}.", a.getLoginName());
+                status.inc("Could not create account for (" + a.getKlasse() + ") " + a.getLoginName() + " in external system");
+            }
+        }
+
+        for(SUSAccount a: accUpdate.getToDelete()){
+            usrLDAPCmd.deleteUser(a.getLoginName());
+            LOG.debug("Deleted user {}.", a.getLoginName());
+            status.inc("Deleted account for (" + a.getKlasse() + ") " + a.getLoginName() + ".");
+            usrLDAPCmd.disconnectUserAndGroup(a.getLoginName(), toEKlasse(a.getKlasse()));
+            deleted++;
+        }
+
+        status.stop("Created/updated/deleted " + noCreated +  "/" + anz + "/" + deleted + " accounts in external system");
     }
 
 
@@ -291,42 +472,47 @@ public class DataSrvc implements IDataSrvc {
     //
     //  set up Nextcloud, moodle an LDAP connections
     //
-    private void initCmd(){
-        String serverNC = null;
-        String serverLDAP = null;
-        String usrNC = null;
-        String pwNC = null;
-        String usrLDAP = null;
-        String pwLDAP = null;
+    private void initCmd() {
+        initMoodle();
+        initLDAP();
+        initNC();
+    }
 
-        serverNC = configuration.get("accNCURL", "https://learn.berufskolleg-geilenkirchen.de");
-        usrNC = configuration.get("accNCAcc", "admin");
-        pwNC = configuration.get("accNCPW", "dW4ZB-szLx9-oWEjr-xQrLq-bbqsN");
-
-        serverLDAP = configuration.get("accLDAPURL", "ldap.learn.berufskolleg-geilenkirchen.de");
-        usrLDAP = configuration.get("accLDAPAcc", "cn=admin,dc=bkest,dc=schule");
-        pwLDAP = configuration.get("accLDAPPW", "pHtSL4MhUlaTBaevsmka");
-
-        accUserSize = configuration.get("accUserSize", "");
-
+    private void initMoodle() {
         moodleServer = configuration.get("accMoodleURL", "schulen-online");
         moodleUser = configuration.get("accMoodleAcc", "admin");
         moodlePW = configuration.get("accMoodlePW", "");
+    }
 
+    private void initLDAP(){
+        String serverLDAP = configuration.get("accLDAPURL", "ldap.learn.berufskolleg-geilenkirchen.de");
+        String usrLDAP = configuration.get("accLDAPAcc", "cn=admin,dc=bkest,dc=schule");
+        String pwLDAP = configuration.get("accLDAPPW", "pHtSL4MhUlaTBaevsmka");
         configuration.save();;
+        Consumer<Meta> handleErrors = m -> status.stop("ERROR " + m.getStatusCode() + ": " + m.getMessage());
+        try {
+            usrLDAPCmd = new LDAPUserApi(serverLDAP, usrLDAP, pwLDAP);
+            usrLDAPCmd.atError(handleErrors);
+        } catch (LdapException e) {
+            e.printStackTrace();
+        }
+    }
 
+    private void initNC(){
+        String serverNC = configuration.get("accNCURL", "https://learn.berufskolleg-geilenkirchen.de");
+        String usrNC = configuration.get("accNCAcc", "admin");
+        String pwNC = configuration.get("accNCPW", "dW4ZB-szLx9-oWEjr-xQrLq-bbqsN");
+        accUserSize = configuration.get("accUserSize", "");
+        configuration.save();;
         Consumer<Meta> handleErrors = m -> status.stop("ERROR " + m.getStatusCode() + ": " + m.getMessage());
 
         try {
             usrNCCmd = new NCUserApi(serverNC, usrNC, pwNC);
-            usrLDAPCmd = new LDAPUserApi(serverLDAP, usrLDAP, pwLDAP);
-            usrLDAPCmd.atError(handleErrors);
             fileCmd = new NCFileApi(serverNC, usrNC, pwNC);
             fileCmd.atError(handleErrors);
-        } catch (MalformedURLException | LdapException e) {
+        } catch (MalformedURLException e) {
             e.printStackTrace();
         }
-
     }
 
 }

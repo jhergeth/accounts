@@ -19,6 +19,8 @@ public interface IUserApi {
 
     boolean connectUserAndGroup(String u, String g);
 
+    boolean disconnectUserAndGroup(String u, String g);
+
     void atError(Consumer<Meta> ehdl);
 
     List<String> getExternalUsers();

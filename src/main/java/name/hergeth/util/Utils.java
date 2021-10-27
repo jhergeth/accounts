@@ -13,6 +13,7 @@ import java.nio.charset.StandardCharsets;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
 import java.security.SecureRandom;
+import java.text.Normalizer;
 import java.util.Base64;
 import java.util.Enumeration;
 import java.util.function.Consumer;
@@ -187,5 +188,58 @@ public class Utils {
             }
         }
         return true;
+    }
+
+    /**
+     * from: http://gordon.koefner.at/blog/coding/replacing-german-umlauts/
+     * Replaces all german umlaute in the input string with the usual replacement
+     * scheme, also taking into account capitilization.
+     * A test String such as
+     * "Käse Köln Füße Öl Übel Äü Üß ÄÖÜ Ä Ö Ü ÜBUNG" will yield the result
+     * "Kaese Koeln Fuesse Oel Uebel Aeue Uess AEOEUe Ae Oe Ue UEBUNG"
+     * @param input
+     * @return the input string with replaces umlaute
+     */
+    public static String replaceUmlaut(String input) {
+
+        //replace all lower Umlauts
+        String o_strResult =
+                input
+                        .replaceAll("ü", "ue")
+                        .replaceAll("ö", "oe")
+                        .replaceAll("ä", "ae")
+                        .replaceAll("ß", "ss");
+
+        //first replace all capital umlaute in a non-capitalized context (e.g. Übung)
+        o_strResult =
+                o_strResult
+                        .replaceAll("Ü(?=[a-zäöüß ])", "Ue")
+                        .replaceAll("Ö(?=[a-zäöüß ])", "Oe")
+                        .replaceAll("Ä(?=[a-zäöüß ])", "Ae");
+
+        //now replace all the other capital umlaute
+        o_strResult =
+                o_strResult
+                        .replaceAll("Ü", "UE")
+                        .replaceAll("Ö", "OE")
+                        .replaceAll("Ä", "AE");
+
+        return o_strResult;
+    }
+
+    /**
+     * aus: https://www.it-swarm.com.de/de/java/gibt-es-eine-moeglichkeit-akzente-zu-entfernen-und-eine-ganze-zeichenfolge-regulaere-buchstaben-umzuwandeln/969548740/
+     * @param string
+     * @return
+     */
+    public static String flattenToAscii(String string) {
+        char[] out = new char[string.length()];
+        string = Normalizer.normalize(string, Normalizer.Form.NFD);
+        int j = 0;
+        for (int i = 0, n = string.length(); i < n; ++i) {
+            char c = string.charAt(i);
+            if (c <= '\u007F') out[j++] = c;
+        }
+        return new String(out);
     }
 }

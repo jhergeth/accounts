@@ -50,6 +50,9 @@ dependencies {
     // Apache commons
     compileOnly "org.apache.commons:commons-email:1.5"
     compileOnly "commons-validator:commons-validator:1.7"
+    // https://mvnrepository.com/artifact/org.apache.commons/commons-text
+    implementation group: 'org.apache.commons', name: 'commons-text', version: '1.9'
+
 // https://mvnrepository.com/artifact/commons-io/commons-io
 //    implementation 'commons-io:commons-io:20030203.000550'
     compileOnly 'commons-io:commons-io:2.11.0'
