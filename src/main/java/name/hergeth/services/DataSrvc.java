@@ -1,13 +1,12 @@
 package name.hergeth.services;
 
 import jakarta.inject.Singleton;
-import lombok.AllArgsConstructor;
 import lombok.Data;
 import name.hergeth.config.Configuration;
 import name.hergeth.controler.response.AccUpdate;
-import name.hergeth.domain.SUSAccount;
+import name.hergeth.domain.AccList;
+import name.hergeth.domain.Account;
 import name.hergeth.domain.SUSAccList;
-import name.hergeth.services.external.IUserApi;
 import name.hergeth.services.external.LDAPUserApi;
 import name.hergeth.services.external.NCFileApi;
 import name.hergeth.services.external.NCUserApi;
@@ -30,20 +29,17 @@ import java.util.function.Consumer;
 @Singleton
 public class DataSrvc implements IDataSrvc {
 
-    private final String SJ ="SJ2021";
-    private final String SKLASSENDIR = "KLASSEN/" + SJ;
-
     @Data
     private class AccPair {
         String key;
-        SUSAccount accCSV;
-        SUSAccount accLDAP;
+        Account accCSV;
+        Account accLDAP;
 
         Boolean same = false;
         Boolean changed = true;
         Boolean newLogin = true;
 
-        public AccPair(String key, SUSAccount csv, SUSAccount ldap){
+        public AccPair(String key, Account csv, Account ldap){
             this.key = key;
             this.accCSV = csv;
             this.accLDAP = ldap;
@@ -64,23 +60,27 @@ public class DataSrvc implements IDataSrvc {
     private static final Logger LOG = LoggerFactory.getLogger(DataSrvc.class);
 
     private Configuration configuration;
-    private SUSAccList susAccListCSV;
-    private SUSAccList susAccListLDAP;
+    private AccList susAccListCSV;
+    private AccList susAccListLDAP;
     private HashedMap<String,AccPair> accPairs;
     private AccUpdate accUpdate = null;
+    private String defaultUserMailDomain = "";
 
     private StatusSrvc status;
 
     private String moodleServer = null;
     private String moodleUser = null;
     private String moodlePW = null;
+    private String SCHULJAHR =null;
+    private String SKLASSENDIR = null;
     private String accUserSize = null;
+    private String accUserPW = null;
 
-    private IUserApi usrLDAPCmd = null;
-    private IUserApi usrNCCmd = null;
+    private LDAPUserApi usrLDAPCmd = null;
+    private NCUserApi usrNCCmd = null;
     private NCFileApi fileCmd = null;
 
-    public DataSrvc(Configuration configuration, SUSAccList susAccListCSV, SUSAccList susAccListLDAP, StatusSrvc status) {
+    public DataSrvc(Configuration configuration, AccList susAccListCSV, AccList susAccListLDAP, StatusSrvc status) {
         this.configuration = configuration;
         this.susAccListCSV = susAccListCSV;
         this.susAccListLDAP = susAccListLDAP;
@@ -116,7 +116,7 @@ public class DataSrvc implements IDataSrvc {
     //
     //  get accountlist
     //
-    public List<SUSAccount> getCSVAccounts(){
+    public List<Account> getCSVAccounts(){
         return susAccListCSV;
     }
 
@@ -124,7 +124,7 @@ public class DataSrvc implements IDataSrvc {
     public List<String> getCSVLogins(){
         List<String> res = Collections.emptyList();
         if(susAccListCSV != null){
-            res = susAccListCSV.getAll(SUSAccount::getLoginName);
+            res = susAccListCSV.getAll(Account::getLoginName);
         }
         return res;
     }
@@ -133,26 +133,26 @@ public class DataSrvc implements IDataSrvc {
     public List<String> getCSVKlassen(){
         List<String> res = Collections.emptyList();
         if(susAccListCSV != null){
-            res = susAccListCSV.getAllDistinct(SUSAccount::getKlasse);
+            res = susAccListCSV.getAllDistinct(Account::getKlasse);
         }
         return res;
     }
 
     public boolean loadExtAccounts(){
         initLDAP();
-        susAccListLDAP = new SUSAccList(usrLDAPCmd.getExternalAccounts());
+        susAccListLDAP = new AccList(usrLDAPCmd.getExternalAccounts());
         LOG.debug("Read "+ susAccListLDAP.size() +" user accounts from LDAP system.");
         status.update("Read " + susAccListLDAP.size() + " Accounts from LDAP.");
         return true;
     }
 
     public AccUpdate compareAccounts(){
+        loadExtAccounts();
+
         accUpdate = new AccUpdate();
 
         if( susAccListCSV == null
-            || susAccListLDAP == null
-            || susAccListCSV.size() == 0
-            || susAccListLDAP.size() == 0){
+            || susAccListLDAP == null){
             LOG.debug("Cannot compare empty accountlists");
             status.update("Keine Kontenlisten vorhanden!");
             return accUpdate;
@@ -161,7 +161,7 @@ public class DataSrvc implements IDataSrvc {
         status.update("Neue Accounts auslesen.");
         accPairs = new HashedMap<>();
 
-        for(SUSAccount acc : susAccListCSV){
+        for(Account acc : susAccListCSV){
             if(accPairs.containsKey(acc.getId())){
                 LOG.debug("ID: " + acc.getId() + " multiple times in CSV-List.");
                 status.update("Doppelter Eintrag in CSV-Liste!");
@@ -172,7 +172,7 @@ public class DataSrvc implements IDataSrvc {
         LOG.debug("CSV-Accounts read, inserting LDAP-Accounts.");
         status.update("... füge vorhandene Accounts hinzu...");
 
-        for(SUSAccount acc : susAccListLDAP){
+        for(Account acc : susAccListLDAP){
             if(accPairs.containsKey(acc.getId())){
                 AccPair ap = accPairs.get(acc.getId());
                 ap.accLDAP = acc;
@@ -185,6 +185,7 @@ public class DataSrvc implements IDataSrvc {
         LOG.debug("All accounts in one map (" + accPairs.size() + ")");
         status.update("... LDAP-Accounts hinzugefügt...");
 
+        List<String> usersLDAP = usrLDAPCmd.getExternalUsers();
         int cntPairs = 0;
         int cntCSV = 0;
         int cntLDAP = 0;
@@ -194,8 +195,11 @@ public class DataSrvc implements IDataSrvc {
             AccPair ap = it.getValue();
             if(ap.accCSV != null && ap.accLDAP != null){
                 cntPairs++;
-                ap.accCSV.setAnzeigeName(ap.accLDAP.getAnzeigeName());
+                ap.accCSV.setAnzeigeName(ap.accCSV.getVorname() + " " + ap.accCSV.getNachname());
                 ap.accCSV.setLoginName(ap.accLDAP.getLoginName());
+                if(defaultUserMailDomain.contains("@")){
+                    ap.accCSV.setEmail(ap.accCSV.getLoginName() + defaultUserMailDomain);
+                }
                 ap.compare();
                 if(ap.getChanged()){
                     accUpdate.getToChange().add(ap.accCSV);
@@ -214,7 +218,17 @@ public class DataSrvc implements IDataSrvc {
                 vor = vor.replaceAll("\\s","") ;
                 nach = nach.replaceAll("\\s","") ;
                 String login = nach.substring(0,Math.min(8,nach.length())) + vor.substring(0, Math.min(4,vor.length()));
-                ap.accCSV.setLoginName(login.toLowerCase(Locale.ROOT));
+                login = login.toLowerCase(Locale.ROOT);
+                String loginn = new String(login);
+                int i = 1;
+                while(usersLDAP.contains(loginn)){
+                    loginn = login + i++;
+                }
+                ap.accCSV.setLoginName(loginn);
+                if(defaultUserMailDomain.contains("@")){
+                    ap.accCSV.setEmail(loginn + defaultUserMailDomain);
+                }
+                usersLDAP.add(loginn);
 
                 cntCSV++;
                 accUpdate.getToCreate().add(ap.accCSV);
@@ -238,15 +252,16 @@ public class DataSrvc implements IDataSrvc {
 
         List<String> klassenLDAP = usrLDAPCmd.getExternalGroups();
 
-        for(SUSAccount a: accUpdate.getToChange()){
+        status.start(0, accUpdate.getToChange().size() + accUpdate.getToCreate().size() + accUpdate.getToDelete().size(), " accounts to manage...");
+        for(Account a: accUpdate.getToChange()){
             usrLDAPCmd.updateUser(a);
-            LOG.debug("User {} already in external system.", a.getLoginName());
-            status.inc("Account for (" + a.getKlasse() + ") " + a.getLoginName() + " already in external system");
+            LOG.debug("Updated user {} in external system.", a.getLoginName());
+            status.inc("Account for (" + a.getKlasse() + ") " + a.getLoginName() + " updated in external system");
 
             String eKlasse = toEKlasse(a.getKlasse());
             if (!klassenLDAP.contains(eKlasse)) {
                 LOG.debug("Klasse {} not in external system.", eKlasse);
-                status.update("Creating group " + eKlasse);
+  //              status.update("Creating group " + eKlasse);
                 usrLDAPCmd.createGroup(eKlasse);     // create user group
                 klassenLDAP.add(eKlasse);
             }
@@ -254,18 +269,19 @@ public class DataSrvc implements IDataSrvc {
             anz++;
         }
 
-        for(SUSAccount a: accUpdate.getToCreate()){
-            if(usrLDAPCmd.createUser(a,"bkest2021" + a.getKlasse(), accUserSize)){
+        for(Account a: accUpdate.getToCreate()){
+            if(usrLDAPCmd.createSuS(a,"bkest" + SCHULJAHR + a.getKlasse(), accUserSize)){
                 LOG.debug("User {} created.", a.getLoginName());
-                status.inc("Created account (" + a.getKlasse() + ") " +  a.getLoginName() + " in external system ...");
+                status.inc("Account for (" + a.getKlasse() + ") " + a.getLoginName() + " created in external system");
 
                 String eKlasse = toEKlasse(a.getKlasse());
                 if (!klassenLDAP.contains(eKlasse)) {
                     LOG.debug("Klasse {} not in external system.", eKlasse);
-                    status.update("Creating group " + eKlasse);
+//                    status.update("Creating group " + eKlasse);
                     usrLDAPCmd.createGroup(eKlasse);     // create user group
                     klassenLDAP.add(eKlasse);
                 }
+
                 usrLDAPCmd.connectUserAndGroup(a.getLoginName(), eKlasse);
                 noCreated++;
             }
@@ -275,134 +291,35 @@ public class DataSrvc implements IDataSrvc {
             }
         }
 
-        for(SUSAccount a: accUpdate.getToDelete()){
-            usrLDAPCmd.deleteUser(a.getLoginName());
-            LOG.debug("Deleted user {}.", a.getLoginName());
-            status.inc("Deleted account for (" + a.getKlasse() + ") " + a.getLoginName() + ".");
+        for(Account a: accUpdate.getToDelete()){
+            usrLDAPCmd.deleteSuS(a.getLoginName());
             usrLDAPCmd.disconnectUserAndGroup(a.getLoginName(), toEKlasse(a.getKlasse()));
+            LOG.debug("Deleted user {}.", a.getLoginName());
+            status.inc("Account for (" + a.getKlasse() + ") " + a.getLoginName() + " deleted in external system");
             deleted++;
         }
 
         status.stop("Created/updated/deleted " + noCreated +  "/" + anz + "/" + deleted + " accounts in external system");
     }
-
-
-    public int addExtAccounts(String[] klassen){
-        String[] eKlassen = new String[klassen.length];
-        for(int i = 0; i < klassen.length; i++){
-            eKlassen[i] = toEKlasse(klassen[i]);    // add school year to generate group name
-        }
-
-        initCmd();      // init connections to Nextcloud, moodle and LDAP
-
-        LOG.info("Adding external accounts: {}", klassen.length);
-
-        List<String> usersLDAP = usrLDAPCmd.getExternalUsers();
-        LOG.debug("Found "+ usersLDAP.size() +" user in external system.");
-        List<String> klassenLDAP = usrLDAPCmd.getExternalGroups();
-        LOG.debug("Found "+ klassenLDAP.size() +" groups in external system.");
-        List<String> klassenDirNC = fileCmd.getDirs(SKLASSENDIR);
-        LOG.debug("Found "+ klassenDirNC.size() +" klassen Dirs in nextcloud.");
-        List<SUSAccount> userAccLDAPinKlassen = usrLDAPCmd.getExternalAccounts(eKlassen);
-
-        LOG.debug("Found "+ userAccLDAPinKlassen.size() +" external accounts.");
-//
-//  Calc list of accounts to create or change
-        List<SUSAccount> toDoSUSAccounts = new ArrayList<>();
-        for(int i = 0; i < klassen.length; i++){
-            String kla = klassen[i];
-            if(!Utils.isValidFileName(kla)){
-                LOG.warn("Can't use {} as a filename, skipping...", kla);
-                continue;
-            }
-            String eKla = eKlassen[i];
-
-            List<SUSAccount> curAccLDAP = usrLDAPCmd.getExternalAccounts(eKla);
-            List<SUSAccount> dstAcc = susAccListCSV.findAllBy(a -> a.getKlasse().compareToIgnoreCase(kla)==0);
-            if(curAccLDAP.isEmpty()){
-                toDoSUSAccounts.addAll(dstAcc);
-            }
-            else{
-                for(SUSAccount aZiel : dstAcc){
-                    Optional<SUSAccount> opt = curAccLDAP.stream().filter(a -> aZiel.getId().compareToIgnoreCase(a.getId())==0).findFirst();
-                    if(opt.isPresent()){
-                        SUSAccount aIst = opt.get();
-                        if(aIst.changed(aZiel)){
-                            toDoSUSAccounts.add(aZiel);
-                        }
-                    }
-                    else{
-                        toDoSUSAccounts.add(aZiel);
-                    }
-                }
-            }
-        }
-
-        int usersToCreate = toDoSUSAccounts.size();
-        status.start(0, usersToCreate, "Found " + usersToCreate + " accounts to create/modify in external system ...");
-
-        int anz = 0;
-        int noCreated = 0;
-        for(int i = 0; i < klassen.length; i++) {
-            String klasse = klassen[i];
-            String eKlasse = eKlassen[i];
-            if (!klassenLDAP.contains(eKlasse)) {
-                LOG.debug("Klasse {} not in external system.", klasse);
-                status.update("Creating group " + klasse);
-                usrLDAPCmd.createGroup(eKlasse);     // create user group
-            }
-        }
-
-        for(SUSAccount a: toDoSUSAccounts){
-            if(!usersLDAP.contains(a.getLoginName())) {
-                if(usrLDAPCmd.createUser(a,"bkest2021" + a.getKlasse(), accUserSize)){
-                    LOG.debug("User {} created.", a.getLoginName());
-                    status.inc("Created account (" + a.getKlasse() + ") " +  a.getLoginName() + " in external system ...");
-                    noCreated++;
-                }
-                else{
-                    LOG.debug("Could not create user {}.", a.getLoginName());
-                    status.inc("Could not create account for (" + a.getKlasse() + ") " + a.getLoginName() + " in external system");
-                }
-            }
-            else{
-                usrLDAPCmd.updateUser(a);
-                LOG.debug("User {} already in external system.", a.getLoginName());
-                status.inc("Account for (" + a.getKlasse() + ") " + a.getLoginName() + " already in external system");
-                anz++;
-            }
-            usrLDAPCmd.connectUserAndGroup(a.getLoginName(), toEKlasse(a.getKlasse()));
-        }
-        status.stop("Exsists/created/total " + noCreated +  "/" + anz + "/" + usersToCreate + " accounts in external system");
-        return anz;
-    }
-
-    /*
-    Check groups in Nextclouds filesystem every 2 minutes
-    For each group:
-        check if its name conforms to the pattern of group names from the dir (xxx.yyy),
-            if yes
-                check if there is already a dir for this group
-                    if yes
-                        create a share in the path of this school year
-                    else
-                        create a Dir and a share
-
-     */
 //    @Scheduled(fixedDelay = "2m")
-    public void run() {
-        initCmd();;
+    public void updateNC() {
+        initCmd();
 
         List<String> extGroups = usrNCCmd.getExternalGroups();
         List<String> extDirs = fileCmd.getDirs(SKLASSENDIR);
 
+        int cntShare = 0;
+        int cntDir = 0;
+        status.start(0, extGroups.size(), "Found " + extGroups.size() + " groups to create/modify in external system ...");
         for(String grp: extGroups){
             if(grp.contains(".") && Utils.isValidFileName(grp)){
                 boolean found = false;
+                status.inc("Updateing/Creating group: " + grp);
                 for(String dir : extDirs){
-                    if(grp.equalsIgnoreCase(SJ+"."+dir)){
+                    if(grp.equalsIgnoreCase(SCHULJAHR +"."+dir)){
                         found = true;
                         fileCmd.createShare(SKLASSENDIR + "/"+dir, grp);  // create share for user group
+                        cntShare++;
                         break;
                     }
                 }
@@ -411,56 +328,20 @@ public class DataSrvc implements IDataSrvc {
                     fileCmd.mkdir(SKLASSENDIR + "/"+dir);    // create dir for user group
                     fileCmd.createShare(SKLASSENDIR + "/"+dir, grp);  // create share for user group
                     LOG.info("Created dir {} and connected to group {}.", dir, grp);
+                    cntShare++;
+                    cntDir++;
                 }
             }
             else{
                 LOG.warn("No valid class {}, skipping creation of dir and share.", grp);
             }
         }
-
+        status.stop("Added " + cntShare + " shares and " + cntDir + " direcories in Nextcloud.");
     }
 
     // return group name from klassen name (add school year)
     private String toEKlasse(String k){
-        return SJ + "." + k;
-    }
-
-    public int delExtAccounts(String[] klassen){
-        initCmd();
-
-        LOG.info("Removing external system accounts: {}", klassen.length);
-
-        List<String> usersNC = usrLDAPCmd.getExternalUsers();
-        LOG.debug("Found "+ usersNC.size() +" user in external system.");
-        List<String> klassenNC = usrLDAPCmd.getExternalGroups();
-        LOG.debug("Found "+ klassenNC.size() +" groups in external system.");
-
-        int usersToDelete = 0;
-        for(String klasse : klassen){
-            usersToDelete += susAccListCSV.stream().filter(a -> a.getKlasse().compareToIgnoreCase(klasse) == 0).count();
-        }
-        status.start(0, usersToDelete, "Deleting accounts in external system ...");
-
-        int anz = 0;
-        for(String klasse : klassen){
-            String eKlasse = SJ + "." + klasse;
-            List<SUSAccount> sus = susAccListCSV.findAllBy(a -> (a.getKlasse().compareToIgnoreCase(klasse)==0));
-            for(SUSAccount a : sus){
-                if(usersNC.contains(a.getLoginName())) {
-                    boolean ok = usrLDAPCmd.deleteUser(a.getLoginName());
-                    LOG.debug("User {} {} deleted.", a.getLoginName(), ok ? "" : "not");
-                    anz++;
-                }
-                status.inc("Deleted account (" + a.getKlasse() + ") " + a.getLoginName() + " in external system ...");
-            }
-
-            if(klassenNC.contains(eKlasse)){
-                boolean ok = usrLDAPCmd.deleteGroup(eKlasse);
-                LOG.debug("Group {} {} deleted.", klasse, ok ? "" : "not");
-            }
-        }
-        status.stop("Deleted all accounts in external system");
-        return anz;
+        return "SJ" + SCHULJAHR + "." + k;
     }
 
     public int putMoodleAccounts(String[] klassen){
@@ -473,9 +354,12 @@ public class DataSrvc implements IDataSrvc {
     //  set up Nextcloud, moodle an LDAP connections
     //
     private void initCmd() {
+        SCHULJAHR = configuration.get("Schuljahr", "2122");
+        defaultUserMailDomain = configuration.get("DefaultUserMailDomain", "@a133f.de");
         initMoodle();
         initLDAP();
         initNC();
+        configuration.save();;
     }
 
     private void initMoodle() {
@@ -488,10 +372,9 @@ public class DataSrvc implements IDataSrvc {
         String serverLDAP = configuration.get("accLDAPURL", "ldap.learn.berufskolleg-geilenkirchen.de");
         String usrLDAP = configuration.get("accLDAPAcc", "cn=admin,dc=bkest,dc=schule");
         String pwLDAP = configuration.get("accLDAPPW", "pHtSL4MhUlaTBaevsmka");
-        configuration.save();;
         Consumer<Meta> handleErrors = m -> status.stop("ERROR " + m.getStatusCode() + ": " + m.getMessage());
         try {
-            usrLDAPCmd = new LDAPUserApi(serverLDAP, usrLDAP, pwLDAP);
+            usrLDAPCmd = new LDAPUserApi(serverLDAP, usrLDAP, pwLDAP, SCHULJAHR);
             usrLDAPCmd.atError(handleErrors);
         } catch (LdapException e) {
             e.printStackTrace();
@@ -501,9 +384,11 @@ public class DataSrvc implements IDataSrvc {
     private void initNC(){
         String serverNC = configuration.get("accNCURL", "https://learn.berufskolleg-geilenkirchen.de");
         String usrNC = configuration.get("accNCAcc", "admin");
-        String pwNC = configuration.get("accNCPW", "dW4ZB-szLx9-oWEjr-xQrLq-bbqsN");
-        accUserSize = configuration.get("accUserSize", "");
-        configuration.save();;
+        String pwNC = configuration.get("accNCPW", "Bv3YI7RY8WMCEXVCRgON"); // Bv3YI7RY8WMCEXVCRgON
+//        String pwNC = configuration.get("accNCPW", "dW4ZB-szLx9-oWEjr-xQrLq-bbqsN"); // Bv3YI7RY8WMCEXVCRgON
+        SKLASSENDIR = configuration.get("KlassenDir", "KLASSEN") + "/SJ" + SCHULJAHR;
+        accUserSize = configuration.get("accUserSize", "256 MB");
+        accUserPW = configuration.get("accUserPW", "bkest" + SCHULJAHR);
         Consumer<Meta> handleErrors = m -> status.stop("ERROR " + m.getStatusCode() + ": " + m.getMessage());
 
         try {

@@ -1,9 +1,7 @@
 package name.hergeth.controler.response;
 
-import lombok.AllArgsConstructor;
 import lombok.Data;
-import lombok.NoArgsConstructor;
-import name.hergeth.domain.SUSAccount;
+import name.hergeth.domain.Account;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -11,10 +9,10 @@ import java.util.List;
 @Data
 public class AccUpdate {
     int unchanged;
-    List<SUSAccount> toChange;
-    List<SUSAccount> toCOld;
-    List<SUSAccount> toCreate;
-    List<SUSAccount> toDelete;
+    List<Account> toChange;
+    List<Account> toCOld;
+    List<Account> toCreate;
+    List<Account> toDelete;
 
     public AccUpdate(){
         unchanged = 0;

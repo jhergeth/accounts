@@ -1,6 +1,6 @@
 package name.hergeth.services.external;
 
-import name.hergeth.domain.SUSAccount;
+import name.hergeth.domain.Account;
 import name.hergeth.services.external.io.Meta;
 import name.hergeth.util.Utils;
 import org.apache.directory.api.ldap.model.cursor.CursorException;
@@ -26,7 +26,7 @@ import java.util.List;
 import java.util.function.Consumer;
 import java.util.function.Function;
 
-public class LDAPUserApi implements IUserApi{
+public class LDAPUserApi {
     private static final Logger LOG = LoggerFactory.getLogger(LDAPUserApi.class);
     private LdapConnection con = null;
 
@@ -36,33 +36,71 @@ public class LDAPUserApi implements IUserApi{
     private String BASE_GROUP_DN = "ou=Kurse,dc=bkest,dc=schule";
     private String BASE_SUS_DN = "ou=Schueler,dc=bkest,dc=schule";
     private String BASE_KUK_DN = "ou=Lehrer,dc=bkest,dc=schule";
-    private String SYSTEM_GROUP_DN = "ou=System,ou=Kurse,dc=bkest,dc=schule";
+    private String SYSTEM_GROUP_DN = "ou=System,dc=bkest,dc=schule";
     private String DUMMY_USER_DN = "cn=___dummy___,ou=System,dc=bkest,dc=schule";
+    private String DUMMY_USER_CN = "___dummy___";
+    private String SJ = "";
 
     private Consumer<Meta> errorHndler = null;
 
-    public LDAPUserApi(String srv, String user, String pw) throws LdapException {
+    public LDAPUserApi(String srv, String user, String pw, String sj) throws LdapException {
         con = new LdapNetworkConnection( srv, 636 ,true);
-        con.bind( user, pw );
+        con.bind( user, pw);
+        SJ = sj;
+        createOU("Kurse", BASE_DN);
+        createOU("Schueler", BASE_DN);
+        createOU("Klassen", BASE_DN);
+        createOU("Lehrer", BASE_DN);
+        createOU("System", BASE_DN);
 
-        intCreateGroup("ALL", "cn=ALL," + SYSTEM_GROUP_DN);
-        intCreateGroup("SUS-202021", "cn=SUS-202021," + SYSTEM_GROUP_DN);
+        try {
+            Entry entry = new DefaultEntry(
+                    DUMMY_USER_DN,
+                    "objectClass: top",
+                    "objectClass: person",
+                    "objectClass: organizationalPerson",
+                    "objectClass: inetOrgPerson");
+            entry.add( "cn", DUMMY_USER_CN);
+            entry.add( "sn", DUMMY_USER_CN);
+            entry.add( "roomNumber", LocalDate.now().format(DateTimeFormatter.ISO_LOCAL_DATE));   // created
+            entry.add("userPassword", Utils.generateSSHA("1234567890xyz".getBytes(StandardCharsets.UTF_8)));
+            con.add(entry);
+        } catch (LdapException | NoSuchAlgorithmException e) {
+            LOG.error("Got Exception during LDAP-Create dummy user: {}", e.getMessage());
+        }
+
+        createSysGroup("ALL");     // create user group
+        createSysGroup("LEHRER");     // create user group
+        createSysGroup("SUS-" + SJ);     // create user group
     }
     protected void finalize() throws Throwable {
         super.finalize();
         con.close();
     }
 
-    @Override
-    public boolean createUser(SUSAccount a, String pw, String quota) {
-        return createLDAPUser(a, BASE_SUS_DN, pw, quota);
+    public boolean createSuS(Account a, String pw, String quota) {
+        boolean res =  createLDAPUser(a, BASE_SUS_DN, pw, quota);
+        if(res){
+            connectUserAndGroup(a.getLoginName(), "ALL");
+            connectUserAndGroup(a.getLoginName(), "SUS-"+SJ);
+        }
+        return res;
+    }
+
+    public boolean createKuK(Account a, String pw, String quota) {
+        boolean res =  createLDAPUser(a, BASE_KUK_DN, pw, quota);
+        if(res){
+            connectUserAndGroup(a.getLoginName(), "ALL");
+            connectUserAndGroup(a.getLoginName(), "LEHRER");
+        }
+        return res;
     }
 
     public void atError(Consumer<Meta> ehdl){
         errorHndler = ehdl;
     }
 
-    private boolean createLDAPUser(SUSAccount a, String bdn, String pw, String quota) {
+    private boolean createLDAPUser(Account a, String bdn, String pw, String quota) {
         Entry entry = null;
         String dn = "cn=" + a.getLoginName() + "," + bdn;
         try {
@@ -86,13 +124,11 @@ public class LDAPUserApi implements IUserApi{
             entry.add( "uid", a.getId());
             entry.add( "businessCategory", a.getKlasse());
             entry.add( "pager", a.getGeburtstag());
+            entry.add( "audio", quota);
             entry.add( "roomNumber", LocalDate.now().format(DateTimeFormatter.ISO_LOCAL_DATE));   // created
             entry.add( "departmentNumber", LocalDate.now().format(DateTimeFormatter.ISO_LOCAL_DATE));   // last changed
             entry.add("userPassword", Utils.generateSSHA(pw.getBytes(StandardCharsets.UTF_8)));
             con.add(entry);
-
-            connectUserAndGroup(a.getLoginName(), "ALL");
-            connectUserAndGroup(a.getLoginName(), "SUS-202021");
             return true;
         } catch (LdapException | NoSuchAlgorithmException e) {
             LOG.error("Got Exception during LDAP-Create user {}: {}", dn, e.getMessage());
@@ -100,15 +136,19 @@ public class LDAPUserApi implements IUserApi{
         }
     }
 
-    @Override
-    public boolean deleteUser(String user) {
+    public boolean deleteSuS(String user) {
         disconnectUserAndGroup(user, "ALL");
-        disconnectUserAndGroup(user, "SUS-202021");
+        disconnectUserAndGroup(user, "SUS-"+SJ);
         return deleteLDAPEntry(user, SEARCH_USER);
     }
 
-    @Override
-    public boolean updateUser(SUSAccount a){
+    public boolean deleteKuK(String user) {
+        disconnectUserAndGroup(user, "ALL");
+        disconnectUserAndGroup(user, "LEHRER");
+        return deleteLDAPEntry(user, SEARCH_USER);
+    }
+
+    public boolean updateUser(Account a){
         Entry ue = getFirstEntry(a.getLoginName(), SEARCH_USER);
         if(ue == null){
             LOG.error("Cannot find LDAP-account of user {} for update!", a.getLoginName());
@@ -120,6 +160,8 @@ public class LDAPUserApi implements IUserApi{
             Modification mod = new DefaultModification( ModificationOperation.REPLACE_ATTRIBUTE, "sn", a.getNachname());
             con.modify( usr, mod );
             mod = new DefaultModification( ModificationOperation.REPLACE_ATTRIBUTE, "givenName", a.getVorname());
+            con.modify( usr, mod );
+            mod = new DefaultModification( ModificationOperation.REPLACE_ATTRIBUTE, "mail", a.getEmail());
             con.modify( usr, mod );
             mod = new DefaultModification( ModificationOperation.REPLACE_ATTRIBUTE, "displayName", a.getAnzeigeName());
             con.modify( usr, mod );
@@ -138,9 +180,13 @@ public class LDAPUserApi implements IUserApi{
         return true;
     }
 
-    @Override
     public boolean createGroup(String group) {
         String dn = "cn=" + group + "," + BASE_GROUP_DN;
+        return intCreateGroup(group, dn);
+    }
+
+    public boolean createSysGroup(String group) {
+        String dn = "cn=" + group + "," + SYSTEM_GROUP_DN;
         return intCreateGroup(group, dn);
     }
 
@@ -167,7 +213,28 @@ public class LDAPUserApi implements IUserApi{
         }
     }
 
-    @Override
+    public boolean createOU(String ou, String base) {
+        String dn = "ou=" + ou + "," + base;
+        Entry entry = null;
+        try {
+            entry = new DefaultEntry(
+                    dn,
+                    "objectClass: top",
+                    "objectClass: organizationalUnit");
+            entry.add("ou", ou);
+
+            entry.add("description", "Created during user import.");
+            con.add(entry);
+            return true;
+        }catch(LdapEntryAlreadyExistsException e) {
+            LOG.info("LDAP-OU {} already exsists.", ou);
+            return true;
+        } catch (LdapException e) {
+            LOG.error("Got Exception during LDAP-Create organisational unit {}: {}", ou, e.getMessage());
+            return false;
+        }
+    }
+
     public boolean deleteGroup(String grp) {
         return deleteLDAPEntry(grp, SEARCH_GROUP);
     }
@@ -187,7 +254,6 @@ public class LDAPUserApi implements IUserApi{
         return false;
     }
 
-    @Override
     public boolean connectUserAndGroup(String u, String g){
         LOG.info("Connecting user {} with group {}.", u, g);
         Entry ue = getFirstEntry(u, SEARCH_USER);
@@ -269,31 +335,29 @@ public class LDAPUserApi implements IUserApi{
         return false;
     }
 
-    @Override
     public List<String> getExternalUsers() {
         return getLDAPStrings(SEARCH_USER, "cn");
     }
 
-    @Override
     public List<String> getExternalGroups() {
         return getLDAPStrings(SEARCH_GROUP, "cn");
     }
 
-    public List<SUSAccount> getExternalAccounts(String[] klassen){
-        List<SUSAccount> all = new ArrayList<>();
+    public List<Account> getExternalAccounts(String[] klassen){
+        List<Account> all = new ArrayList<>();
         for(String kla : klassen) {
             all.addAll(getExternalAccounts(kla));
         }
         return all;
     }
 
-    public List<SUSAccount> getExternalAccounts(String klasse){
+    public List<Account> getExternalAccounts(String klasse){
         Dn grp = getFirstDN(klasse, SEARCH_GROUP);
         if(grp != null){
             //(&(objectClass=inetOrgPerson)(seeAlso="cn=2020.ITM1,ou=Klassen,dc=bkest,dc=schule"))
             return getLDAPEntries("(&"+SEARCH_USER+"(seeAlso="+grp.getName()+"))", null, e -> {
-                        SUSAccount res = null;
-                        res =  new SUSAccount(
+                        Account res = null;
+                        res =  new Account(
                                 getAttribute(e, "uid"),
                                 getAttribute(e, "businessCategory"),        // Klasse
                                 getAttribute(e, "sn"),
@@ -309,13 +373,13 @@ public class LDAPUserApi implements IUserApi{
         return new ArrayList<>();
     }
 
-    public List<SUSAccount> getExternalAccounts(){
+    public List<Account> getExternalAccounts(){
         //(&(objectClass=inetOrgPerson)(seeAlso="cn=2020.ITM1,ou=Klassen,dc=bkest,dc=schule"))
         return getLDAPEntries("(&"+SEARCH_USER+")", null, e -> {
             String uid = getAttribute(e, "uid");
-            SUSAccount res = null;
+            Account res = null;
             if(uid != null && uid.length() > 1) {
-                res = new SUSAccount(
+                res = new Account(
                         getAttribute(e, "uid"),
                         getAttribute(e, "businessCategory"),        // Klasse
                         getAttribute(e, "sn"),

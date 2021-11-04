@@ -1,4 +1,7 @@
 {
+  "DefaultUserMailDomain" : "@a133f.de",
+  "KlassenDir" : "KLASSEN",
+  "Schuljahr" : "202122",
   "accLDAPAcc" : "cn=admin,dc=bkest,dc=schule",
   "accLDAPPW" : "pHtSL4MhUlaTBaevsmka",
   "accLDAPURL" : "ldap.learn.berufskolleg-geilenkirchen.de",
@@ -6,9 +9,10 @@
   "accMoodlePW" : "",
   "accMoodleURL" : "schulen-online",
   "accNCAcc" : "admin",
-  "accNCPW" : "dW4ZB-szLx9-oWEjr-xQrLq-bbqsN",
+  "accNCPW" : "Bv3YI7RY8WMCEXVCRgON",
   "accNCURL" : "https://learn.berufskolleg-geilenkirchen.de",
-  "accUserSize" : "",
-  "accountsLoaded" : "2021-10-28T00:08:30.048009100",
+  "accUserPW" : "bkest202122",
+  "accUserSize" : "256 MB",
+  "accountsLoaded" : "2021-11-04T20:47:13.342605800",
   "datadir" : "."
 }

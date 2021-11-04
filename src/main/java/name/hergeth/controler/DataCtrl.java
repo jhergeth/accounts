@@ -15,7 +15,7 @@ import io.micronaut.security.rules.SecurityRule;
 import jakarta.inject.Inject;
 import name.hergeth.config.Configuration;
 import name.hergeth.controler.response.AccUpdate;
-import name.hergeth.domain.SUSAccount;
+import name.hergeth.domain.Account;
 import name.hergeth.services.IDataSrvc;
 import org.reactivestreams.Publisher;
 import org.slf4j.Logger;
@@ -92,7 +92,7 @@ public class DataCtrl {
 
 
     @Get(value = "/read")
-    public List<SUSAccount> getAccounts() {
+    public List<Account> getAccounts() {
         return dataSrvc.getCSVAccounts();
     }
 
@@ -121,18 +121,10 @@ public class DataCtrl {
         dataSrvc.updateAccounts();
     }
 
-    @Post(value = "/ncadd", consumes = MediaType.APPLICATION_JSON)
-    public HttpResponse putNCAdd(@Body String[] klassen) {
-        int anz = dataSrvc.addExtAccounts(klassen);
-        return HttpResponse.ok("{ \"anz\": \"" + Integer.toString(anz) + "\" }");
+    @Get(value = "/updnextcloud")
+    public void updateNC() {
+        dataSrvc.updateNC();
     }
-
-    @Post(value = "/ncminus", consumes = MediaType.APPLICATION_JSON)
-    public HttpResponse putNCMinus(@Body String[] klassen) {
-        int anz = dataSrvc.delExtAccounts(klassen);
-        return HttpResponse.ok("{ \"anz\": \"" + Integer.toString(anz) + "\" }");
-    }
-
     @Post(value = "/moodle", consumes = MediaType.APPLICATION_JSON)
     public HttpResponse putMoodle(@Body String[] klassen) {
         int anz = dataSrvc.putMoodleAccounts(klassen);
