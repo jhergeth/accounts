@@ -32,6 +32,9 @@ public class Account {
     @NonNull
     private String email;
 
+    @NonNull
+    private String maxSize;
+
     public boolean changed(Account n){
         return this.klasse.compareToIgnoreCase(n.klasse) != 0
                 || this.anzeigeName.compareToIgnoreCase(n.anzeigeName) != 0
@@ -40,6 +43,7 @@ public class Account {
                 || this.vorname.compareToIgnoreCase(n.vorname) != 0
                 || this.geburtstag.compareToIgnoreCase(n.geburtstag) != 0
                 || this.email.compareToIgnoreCase(n.email) != 0
+                || this.maxSize.compareToIgnoreCase(n.maxSize) != 0
                 ;
     }
 }

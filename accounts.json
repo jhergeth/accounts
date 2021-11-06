@@ -1,7 +1,8 @@
 {
-  "DefaultUserMailDomain" : "@a133f.de",
+  "DefaultUserMailDomain" : "none",
   "KlassenDir" : "KLASSEN",
   "Schuljahr" : "202122",
+  "accKuKSize" : "10 GB",
   "accLDAPAcc" : "cn=admin,dc=bkest,dc=schule",
   "accLDAPPW" : "pHtSL4MhUlaTBaevsmka",
   "accLDAPURL" : "ldap.learn.berufskolleg-geilenkirchen.de",
@@ -11,8 +12,12 @@
   "accNCAcc" : "admin",
   "accNCPW" : "Bv3YI7RY8WMCEXVCRgON",
   "accNCURL" : "https://learn.berufskolleg-geilenkirchen.de",
+  "accSuSSize" : "256 MB",
   "accUserPW" : "bkest202122",
   "accUserSize" : "256 MB",
   "accountsLoaded" : "2021-11-04T20:47:13.342605800",
-  "datadir" : "."
+  "datadir" : ".",
+  "defKuKPassword" : "1BKGKlehrer-",
+  "kukAccountsLoaded" : "2021-11-06T18:37:10.189734900",
+  "susAccountsLoaded" : "2021-11-06T16:52:55.572293300"
 }

@@ -65,7 +65,8 @@ public class AccList extends DomainList<Account> {
                 elm[3],         // date of birth
                 elm[4],         // displayname
                 elm[6],         // logon name
-                elm[8]          // e-mail
+                elm[8],          // e-mail
+                ""
         );
         add(a);
         return a;

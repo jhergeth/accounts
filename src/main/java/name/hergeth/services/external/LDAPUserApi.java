@@ -30,15 +30,13 @@ public class LDAPUserApi {
     private static final Logger LOG = LoggerFactory.getLogger(LDAPUserApi.class);
     private LdapConnection con = null;
 
-    private String BASE_DN = "dc=bkest,dc=schule";
-    private String SEARCH_USER = "(objectClass=inetOrgPerson)";
-    private String SEARCH_GROUP = "(objectClass=groupOfNames)";
-    private String BASE_GROUP_DN = "ou=Kurse,dc=bkest,dc=schule";
-    private String BASE_SUS_DN = "ou=Schueler,dc=bkest,dc=schule";
-    private String BASE_KUK_DN = "ou=Lehrer,dc=bkest,dc=schule";
-    private String SYSTEM_GROUP_DN = "ou=System,dc=bkest,dc=schule";
-    private String DUMMY_USER_DN = "cn=___dummy___,ou=System,dc=bkest,dc=schule";
-    private String DUMMY_USER_CN = "___dummy___";
+    private final String BASE_DN = "dc=bkest,dc=schule";
+    private final String SEARCH_USER = "(objectClass=inetOrgPerson)";
+    private final String SEARCH_GROUP = "(objectClass=groupOfNames)";
+    private final String BASE_KONTEN_DN = "ou=Konten,dc=bkest,dc=schule";
+    private final String BASE_KUK_DN = "ou=Lehrer,dc=bkest,dc=schule";
+    private final String DUMMY_USER_DN = "cn=___dummy___,ou=System,dc=bkest,dc=schule";
+    private final String DUMMY_USER_CN = "___dummy___";
     private String SJ = "";
 
     private Consumer<Meta> errorHndler = null;
@@ -47,10 +45,8 @@ public class LDAPUserApi {
         con = new LdapNetworkConnection( srv, 636 ,true);
         con.bind( user, pw);
         SJ = sj;
-        createOU("Kurse", BASE_DN);
-        createOU("Schueler", BASE_DN);
+        createOU("Konten", BASE_DN);
         createOU("Klassen", BASE_DN);
-        createOU("Lehrer", BASE_DN);
         createOU("System", BASE_DN);
 
         try {
@@ -70,7 +66,7 @@ public class LDAPUserApi {
         }
 
         createSysGroup("ALL");     // create user group
-        createSysGroup("LEHRER");     // create user group
+        createSysGroup("LEHRERINNEN");     // create user group
         createSysGroup("SUS-" + SJ);     // create user group
     }
     protected void finalize() throws Throwable {
@@ -78,8 +74,8 @@ public class LDAPUserApi {
         con.close();
     }
 
-    public boolean createSuS(Account a, String pw, String quota) {
-        boolean res =  createLDAPUser(a, BASE_SUS_DN, pw, quota);
+    public boolean createSUSKonto(Account a, String pw) {
+        boolean res =  createLDAPUser(a, BASE_KONTEN_DN, pw);
         if(res){
             connectUserAndGroup(a.getLoginName(), "ALL");
             connectUserAndGroup(a.getLoginName(), "SUS-"+SJ);
@@ -87,11 +83,11 @@ public class LDAPUserApi {
         return res;
     }
 
-    public boolean createKuK(Account a, String pw, String quota) {
-        boolean res =  createLDAPUser(a, BASE_KUK_DN, pw, quota);
+    public boolean createKUKKonto(Account a, String pw) {
+        boolean res =  createLDAPUser(a, BASE_KUK_DN, pw);
         if(res){
             connectUserAndGroup(a.getLoginName(), "ALL");
-            connectUserAndGroup(a.getLoginName(), "LEHRER");
+            connectUserAndGroup(a.getLoginName(), "LEHRERINNEN");
         }
         return res;
     }
@@ -100,7 +96,7 @@ public class LDAPUserApi {
         errorHndler = ehdl;
     }
 
-    private boolean createLDAPUser(Account a, String bdn, String pw, String quota) {
+    private boolean createLDAPUser(Account a, String bdn, String pw) {
         Entry entry = null;
         String dn = "cn=" + a.getLoginName() + "," + bdn;
         try {
@@ -124,7 +120,7 @@ public class LDAPUserApi {
             entry.add( "uid", a.getId());
             entry.add( "businessCategory", a.getKlasse());
             entry.add( "pager", a.getGeburtstag());
-            entry.add( "audio", quota);
+            entry.add( "audio", a.getMaxSize());
             entry.add( "roomNumber", LocalDate.now().format(DateTimeFormatter.ISO_LOCAL_DATE));   // created
             entry.add( "departmentNumber", LocalDate.now().format(DateTimeFormatter.ISO_LOCAL_DATE));   // last changed
             entry.add("userPassword", Utils.generateSSHA(pw.getBytes(StandardCharsets.UTF_8)));
@@ -136,19 +132,19 @@ public class LDAPUserApi {
         }
     }
 
-    public boolean deleteSuS(String user) {
+    public boolean deleteSUSKonto(String user) {
         disconnectUserAndGroup(user, "ALL");
         disconnectUserAndGroup(user, "SUS-"+SJ);
         return deleteLDAPEntry(user, SEARCH_USER);
     }
 
-    public boolean deleteKuK(String user) {
+    public boolean deleteKUKKonto(String user) {
         disconnectUserAndGroup(user, "ALL");
-        disconnectUserAndGroup(user, "LEHRER");
+        disconnectUserAndGroup(user, "LEHRERINNEN");
         return deleteLDAPEntry(user, SEARCH_USER);
     }
 
-    public boolean updateUser(Account a){
+    public boolean updateKonto(Account a){
         Entry ue = getFirstEntry(a.getLoginName(), SEARCH_USER);
         if(ue == null){
             LOG.error("Cannot find LDAP-account of user {} for update!", a.getLoginName());
@@ -169,6 +165,8 @@ public class LDAPUserApi {
             con.modify( usr, mod );
             mod = new DefaultModification( ModificationOperation.REPLACE_ATTRIBUTE, "pager", a.getGeburtstag());
             con.modify( usr, mod );
+            mod = new DefaultModification( ModificationOperation.REPLACE_ATTRIBUTE, "audio", a.getMaxSize());
+            con.modify( usr, mod );
             mod = new DefaultModification( ModificationOperation.REPLACE_ATTRIBUTE, "departmentNumber", LocalDate.now().format(DateTimeFormatter.ISO_LOCAL_DATE));
             con.modify( usr, mod );
         }
@@ -181,11 +179,13 @@ public class LDAPUserApi {
     }
 
     public boolean createGroup(String group) {
+        String BASE_GROUP_DN = "ou=Klassen,dc=bkest,dc=schule";
         String dn = "cn=" + group + "," + BASE_GROUP_DN;
         return intCreateGroup(group, dn);
     }
 
     public boolean createSysGroup(String group) {
+        String SYSTEM_GROUP_DN = "ou=System,dc=bkest,dc=schule";
         String dn = "cn=" + group + "," + SYSTEM_GROUP_DN;
         return intCreateGroup(group, dn);
     }
@@ -354,31 +354,27 @@ public class LDAPUserApi {
     public List<Account> getExternalAccounts(String klasse){
         Dn grp = getFirstDN(klasse, SEARCH_GROUP);
         if(grp != null){
-            //(&(objectClass=inetOrgPerson)(seeAlso="cn=2020.ITM1,ou=Klassen,dc=bkest,dc=schule"))
-            return getLDAPEntries("(&"+SEARCH_USER+"(seeAlso="+grp.getName()+"))", null, e -> {
-                        Account res = null;
-                        res =  new Account(
-                                getAttribute(e, "uid"),
-                                getAttribute(e, "businessCategory"),        // Klasse
-                                getAttribute(e, "sn"),
-                                getAttribute(e, "givenName"),
-                                getAttribute(e, "pager"),
-                                getAttribute(e, "displayName"),
-                                getAttribute(e, "cn"),
-                                getAttribute(e, "mail")
-                        );
-                        return res;
-                    });
+            return getExtAccounts("(&"+SEARCH_USER+"(seeAlso="+grp.getName()+"))", BASE_KONTEN_DN);
         }
         return new ArrayList<>();
     }
 
+    public List<Account> getExternalAccounts(boolean sus){
+        String search = "(&"+SEARCH_USER+")";
+        return getExtAccounts(search, (sus ? BASE_KONTEN_DN : BASE_KUK_DN));
+    }
+
     public List<Account> getExternalAccounts(){
+        return getExtAccounts("(&"+SEARCH_USER+")", BASE_KONTEN_DN);
+    }
+
+    private List<Account> getExtAccounts(String search, String base) {
         //(&(objectClass=inetOrgPerson)(seeAlso="cn=2020.ITM1,ou=Klassen,dc=bkest,dc=schule"))
-        return getLDAPEntries("(&"+SEARCH_USER+")", null, e -> {
+        LOG.info("Searching LDAP for users with: " + search);
+        List<Account> accs = getLDAPEntries(search, base,null, e -> {
             String uid = getAttribute(e, "uid");
             Account res = null;
-            if(uid != null && uid.length() > 1) {
+            if (uid != null && uid.length() > 1) {
                 res = new Account(
                         getAttribute(e, "uid"),
                         getAttribute(e, "businessCategory"),        // Klasse
@@ -387,11 +383,14 @@ public class LDAPUserApi {
                         getAttribute(e, "pager"),
                         getAttribute(e, "displayName"),
                         getAttribute(e, "cn"),
-                        getAttribute(e, "mail")
+                        getAttribute(e, "mail"),
+                        getAttribute(e, "audio")
                 );
             }
             return res;
         });
+        LOG.info("Found " +accs.size() + " Accounts in LDAP.");
+        return accs;
     }
 
 
@@ -420,6 +419,10 @@ public class LDAPUserApi {
     }
 
     private <T> List<T> getLDAPEntries(String filter, String attr, Function<Entry,T> func) {
+        return getLDAPEntries(filter, BASE_DN, attr, func);
+    }
+
+    private <T> List<T> getLDAPEntries(String filter, String base, String attr, Function<Entry,T> func) {
         List<T> res = new ArrayList<>();
         SearchCursor searchCursor = null;
         try {
@@ -430,7 +433,7 @@ public class LDAPUserApi {
                 req.addAttributes( attr);
             }
             req.setTimeLimit( 0 );
-            req.setBase( new Dn( BASE_DN ) );
+            req.setBase( new Dn( base ) );
             req.setFilter( filter );
 
             searchCursor = con.search( req );
