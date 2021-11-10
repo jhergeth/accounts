@@ -120,7 +120,7 @@ public class LDAPUserApi {
             entry.add( "uid", a.getId());
             entry.add( "businessCategory", a.getKlasse());
             entry.add( "pager", a.getGeburtstag());
-            entry.add( "audio", a.getMaxSize());
+            entry.add( "destinationIndicator", a.getMaxSize());
             entry.add( "roomNumber", LocalDate.now().format(DateTimeFormatter.ISO_LOCAL_DATE));   // created
             entry.add( "departmentNumber", LocalDate.now().format(DateTimeFormatter.ISO_LOCAL_DATE));   // last changed
             entry.add("userPassword", Utils.generateSSHA(pw.getBytes(StandardCharsets.UTF_8)));
@@ -165,7 +165,7 @@ public class LDAPUserApi {
             con.modify( usr, mod );
             mod = new DefaultModification( ModificationOperation.REPLACE_ATTRIBUTE, "pager", a.getGeburtstag());
             con.modify( usr, mod );
-            mod = new DefaultModification( ModificationOperation.REPLACE_ATTRIBUTE, "audio", a.getMaxSize());
+            mod = new DefaultModification( ModificationOperation.REPLACE_ATTRIBUTE, "destinationIndicator", a.getMaxSize());
             con.modify( usr, mod );
             mod = new DefaultModification( ModificationOperation.REPLACE_ATTRIBUTE, "departmentNumber", LocalDate.now().format(DateTimeFormatter.ISO_LOCAL_DATE));
             con.modify( usr, mod );
@@ -384,7 +384,7 @@ public class LDAPUserApi {
                         getAttribute(e, "displayName"),
                         getAttribute(e, "cn"),
                         getAttribute(e, "mail"),
-                        getAttribute(e, "audio")
+                        getAttribute(e, "destinationIndicator")
                 );
             }
             return res;

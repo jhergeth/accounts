@@ -1,14 +1,13 @@
 package name.hergeth.domain;
 
 import io.micronaut.core.annotation.Introspected;
-import io.micronaut.core.annotation.NonNull;
-import lombok.AllArgsConstructor;
 import lombok.Data;
+import lombok.NonNull;
 
 @Data
 @Introspected
-@AllArgsConstructor
 public class Account {
+    @NonNull
     private String id;
 
     @NonNull
@@ -35,15 +34,33 @@ public class Account {
     @NonNull
     private String maxSize;
 
+    private boolean bKlasse = false;
+    private boolean bNachname = false;
+    private boolean bVorname = false;
+    private boolean bGeburtstag = false;
+    private boolean bAnzeigeName = false;
+    private boolean bLoginName = false;
+    private boolean bEmail = false;
+    private boolean bMaxSize = false;
+
+
     public boolean changed(Account n){
-        return this.klasse.compareToIgnoreCase(n.klasse) != 0
-                || this.anzeigeName.compareToIgnoreCase(n.anzeigeName) != 0
-                || this.loginName.compareToIgnoreCase(n.loginName) != 0
-                || this.nachname.compareToIgnoreCase(n.nachname) != 0
-                || this.vorname.compareToIgnoreCase(n.vorname) != 0
-                || this.geburtstag.compareToIgnoreCase(n.geburtstag) != 0
-                || this.email.compareToIgnoreCase(n.email) != 0
-                || this.maxSize.compareToIgnoreCase(n.maxSize) != 0
-                ;
+        bKlasse = !this.klasse.equalsIgnoreCase(n.klasse);
+        bNachname = !this.nachname.equals(n.nachname);
+        bVorname = !this.vorname.equals(n.vorname);
+        bGeburtstag = !this.geburtstag.equalsIgnoreCase(n.geburtstag);
+        bAnzeigeName = !this.anzeigeName.equals(n.anzeigeName);
+        bLoginName = !this.loginName.equalsIgnoreCase(n.loginName);
+        bEmail = !this.email.equalsIgnoreCase(n.email);
+        bMaxSize = !this.maxSize.equalsIgnoreCase(n.maxSize);
+
+        return bKlasse||bNachname||bVorname||bGeburtstag||bAnzeigeName||bLoginName||bEmail||bMaxSize;
+    }
+
+    public boolean hasLogin(){
+        return loginName.length() > 2;
+    }
+    public boolean hasAnzeigeName(){
+        return anzeigeName.length() > 2;
     }
 }

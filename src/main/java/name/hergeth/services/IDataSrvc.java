@@ -12,6 +12,8 @@ public interface IDataSrvc {
     public AccUpdate compareAccounts();
     public void updateAccounts();
     public void updateNC();
+    public boolean updateAccount(Account acc);
+    public void updateSelected(AccUpdate acc);
     public List<Account> getCSVAccounts();
     public List<String> getCSVLogins();
     public List<String> getCSVKlassen();

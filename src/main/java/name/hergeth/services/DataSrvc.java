@@ -85,8 +85,8 @@ public class DataSrvc implements IDataSrvc {
 
     public DataSrvc(Configuration configuration, StatusSrvc status) {
         this.configuration = configuration;
-        this.accListCSV = null;
-        this.accListLDAP = null;
+        this.accListCSV = new AccList();
+        this.accListLDAP = new AccList();
         this.status = status;
 
         initCmd();
@@ -145,6 +145,13 @@ public class DataSrvc implements IDataSrvc {
             res = accListCSV.getAllDistinct(Account::getKlasse);
         }
         return res;
+    }
+
+    @Override
+    public boolean updateAccount(Account acc) {
+        return accListCSV.replaceBy(a -> {
+           return a.getId().equalsIgnoreCase(acc.getId());
+        }, acc);
     }
 
     public boolean loadExtAccounts(){
@@ -250,10 +257,19 @@ public class DataSrvc implements IDataSrvc {
     }
 
     private void handleAccData(Account acc, Consumer<Account> a){
-        if(acc.getAnzeigeName().length() < 2){
-            acc.setAnzeigeName(acc.getVorname() + " " + acc.getNachname());
+        if(!acc.hasAnzeigeName()){
+            String an = acc.getVorname();
+            if(an != null){
+                if(acc.getNachname() != null){
+                    an += ' ' + acc.getNachname();
+                }
+            }
+            else{
+                an = acc.getNachname();
+            }
+            acc.setAnzeigeName(an != null ? an : new String(""));
         }
-        if(acc.getLoginName().length() < 2){
+        if(!acc.hasLogin()){
             a.accept(acc);
         }
         if(defaultUserMailDomain.contains("@")){
@@ -262,14 +278,19 @@ public class DataSrvc implements IDataSrvc {
     }
 
     public void updateAccounts(){
+        updateSelected(accUpdate);
+    }
+
+
+    public void updateSelected(AccUpdate sAcc){
         int anz = 0;
         int noCreated = 0;
         int deleted = 0;
 
         List<String> klassenLDAP = usrLDAPCmd.getExternalGroups();
 
-        status.start(0, accUpdate.getToChange().size() + accUpdate.getToCreate().size() + accUpdate.getToDelete().size(), " accounts to manage...");
-        for(Account a: accUpdate.getToChange()){
+        status.start(0, sAcc.getToChange().size() + sAcc.getToCreate().size() + sAcc.getToDelete().size(), " accounts to manage...");
+        for(Account a: sAcc.getToChange()){
             usrLDAPCmd.updateKonto(a);
             LOG.debug("Updated user {} in external system.", a.getLoginName());
             status.inc("Account for (" + a.getKlasse() + ") " + a.getLoginName() + " updated in external system");
@@ -285,7 +306,7 @@ public class DataSrvc implements IDataSrvc {
             anz++;
         }
 
-        for(Account a: accUpdate.getToCreate()){
+        for(Account a: sAcc.getToCreate()){
             boolean res = false;
             if(areSuSAccounts){
                 res = usrLDAPCmd.createSUSKonto(a,"bkest" + SCHULJAHR + a.getKlasse());
@@ -315,7 +336,7 @@ public class DataSrvc implements IDataSrvc {
             }
         }
 
-        for(Account a: accUpdate.getToDelete()){
+        for(Account a: sAcc.getToDelete()){
             if(areSuSAccounts){
                 usrLDAPCmd.deleteSUSKonto(a.getLoginName());
                 usrLDAPCmd.disconnectUserAndGroup(a.getLoginName(), toEKlasse(a.getKlasse()));

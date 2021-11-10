@@ -4,10 +4,8 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import javax.validation.constraints.NotNull;
-import java.io.File;
 import java.util.List;
 import java.util.Optional;
-import java.util.function.BiFunction;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 
@@ -29,9 +27,7 @@ public class AccList extends DomainList<Account> {
     }
 
     public Optional<Account> findByAcc(@NotNull String name) {
-        return findBy(a -> {
-            return name.equals(a.getLoginName());
-        });
+        return findBy(a -> name.equals(a.getLoginName()));
     }
 
     public List<String> getAll(Function<Account,String> map){

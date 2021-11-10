@@ -28,5 +28,23 @@ public abstract class DomainList<T> extends ArrayList<T> {
         return o;
     }
 
+    public boolean removeBy(Predicate<T> func) {
+        Optional<T> o = this.stream()
+                .filter(func)
+                .findAny();
+        if(o.isPresent()){
+            this.remove(o.get());
+            return true;
+        }
+        return false;
+    }
+
+    public boolean replaceBy(Predicate<T> func, T n){
+        boolean res = removeBy(func);
+        this.add(n);
+        return res;
+    }
+
+
     public abstract T scanLine(String[] elm);
 }

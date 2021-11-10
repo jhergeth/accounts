@@ -3,10 +3,7 @@ package name.hergeth.controler;
 import io.micronaut.core.async.annotation.SingleResult;
 import io.micronaut.http.HttpResponse;
 import io.micronaut.http.MediaType;
-import io.micronaut.http.annotation.Body;
-import io.micronaut.http.annotation.Controller;
-import io.micronaut.http.annotation.Get;
-import io.micronaut.http.annotation.Post;
+import io.micronaut.http.annotation.*;
 import io.micronaut.http.multipart.StreamingFileUpload;
 
 
@@ -67,29 +64,16 @@ public class DataCtrl {
                 });
     }
 
-/*        File tempFile = File.createTempFile(upload.getFilename(), "temp");
-        Publisher<Boolean> uploadPublisher = upload.transferTo(tempFile);
-        return Single.fromPublisher(uploadPublisher)
-                .map(success -> {
-                    if (success) {
-                        LOG.info("Got file {} for accounts.", upload.getFilename());
-                        try {
-                            accSrvc.loadAccounts(tempFile, upload.getFilename());
-                        } catch (Exception e) {
-                            LOG.info("Problems loading accounts.");
-                            return HttpResponse.<String>status(HttpStatus.CONFLICT)
-                                    .body("{ \"status\": \"error\" }");
-                        }
-                        return HttpResponse.ok("{ \"status\": \"server\" }");
-                    } else {
-                        LOG.info("Got no file for accounts.");
-                        return HttpResponse.<String>status(HttpStatus.CONFLICT)
-                                .body("{ \"status\": \"error\" }");
-                    }
-                });
+    @Post(value="/updaterow")
+    public boolean updateRow(@Body Account nAcc){
+        return dataSrvc.updateAccount(nAcc);
     }
-    */
 
+//    @Consumes({MediaType.APPLICATION_FORM_URLENCODED, MediaType.APPLICATION_JSON})
+    @Post(value="/updateselected", consumes = MediaType.APPLICATION_JSON)
+    public void updateSelected(@Body AccUpdate nAcc){
+        dataSrvc.updateSelected(nAcc);
+    }
 
     @Get(value = "/read")
     public List<Account> getAccounts() {

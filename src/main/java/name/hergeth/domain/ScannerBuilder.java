@@ -57,6 +57,7 @@ public class ScannerBuilder {
         match = new int[head.length];
         if (buildMatcher(head, elms, match)) {
             isSuS = true;
+            skipNext.set(true);
             return new BiFunction<AccList, String[], Boolean>() {
                 @Override
                 public Boolean apply(AccList accounts, String[] strings) {
