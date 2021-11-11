@@ -63,4 +63,5 @@ public class Account {
     public boolean hasAnzeigeName(){
         return anzeigeName.length() > 2;
     }
+    public static int sortKlasse(Account a, Account b){return a.klasse.compareTo(b.klasse);}
 }

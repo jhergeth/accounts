@@ -132,6 +132,26 @@ public class LDAPUserApi {
         }
     }
 
+    public boolean setPassword(String id, String pw) {
+        Entry ue = getFirstEntry(id, SEARCH_USER);
+        if (ue == null) {
+            LOG.error("Cannot find LDAP-account of user {} for update!", id);
+            return false;
+        }
+
+        Dn usr = ue.getDn();
+        try {
+            Modification mod = new DefaultModification(ModificationOperation.REPLACE_ATTRIBUTE, "userPassword",
+                    Utils.generateSSHA(pw.getBytes(StandardCharsets.UTF_8)));
+            con.modify(usr, mod);
+        } catch (LdapException | NoSuchAlgorithmException e) {
+            LOG.error("Got Exception during LDAP-Create user {}: {}", usr.getName(), e.getMessage());
+            return false;
+        }
+        return true;
+    }
+
+
     public boolean deleteSUSKonto(String user) {
         disconnectUserAndGroup(user, "ALL");
         disconnectUserAndGroup(user, "SUS-"+SJ);

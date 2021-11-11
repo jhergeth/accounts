@@ -22,6 +22,7 @@ import reactor.core.publisher.Mono;
 import java.io.File;
 import java.io.IOException;
 import java.util.List;
+import java.util.Map;
 
 import static io.micronaut.http.HttpStatus.CONFLICT;
 
@@ -88,6 +89,21 @@ public class DataCtrl {
     @Get(value = "/getklassen")
     public List<String> getKlassen() {
         return dataSrvc.getCSVKlassen();
+    }
+
+    @Get(value = "/getextklassen")
+    public List<String> getExtKlassen() {
+        return dataSrvc.getLDAPKlassen();
+    }
+
+    @Post(value = "/getextacc", consumes = MediaType.APPLICATION_JSON)
+    public List<Account> getExtAcc(@Body String[] klassen) {
+        return dataSrvc.getLDAPAccounts(klassen);
+    }
+
+    @Post(value = "/newpasswort", consumes = MediaType.APPLICATION_JSON)
+    public boolean setPassword(@Body Map<String,String> data) {
+        return dataSrvc.setPassword(data);
     }
 
     @Get(value = "/loadext")

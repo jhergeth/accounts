@@ -14,6 +14,7 @@ import name.hergeth.services.external.io.Meta;
 import name.hergeth.util.Utils;
 import org.apache.commons.collections4.MapIterator;
 import org.apache.commons.collections4.map.HashedMap;
+import org.apache.commons.lang3.ArrayUtils;
 import org.apache.directory.api.ldap.model.exception.LdapException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -144,6 +145,41 @@ public class DataSrvc implements IDataSrvc {
         if(accListCSV != null){
             res = accListCSV.getAllDistinct(Account::getKlasse);
         }
+        return res;
+    }
+
+    // get list of klassen from LDAP
+    public List<String> getLDAPKlassen(){
+        initLDAP();
+        accListLDAP = new AccList(usrLDAPCmd.getExternalAccounts(true));
+        List<String> res = Collections.emptyList();
+        if(accListLDAP != null){
+            res = accListLDAP.getAllDistinct(Account::getKlasse);
+            res.sort(String::compareTo);
+        }
+        return res;
+    }
+
+    public List<Account> getLDAPAccounts(String[] klassen){
+        LOG.debug("Get accounts for "+ klassen.length + " klassen.");
+        if(accListLDAP == null){
+            initLDAP();
+            accListLDAP = new AccList(usrLDAPCmd.getExternalAccounts(true));
+        }
+        List<Account> res = accListLDAP.findAllBy(a -> {
+            return ArrayUtils.contains(klassen,a.getKlasse());
+        });
+        LOG.debug("Found {} accounts.", res.size());
+        res.sort(Account::sortKlasse);
+        return res;
+    }
+
+    public boolean setPassword(Map<String,String> data){
+        String id = data.get("id");
+        String pw = data.get("pw");
+
+        boolean res = usrLDAPCmd.setPassword(id, pw);
+        LOG.debug("Setting new Password for {} to {} {}", id, pw, res?"done":"failed");
         return res;
     }
 
