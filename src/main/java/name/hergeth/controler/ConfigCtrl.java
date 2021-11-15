@@ -8,6 +8,9 @@ import io.micronaut.http.MediaType;
 import io.micronaut.http.annotation.*;
 import io.micronaut.security.annotation.Secured;
 import io.micronaut.security.rules.SecurityRule;
+import lombok.AllArgsConstructor;
+import lombok.Data;
+import lombok.NoArgsConstructor;
 import name.hergeth.config.Configuration;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -114,5 +117,12 @@ public class ConfigCtrl {
     }
 
 
-
+    @Data
+    @NoArgsConstructor
+    @AllArgsConstructor
+    public static class Entry {
+        int id;
+        String name;
+        String value;
+    }
 }

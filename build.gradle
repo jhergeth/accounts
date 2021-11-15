@@ -1,6 +1,6 @@
 plugins {
-    id("com.github.johnrengelman.shadow") version "7.0.0"
-    id("io.micronaut.application") version "2.0.6"
+    id("com.github.johnrengelman.shadow") version "7.1.0"
+    id("io.micronaut.application") version "2.0.8"
 }
 
 version = "0.1"
@@ -20,30 +20,27 @@ micronaut {
 }
 
 dependencies {
-    compileOnly 'org.projectlombok:lombok:1.18.20'
-    annotationProcessor 'org.projectlombok:lombok:1.18.20'
-
-    testCompileOnly 'org.projectlombok:lombok:1.18.20'
-    testAnnotationProcessor 'org.projectlombok:lombok:1.18.20'
-
-    annotationProcessor "io.micronaut:micronaut-inject-java"
-    annotationProcessor('io.micronaut.security:micronaut-security-annotations:3.0.0')
-
+    annotationProcessor("org.projectlombok:lombok")
     annotationProcessor("io.micronaut:micronaut-http-validation")
-    implementation("io.micronaut.security:micronaut-security-annotations")
-    implementation("io.micronaut.security:micronaut-security-jwt")
+    annotationProcessor("io.micronaut.security:micronaut-security-annotations")
 
-    // google: guava, gson
-//    implementation("com.google.guava:guava")
-    implementation 'com.google.code.gson:gson:2.8.8'
-
-    // reactor
+    implementation("io.micronaut:micronaut-http-client")
+    implementation("io.micronaut:micronaut-runtime")
     implementation platform('io.projectreactor:reactor-bom:2020.0.11')
     implementation 'io.projectreactor:reactor-core'
     implementation 'io.micronaut.reactor:micronaut-reactor:2.0.0'
     implementation 'io.micronaut.reactor:micronaut-reactor-http-client:2.0.0'
+    implementation("io.micronaut.security:micronaut-security")
+    implementation("io.micronaut.security:micronaut-security-jwt")
+    implementation("io.micronaut.security:micronaut-security-ldap")
+    implementation("javax.annotation:javax.annotation-api")
+    implementation("org.apache.logging.log4j:log4j-core:2.14.1")
 
-    // https://mvnrepository.com/artifact/org.apache.directory.api/api-all
+// google: guava, gson
+//    implementation("com.google.guava:guava")
+    implementation 'com.google.code.gson:gson:2.8.8'
+
+// https://mvnrepository.com/artifact/org.apache.directory.api/api-all
     implementation group: 'org.apache.directory.api', name: 'api-all', version: '2.1.0'
 // https://mvnrepository.com/artifact/org.wso2.orbit.org.apache.commons/commons-compress
     implementation 'org.wso2.orbit.org.apache.commons:commons-compress:1.18.0.wso2v1'
@@ -52,24 +49,40 @@ dependencies {
     compileOnly "commons-validator:commons-validator:1.7"
     // https://mvnrepository.com/artifact/org.apache.commons/commons-text
     implementation group: 'org.apache.commons', name: 'commons-text', version: '1.9'
-
 // https://mvnrepository.com/artifact/commons-io/commons-io
 //    implementation 'commons-io:commons-io:20030203.000550'
     compileOnly 'commons-io:commons-io:2.11.0'
 
     // https://mvnrepository.com/artifact/com.github.lookfirst/sardine
     implementation group: 'com.github.lookfirst', name: 'sardine', version: '5.10'
+
     // jackson and xml
     implementation("io.micronaut.xml:micronaut-jackson-xml")
 
-    // micronaut:
-    implementation("io.micronaut:micronaut-http-client")
-    implementation("io.micronaut:micronaut-runtime")
-    implementation("javax.annotation:javax.annotation-api")
-    implementation('io.micronaut.security:micronaut-security-jwt')
+    compileOnly("org.projectlombok:lombok")
     runtimeOnly("ch.qos.logback:logback-classic")
     implementation("io.micronaut:micronaut-validation")
 
+
+/*
+    annotationProcessor "io.micronaut:micronaut-inject-java"
+    compile "io.micronaut.configuration:micronaut-security-ldap"
+    implementation("io.micronaut.security:micronaut-security-annotations")
+
+    // reactor
+    implementation platform('io.projectreactor:reactor-bom:2020.0.11')
+    implementation 'io.projectreactor:reactor-core'
+    implementation 'io.micronaut.reactor:micronaut-reactor:2.0.0'
+    implementation 'io.micronaut.reactor:micronaut-reactor-http-client:2.0.0'
+
+    implementation("io.micronaut.rxjava3:micronaut-rxjava3")
+    implementation("io.micronaut.rxjava3:micronaut-rxjava3-http-client")
+
+    implementation("javax.annotation:javax.annotation-api")
+    runtimeOnly("org.apache.logging.log4j:log4j-api:2.14.1")
+    runtimeOnly("org.apache.logging.log4j:log4j-slf4j-impl:2.14.1")
+    implementation("io.micronaut:micronaut-validation")
+*/
 }
 
 

@@ -1,1 +1,0 @@
-${user}: Vertretungen für <#if zeitraum=="kommende Woche">die kommende Woche (ab dem ${ab})<#else>morgen den ${ab}</#if> im Bildungsgang
