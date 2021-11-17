@@ -1,9 +1,10 @@
 plugins {
     id("com.github.johnrengelman.shadow") version "7.1.0"
     id("io.micronaut.application") version "2.0.8"
+//    id 'com.bmuschko.docker-java-application' version '6.7.0'
 }
 
-version = "0.1"
+version = "0.1.0"
 group = "name.hergeth"
 
 repositories {
@@ -34,6 +35,9 @@ dependencies {
     implementation("io.micronaut.security:micronaut-security-jwt")
     implementation("io.micronaut.security:micronaut-security-ldap")
     implementation("javax.annotation:javax.annotation-api")
+// https://mvnrepository.com/artifact/javax.mail/javax.mail-api
+    implementation 'javax.mail:javax.mail-api:1.6.2'
+
     implementation("org.apache.logging.log4j:log4j-core:2.14.1")
 
 // google: guava, gson
@@ -89,10 +93,35 @@ dependencies {
 application {
     mainClass.set("name.hergeth.Application")
 }
+
+/*
+docker{
+    javaApplication {
+        images = ["${System.env.DOCKER_IMAGE ?: project.name}:$project.version"]
+        maintainer = 'Joachim Hergeth "hergethj@gmail.com"'
+        ports = [80]
+        jvmArgs = ['-Xms256m', '-Xmx2048m']
+    }
+}
+*/
+dockerBuild {
+    images = ["${System.env.DOCKER_IMAGE ?: project.name}:$project.version"]
+//    maintainer = 'Joachim Hergeth "hergethj@gmail.com"'
+//    port = 80
+//    jvmArgs = ['-Xms256m', '-Xmx2048m']
+}
+
+
 java {
     sourceCompatibility = JavaVersion.toVersion("11")
     targetCompatibility = JavaVersion.toVersion("11")
 }
+
+
+shadowJar {
+    mergeServiceFiles()
+}
+
 
 // generate a small Java class holding the current version from gradle.properties
 task genJavaVer(type:Copy) {

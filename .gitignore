@@ -12,3 +12,4 @@ out/
 .settings
 .classpath
 .factorypath
+/hs_err_pid33028.log

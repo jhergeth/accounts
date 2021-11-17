@@ -1,26 +1,15 @@
 package name.hergeth.controler;
 
-import io.micronaut.core.async.annotation.SingleResult;
-import io.micronaut.http.HttpResponse;
 import io.micronaut.http.MediaType;
-import io.micronaut.http.annotation.*;
-import io.micronaut.http.multipart.StreamingFileUpload;
-
-
-import io.micronaut.security.annotation.Secured;
-import io.micronaut.security.rules.SecurityRule;
-import jakarta.inject.Inject;
-import name.hergeth.config.Configuration;
-import name.hergeth.controler.response.AccUpdate;
+import io.micronaut.http.annotation.Body;
+import io.micronaut.http.annotation.Controller;
+import io.micronaut.http.annotation.Get;
+import io.micronaut.http.annotation.Post;
 import name.hergeth.domain.Account;
 import name.hergeth.services.IDataSrvc;
-import org.reactivestreams.Publisher;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import reactor.core.publisher.Mono;
 
-import java.io.File;
-import java.io.IOException;
 import java.util.List;
 
 
@@ -28,7 +17,7 @@ import java.util.List;
 public class DataReadCtrl {
     private static final Logger LOG = LoggerFactory.getLogger(DataReadCtrl.class);
 
-    private IDataSrvc dataSrvc;
+    private final IDataSrvc dataSrvc;
 
     public DataReadCtrl(IDataSrvc dataSrvc) {
         this.dataSrvc = dataSrvc;
