@@ -186,7 +186,7 @@ public class DataSrvc implements IDataSrvc {
     @Override
     public boolean updateAccount(Account acc) {
         return accListCSV.replaceBy(a -> {
-           return a.getId().equalsIgnoreCase(acc.getId());
+            return a.getId().equalsIgnoreCase(acc.getId());
         }, acc);
     }
 
@@ -196,6 +196,13 @@ public class DataSrvc implements IDataSrvc {
         LOG.debug("Read "+ accListLDAP.size() +" user accounts from LDAP system.");
         status.update("Read " + accListLDAP.size() + " Accounts from LDAP.");
         return true;
+    }
+
+    @Override
+    public boolean updateExtAccount(Account acc) {
+        boolean res = usrLDAPCmd.updateKonto(acc);
+        LOG.info("LDAP-Account {} updated: {}", acc.getLoginName(), acc);
+        return res;
     }
 
     public AccUpdate compareAccounts(){

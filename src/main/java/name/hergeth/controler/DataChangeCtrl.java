@@ -39,6 +39,11 @@ public class DataChangeCtrl {
         dataSrvc.loadExtAccounts();
     }
 
+    @Post(value="/updateextrow") // used
+    public boolean updateExtRow(@Body Account nAcc){
+        return dataSrvc.updateExtAccount(nAcc);
+    }
+
     @Get(value = "/update") // used
     public void updateAcc() {
         dataSrvc.updateAccounts();

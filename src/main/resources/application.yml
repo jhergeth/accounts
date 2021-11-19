@@ -4,11 +4,11 @@ micronaut:
 
   server:
     port: 80
-    max-request-size: '100MB'
+    max-request-size: 104857600
     cors:
       enabled: true
     multipart:
-      max-file-size: '256MB'
+      max-file-size: 268435456
     ssl:
       enabled: 'true'
     netty:
@@ -78,11 +78,11 @@ micronaut:
       - pattern: /api/write/**
         http-method: GET
         access:
-          - ROLE_ADMIN
+          - ROLE_ACCOUNTMANAGER
       - pattern: /api/write/**
         http-method: POST
         access:
-          - ROLE_ADMIN
+          - ROLE_ACCOUNTMANAGER
       - pattern: /api/read/**
         http-method: GET
         access:

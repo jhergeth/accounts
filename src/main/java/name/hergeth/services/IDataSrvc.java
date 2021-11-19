@@ -14,6 +14,7 @@ public interface IDataSrvc {
     public void updateAccounts();
     public void updateNC();
     public boolean updateAccount(Account acc);
+    public boolean updateExtAccount(Account acc);
     public void updateSelected(AccUpdate acc);
     public boolean setPassword(Map<String,String> data);
     public List<Account> getCSVAccounts();
