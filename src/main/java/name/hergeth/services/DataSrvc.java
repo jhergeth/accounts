@@ -67,6 +67,12 @@ public class DataSrvc implements IDataSrvc {
     private AccUpdate accUpdate = null;
     private String defaultUserMailDomain = "";
     private boolean areSuSAccounts = false;
+    private enum loadType {
+        NONE_LOADED,
+        SUS_LOADED,
+        KUK_LOADED
+    };
+    private loadType loadedAccounts = loadType.NONE_LOADED;
 
     private StatusSrvc status;
 
@@ -89,6 +95,7 @@ public class DataSrvc implements IDataSrvc {
         this.accListCSV = new AccList();
         this.accListLDAP = new AccList();
         this.status = status;
+        this.loadedAccounts = loadType.NONE_LOADED;
 
         initCmd();
     }
@@ -108,19 +115,37 @@ public class DataSrvc implements IDataSrvc {
                 scanner.apply(accListCSV, ar);
                 status.inc("Reading accounts from file " + oname);
             }, LOG);
+            accListCSV.forEach(a -> fixAccount(a));
+
             LOG.debug("Found "+ lines +" accounts");
             status.update(lines, "Read accounts from file " + oname);
             areSuSAccounts = ScannerBuilder.wasSuS();
             if(areSuSAccounts){
                 configuration.set("susAccountsLoaded", LocalDateTime.now().toString());
+                loadedAccounts = loadType.SUS_LOADED;
             }
             else{
                 configuration.set("kukAccountsLoaded", LocalDateTime.now().toString());
+                loadedAccounts = loadType.KUK_LOADED;
             }
             configuration.save();
             return true;
         }
         return false;
+    }
+
+    private void fixAccount(Account acc){
+        String vor = Utils.flattenToAscii(Utils.replaceUmlaut(acc.getVorname()));
+        String nach = Utils.flattenToAscii(Utils.replaceUmlaut(acc.getNachname()));
+        vor = vor.replaceAll("\\s","") ;
+        nach = nach.replaceAll("\\s","") ;
+        String login = nach.substring(0,Math.min(8,nach.length())) + vor.substring(0, Math.min(4,vor.length()));
+        login = login.toLowerCase(Locale.ROOT);
+        acc.setLoginName(login);
+        if(defaultUserMailDomain.contains("@")){
+            acc.setEmail(login + defaultUserMailDomain);
+        }
+
     }
 
     //
@@ -254,7 +279,7 @@ public class DataSrvc implements IDataSrvc {
             AccPair ap = it.getValue();
             if(ap.accCSV != null && ap.accLDAP != null){
                 cntPairs++;
-                handleAccData(ap.accCSV, acc -> {
+                ap.accCSV.handleAccData(acc -> {
                     acc.setLoginName(ap.accLDAP.getLoginName());
                 });
                 ap.compare();
@@ -268,15 +293,10 @@ public class DataSrvc implements IDataSrvc {
                 accUpdate.getToDelete().add(ap.accLDAP);
             }
             else if(ap.accCSV != null && ap.accLDAP == null){
-                handleAccData(ap.accCSV, acc -> {
-                    String vor = Utils.flattenToAscii(Utils.replaceUmlaut(acc.getVorname()));
-                    String nach = Utils.flattenToAscii(Utils.replaceUmlaut(acc.getNachname()));
-                    vor = vor.replaceAll("\\s","") ;
-                    nach = nach.replaceAll("\\s","") ;
-                    String login = nach.substring(0,Math.min(8,nach.length())) + vor.substring(0, Math.min(4,vor.length()));
-                    login = login.toLowerCase(Locale.ROOT);
-                    String loginn = new String(login);
+                ap.accCSV.handleAccData( acc -> {
+                    String login = acc.getLoginName();
                     int i = 1;
+                    String loginn = login;
                     while(usersLDAP.contains(loginn)){
                         loginn = login + i++;
                     }
@@ -299,26 +319,6 @@ public class DataSrvc implements IDataSrvc {
         return accUpdate;
     }
 
-    private void handleAccData(Account acc, Consumer<Account> a){
-        if(!acc.hasAnzeigeName()){
-            String an = acc.getVorname();
-            if(an != null){
-                if(acc.getNachname() != null){
-                    an += ' ' + acc.getNachname();
-                }
-            }
-            else{
-                an = acc.getNachname();
-            }
-            acc.setAnzeigeName(an != null ? an : new String(""));
-        }
-        if(!acc.hasLogin()){
-            a.accept(acc);
-        }
-        if(defaultUserMailDomain.contains("@")){
-            acc.setEmail(acc.getLoginName() + defaultUserMailDomain);
-        }
-    }
 
     public void updateAccounts(){
         updateSelected(accUpdate);

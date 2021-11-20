@@ -4,6 +4,8 @@ import io.micronaut.core.annotation.Introspected;
 import lombok.Data;
 import lombok.NonNull;
 
+import java.util.function.Consumer;
+
 @Data
 @Introspected
 public class Account {
@@ -55,6 +57,24 @@ public class Account {
         bMaxSize = !this.maxSize.equalsIgnoreCase(n.maxSize);
 
         return bKlasse||bNachname||bVorname||bGeburtstag||bAnzeigeName||bLoginName||bEmail||bMaxSize;
+    }
+
+    public void handleAccData(Consumer<Account> a){
+        if(!this.hasAnzeigeName()){
+            String an = this.getVorname();
+            if(an != null){
+                if(this.getNachname() != null){
+                    an += ' ' + this.getNachname();
+                }
+            }
+            else{
+                an = this.getNachname();
+            }
+            this.setAnzeigeName(an != null ? an : new String(""));
+        }
+        if(!this.hasLogin()){
+            a.accept(this);
+        }
     }
 
     public boolean hasLogin(){
