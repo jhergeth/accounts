@@ -1,20 +1,23 @@
 package name.hergeth.services;
 
 import jakarta.inject.Singleton;
-import lombok.AllArgsConstructor;
 import lombok.Data;
-import lombok.NoArgsConstructor;
 import name.hergeth.BuildInfo;
 import name.hergeth.config.Configuration;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.time.LocalTime;
+import java.time.format.DateTimeFormatter;
+import java.time.format.FormatStyle;
+
+import static java.time.format.DateTimeFormatter.ISO_LOCAL_TIME;
 
 
 @Singleton
 public class StatusSrvc implements IStatusSrvc {
     private static final Logger LOG = LoggerFactory.getLogger(StatusSrvc.class);
+    private static DateTimeFormatter dtFormatter = DateTimeFormatter.ofLocalizedTime(FormatStyle.SHORT);
 
     final long STALEDELAY = 5000;
     private int idx = 0;
@@ -32,7 +35,8 @@ public class StatusSrvc implements IStatusSrvc {
         int toDo = 0;
         int done = 0;
         boolean stale = true;
-        LocalTime timeSet = LocalTime.now();;
+        LocalTime timeNow = LocalTime.now();;
+        String timeSet;
         String message = "";
 
         private Status(StatusSrvc as){
@@ -40,7 +44,8 @@ public class StatusSrvc implements IStatusSrvc {
             idx = as.idx;
             toDo = as.todo;
             done = as.done;
-            timeSet = as.timeSet;
+            timeNow = as.timeSet;
+            timeSet = timeNow.format(dtFormatter);
             message = as.curActivity;
             long curr = System.currentTimeMillis();
             if(idx == as.lastIdx){
@@ -55,10 +60,7 @@ public class StatusSrvc implements IStatusSrvc {
 
     }
 
-    private Configuration configuration;
-
-    public StatusSrvc(Configuration vmConfig) {
-        this.configuration = vmConfig;
+    public StatusSrvc() {
         lastSampled = System.currentTimeMillis();
     }
 
