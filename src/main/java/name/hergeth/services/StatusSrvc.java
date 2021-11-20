@@ -4,6 +4,7 @@ import jakarta.inject.Singleton;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
+import name.hergeth.BuildInfo;
 import name.hergeth.config.Configuration;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -26,6 +27,7 @@ public class StatusSrvc implements IStatusSrvc {
 
     @Data
     public class Status{
+        String version;
         int idx = 0;
         int toDo = 0;
         int done = 0;
@@ -34,6 +36,7 @@ public class StatusSrvc implements IStatusSrvc {
         String message = "";
 
         private Status(StatusSrvc as){
+            version = BuildInfo.getVersion();
             idx = as.idx;
             toDo = as.todo;
             done = as.done;
