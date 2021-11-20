@@ -135,6 +135,10 @@ public class DataSrvc implements IDataSrvc {
     }
 
     private void fixAccount(Account acc){
+        if(!acc.hasAnzeigeName()){
+            acc.setAnzeigeName(acc.getVorname() + ' ' + acc.getNachname());
+        }
+
         String vor = Utils.flattenToAscii(Utils.replaceUmlaut(acc.getVorname()));
         String nach = Utils.flattenToAscii(Utils.replaceUmlaut(acc.getNachname()));
         vor = vor.replaceAll("\\s","") ;

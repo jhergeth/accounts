@@ -118,6 +118,12 @@ dockerBuild.dockerFile.set(file("${buildDir}/docker/Dockerfile"))
 // ^^^
 dockerBuild.dependsOn fixIssue214 // wire the generateJava task into the DAG
 
+task fetchUI(type: Copy){
+    from "C:\\USR\\DEV\\accvue\\dist"
+    into 'src/main/resources/public'
+}
+
+
 java {
     sourceCompatibility = JavaVersion.toVersion("11")
     targetCompatibility = JavaVersion.toVersion("11")
