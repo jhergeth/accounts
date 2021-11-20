@@ -4,6 +4,12 @@ plugins {
     id 'pl.allegro.tech.build.axion-release' version '1.13.6'
 }
 
+scmVersion {
+    repository {
+        remote = 'master'
+    }
+}
+
 project.version = scmVersion.version
 group = "name.hergeth"
 
