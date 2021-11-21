@@ -1,24 +1,21 @@
 package name.hergeth.controler.response;
 
 import lombok.Data;
-import name.hergeth.domain.Account;
-
-import java.util.ArrayList;
-import java.util.List;
+import name.hergeth.domain.AccList;
 
 @Data
 public class AccUpdate {
     int unchanged;
-    List<Account> toChange;
-    List<Account> toCOld;
-    List<Account> toCreate;
-    List<Account> toDelete;
+    AccList toChange;
+    AccList toCOld;
+    AccList toCreate;
+    AccList toDelete;
 
     public AccUpdate(){
         unchanged = 0;
-        toChange = new ArrayList<>();
-        toCOld = new ArrayList<>();
-        toCreate = new ArrayList<>();
-        toDelete = new ArrayList<>();
+        toChange = new AccList();
+        toCOld = new AccList();
+        toCreate = new AccList();
+        toDelete = new AccList();
     }
 }

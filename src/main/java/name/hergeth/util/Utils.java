@@ -16,7 +16,10 @@ import java.security.SecureRandom;
 import java.text.Normalizer;
 import java.util.Base64;
 import java.util.Enumeration;
+import java.util.List;
 import java.util.function.Consumer;
+import java.util.function.Predicate;
+import java.util.stream.Collectors;
 
 public class Utils {
     public static void unZipToFolder(String zipfilename, String outputdir) throws IOException {
@@ -242,4 +245,12 @@ public class Utils {
         }
         return new String(out);
     }
+
+    public static <T> List<T> findBy(List<T> aList, Predicate<T> func) {
+        List<T> o = aList.stream()
+                .filter(func)
+                .collect(Collectors.toList());
+        return o;
+    }
+
 }

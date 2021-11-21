@@ -1,12 +1,10 @@
 package name.hergeth.services;
 
+import info.debatty.java.stringsimilarity.JaroWinkler;
 import jakarta.inject.Singleton;
-import lombok.Data;
 import name.hergeth.config.Configuration;
 import name.hergeth.controler.response.AccUpdate;
-import name.hergeth.domain.AccList;
-import name.hergeth.domain.Account;
-import name.hergeth.domain.ScannerBuilder;
+import name.hergeth.domain.*;
 import name.hergeth.services.external.LDAPUserApi;
 import name.hergeth.services.external.NCFileApi;
 import name.hergeth.services.external.NCUserApi;
@@ -30,40 +28,13 @@ import java.util.function.Consumer;
 @Singleton
 public class DataSrvc implements IDataSrvc {
 
-    @Data
-    private class AccPair {
-        String key;
-        Account accCSV;
-        Account accLDAP;
 
-        Boolean same = false;
-        Boolean changed = true;
-        Boolean newLogin = true;
-
-        public AccPair(String key, Account csv, Account ldap){
-            this.key = key;
-            this.accCSV = csv;
-            this.accLDAP = ldap;
-        }
-        public void compare(){
-            if(accCSV != null && accLDAP != null){
-                same = !accCSV.changed(accLDAP);
-                newLogin = accCSV.getLoginName().compareToIgnoreCase(accLDAP.getLoginName()) != 0;
-                changed = !same && !newLogin;
-            }
-            else{
-                same = false;
-                changed = true;
-                newLogin = true;
-            }
-        }
-    }
     private static final Logger LOG = LoggerFactory.getLogger(DataSrvc.class);
 
     private Configuration configuration;
     private AccList accListCSV;
     private AccList accListLDAP;
-    private HashedMap<String,AccPair> accPairs;
+    private HashedMap<String, AccPair> accPairs;
     private AccUpdate accUpdate = null;
     private String defaultUserMailDomain = "";
     private boolean areSuSAccounts = false;
@@ -85,6 +56,7 @@ public class DataSrvc implements IDataSrvc {
     private String accSuSSize = null;
     private String accKuKSize = null;
     private String accUserPW = null;
+    private double STRINGDIST = 0.0;
 
     private LDAPUserApi usrLDAPCmd = null;
     private NCUserApi usrNCCmd = null;
@@ -263,7 +235,7 @@ public class DataSrvc implements IDataSrvc {
         for(Account acc : accListLDAP){
             if(accPairs.containsKey(acc.getId())){
                 AccPair ap = accPairs.get(acc.getId());
-                ap.accLDAP = acc;
+                ap.acc2 = acc;
 //                accPairs.put(acc.getId(), new AccPair(acc.getId(), ap.accCSV, acc));
             }
             else{
@@ -281,23 +253,23 @@ public class DataSrvc implements IDataSrvc {
         while (it.hasNext()) {
             String key = it.next();
             AccPair ap = it.getValue();
-            if(ap.accCSV != null && ap.accLDAP != null){
+            if(ap.acc1 != null && ap.acc2 != null){
                 cntPairs++;
-                ap.accCSV.handleAccData(acc -> {
-                    acc.setLoginName(ap.accLDAP.getLoginName());
+                ap.acc1.handleAccData(acc -> {
+                    acc.setLoginName(ap.acc2.getLoginName());
                 });
                 ap.compare();
                 if(ap.getChanged()){
-                    accUpdate.getToChange().add(ap.accCSV);
-                    accUpdate.getToCOld().add(ap.accLDAP);
+                    accUpdate.getToChange().add(ap.acc1);
+                    accUpdate.getToCOld().add(ap.acc2);
                 }
             }
-            else if(ap.accCSV == null && ap.accLDAP != null){
+            else if(ap.acc1 == null && ap.acc2 != null){
                 cntLDAP++;
-                accUpdate.getToDelete().add(ap.accLDAP);
+                accUpdate.getToDelete().add(ap.acc2);
             }
-            else if(ap.accCSV != null && ap.accLDAP == null){
-                ap.accCSV.handleAccData( acc -> {
+            else if(ap.acc1 != null && ap.acc2 == null){
+                ap.acc1.handleAccData(acc -> {
                     String login = acc.getLoginName();
                     int i = 1;
                     String loginn = login;
@@ -309,7 +281,7 @@ public class DataSrvc implements IDataSrvc {
                 });
 
                 cntCSV++;
-                accUpdate.getToCreate().add(ap.accCSV);
+                accUpdate.getToCreate().add(ap.acc1);
             }
             else {
                 LOG.debug("ID: " + key + " has no CSV or LDAP entry?");
@@ -321,6 +293,82 @@ public class DataSrvc implements IDataSrvc {
         status.update("... " + cntPairs + " Konten neu&vorhanden; " + cntCSV + " Konten neu; " + cntLDAP + " Konten zu löschen.");
 
         return accUpdate;
+    }
+
+    @Override
+    public ListPlus<AccPair> searchDupAccs() {
+        ListPlus<AccPair> dupes = new ListPlus<>();
+
+        if(accUpdate == null){
+            LOG.info("Need to compare prior to search for duplicates.");
+            return dupes;
+        }
+
+        AccList accCreate = accUpdate.getToCreate();
+        if(accCreate.size() == 0 ){
+            LOG.info("No accounts to be created during search for duplicates.");
+            return dupes;
+        }
+
+        if(accListLDAP == null || accListLDAP.size() == 0){
+            loadExtAccounts();
+            if(accListLDAP == null || accListLDAP.size() == 0) {
+                LOG.info("Could not load external accounts during search for duplicates.");
+                return dupes;
+            }
+        }
+
+        accCreate.forEach(a -> {
+            accListLDAP.forEach(b -> {
+                if (isSimilar(a, b)) {
+                    dupes.add(new AccPair(null, a, b));
+                }
+            });
+        });
+
+        return dupes;
+    }
+
+    @Override
+    public ListPlus<AccPair> searchDupAllAccs() {
+        ListPlus<AccPair> dupes = new ListPlus<>();
+
+        if(accListLDAP == null || accListLDAP.size() == 0){
+            loadExtAccounts();
+            if(accListLDAP == null || accListLDAP.size() == 0) {
+                LOG.info("Could not load external accounts during search for duplicates.");
+                return dupes;
+            }
+        }
+
+        AccList extCpy = new AccList(accListLDAP);
+        extCpy.forEach(a -> {
+            accListLDAP.forEach(b -> {
+                if(a != b){
+                    if (isSimilar(a, b)) {
+                        LOG.info("{} and {} seem to be similar.", a.getLoginName(), b.getLoginName());
+                        boolean notFound = dupes.findBy(d -> {
+                            return (d.acc1 == a) || (d.acc2 == a);
+                        }).isEmpty();
+                        if(notFound){
+                            dupes.add(new AccPair(null, a, b));
+                            LOG.info("{} and {} added to similar list.", a.getLoginName(), b.getLoginName());
+                        }
+                    }
+                }
+            });
+        });
+
+        return dupes;
+    }
+
+    private static JaroWinkler jw = new JaroWinkler();
+    private boolean isSimilar(Account a, Account b) {
+        boolean svor = jw.similarity(a.getVorname(), b.getVorname()) > STRINGDIST;
+        boolean snach = jw.similarity(a.getNachname(), b.getNachname()) > STRINGDIST;
+        boolean svn = jw.similarity(a.getVorname(), b.getNachname()) > STRINGDIST;
+        boolean snv = jw.similarity(a.getNachname(), b.getVorname()) > STRINGDIST;
+        return (svor && snach) || (svn && snv);
     }
 
 
@@ -454,6 +502,7 @@ public class DataSrvc implements IDataSrvc {
         SCHULJAHR = configuration.get("Schuljahr", "2122");
         DEFKUKPASSW = configuration.get("defKuKPassword", "1BKGKlehrer-");
         defaultUserMailDomain = configuration.get("DefaultUserMailDomain", "@a133f.de");
+        STRINGDIST = Double.parseDouble(configuration.get("StringDistance", "0.95"));
         initMoodle();
         initLDAP();
         initNC();

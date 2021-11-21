@@ -6,6 +6,7 @@ import io.micronaut.http.annotation.Controller;
 import io.micronaut.http.annotation.Get;
 import io.micronaut.http.annotation.Post;
 import name.hergeth.domain.Account;
+import name.hergeth.services.AccPair;
 import name.hergeth.services.IDataSrvc;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -48,5 +49,9 @@ public class DataReadCtrl {
         return dataSrvc.getLDAPAccounts(klassen);
     }
 
+    @Get(value = "/getduplicates")
+    public List<AccPair> getDuplicates() { return dataSrvc.searchDupAccs(); }
 
+    @Get(value = "/checkextdup")
+    public List<AccPair> getAllDuplicates() { return dataSrvc.searchDupAllAccs(); }
 }

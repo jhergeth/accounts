@@ -2,6 +2,7 @@ package name.hergeth.services;
 
 import name.hergeth.controler.response.AccUpdate;
 import name.hergeth.domain.Account;
+import name.hergeth.domain.ListPlus;
 
 import java.io.File;
 import java.util.List;
@@ -11,6 +12,8 @@ public interface IDataSrvc {
     public boolean loadData(File file, String oname);
     public boolean loadExtAccounts();
     public AccUpdate compareAccounts();
+    public ListPlus<AccPair> searchDupAccs();
+    public ListPlus<AccPair> searchDupAllAccs();
     public void updateAccounts();
     public void updateNC();
     public boolean updateAccount(Account acc);
