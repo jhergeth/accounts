@@ -17,6 +17,11 @@ micronaut:
       childOptions:
         autoRead: true
 
+  executors:
+    io:
+      type: fixed
+      nThreads: 75
+
   router:
     static-resources:
       public:
@@ -63,7 +68,7 @@ micronaut:
       - pattern: /auth/**
         access:
           - isAnonymous()
-      - pattern: /api/write/newpasswort
+      - pattern: /api/acc/write/newpasswort
         http-method: POST
         access:
           - ROLE_TEACHER
@@ -75,22 +80,40 @@ micronaut:
         http-method: POST
         access:
           - ROLE_ADMIN
-      - pattern: /api/write/**
+      - pattern: /api/acc/write/**
         http-method: GET
         access:
           - ROLE_ACCOUNTMANAGER
-      - pattern: /api/write/**
+      - pattern: /api/acc/write/**
         http-method: POST
         access:
           - ROLE_ACCOUNTMANAGER
-      - pattern: /api/read/**
+      - pattern: /api/acc/read/**
         http-method: GET
         access:
           - isAuthenticated()
-      - pattern: /api/read/**
+      - pattern: /api/acc/read/**
         http-method: POST
         access:
           - isAuthenticated()
+
+      - pattern: /api/eplan/**
+        http-method: GET
+        access:
+          - isAuthenticated()
+      - pattern: /api/eplan/bereich/**
+        http-method: GET
+        access:
+          - isAuthenticated()
+      - pattern: /api/eplan/read/**
+        http-method: GET
+        access:
+          - isAuthenticated()
+      - pattern: /api/eplan/read/**
+        http-method: POST
+        access:
+          - isAuthenticated()
+
       - pattern: /**
         http-method: GET
         access:
@@ -107,3 +130,5 @@ logger:
 accounts:
   configpfad: 'config/accounts.json'
 
+eplan:
+  bereiche: ["BauH", "ETIT", "JVA", "AV", "AIF", "FOS", "ErnPfl", "SozKi", "GesSoz"]

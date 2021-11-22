@@ -9,7 +9,6 @@ import io.micronaut.context.event.ApplicationEventPublisher;
 import jakarta.inject.Inject;
 import jakarta.inject.Singleton;
 import name.hergeth.BuildInfo;
-import name.hergeth.controler.ConfigCtrl;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -21,7 +20,6 @@ import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
-import java.util.HashMap;
 import java.util.Map;
 import java.util.TreeMap;
 
