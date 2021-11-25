@@ -1,6 +1,7 @@
 package name.hergeth.eplan.domain;
 
 import io.micronaut.data.jdbc.annotation.JdbcRepository;
+import io.micronaut.data.model.query.builder.sql.Dialect;
 import io.micronaut.data.repository.CrudRepository;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -8,7 +9,7 @@ import org.slf4j.LoggerFactory;
 import java.util.List;
 import java.util.Optional;
 
-@JdbcRepository
+@JdbcRepository(dialect= Dialect.H2)
 public abstract class EPlanRepository implements CrudRepository<EPlan, Long> {
     private static final Logger LOG = LoggerFactory.getLogger(EPlanRepository.class);
 

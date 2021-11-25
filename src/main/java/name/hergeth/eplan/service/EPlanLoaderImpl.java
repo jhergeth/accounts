@@ -7,7 +7,6 @@ import me.xdrop.fuzzywuzzy.model.ExtractedResult;
 import name.hergeth.eplan.domain.EPlan;
 import name.hergeth.eplan.domain.EPlanRepository;
 import name.hergeth.eplan.domain.Klasse;
-import name.hergeth.eplan.util.EPLAN;
 import org.apache.poi.ss.usermodel.*;
 import org.apache.poi.xssf.usermodel.XSSFWorkbook;
 import org.slf4j.Logger;

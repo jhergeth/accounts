@@ -5,7 +5,6 @@ import io.micronaut.context.annotation.Property;
 import jakarta.inject.Singleton;
 import name.hergeth.eplan.domain.*;
 import name.hergeth.eplan.dto.EPlanSummen;
-import name.hergeth.eplan.util.EPLAN;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -93,7 +92,10 @@ public class EPlanLogicImp implements EPlanLogic {
 
     @Override
     public List<EPlan> getEPlan(String bereich){
-        return ePlanRep.findBySchuleAndBereichOrderByNo(EPLAN.SCHULE, bereich);
+        if(ePlanRep.count() > 0){
+            return ePlanRep.findBySchuleAndBereichOrderByNo(EPLAN.SCHULE, bereich);
+        }
+        return new ArrayList<>();
     }
 
     @Override

@@ -8,7 +8,6 @@ import io.micronaut.data.repository.CrudRepository;
 import jakarta.inject.Inject;
 import jakarta.inject.Singleton;
 import name.hergeth.eplan.domain.*;
-import name.hergeth.eplan.util.EPLAN;
 import org.apache.commons.lang3.math.NumberUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;

@@ -13,6 +13,10 @@ scmVersion {
 project.version = scmVersion.version
 group = "name.hergeth"
 
+application {
+    mainClass.set("name.hergeth.Application")
+}
+
 micronaut {
     version "3.1.4"
 }
@@ -35,6 +39,9 @@ dependencies {
     annotationProcessor("io.micronaut.security:micronaut-security-annotations")
     annotationProcessor("io.micronaut.data:micronaut-data-processor:3.2.0")
 
+    compileOnly("org.projectlombok:lombok")
+    compileOnly("jakarta.persistence:jakarta.persistence-api:2.2.2")
+
     implementation("io.micronaut:micronaut-http-client")
     implementation("io.micronaut:micronaut-runtime")
 //    implementation platform('io.projectreactor:reactor-bom:2020.0.13')
@@ -46,8 +53,9 @@ dependencies {
     implementation("io.micronaut.security:micronaut-security-jwt")
     implementation("io.micronaut.security:micronaut-security-ldap")
     implementation("io.micronaut.data:micronaut-data-jdbc")
-    implementation("io.micronaut.data:micronaut-data-hibernate-jpa:3.2.0")
-//    implementation("io.micronaut.sql:micronaut-jdbc-hikari")
+//    implementation("io.micronaut.data:micronaut-data-hibernate-jpa:3.2.0")
+    implementation("io.micronaut.sql:micronaut-jdbc-hikari")
+    implementation("io.micronaut.data:micronaut-data-hibernate-jpa")
 
     implementation("javax.annotation:javax.annotation-api")
 
@@ -90,20 +98,15 @@ dependencies {
     // https://mvnrepository.com/artifact/com.github.lookfirst/sardine
     implementation group: 'com.github.lookfirst', name: 'sardine', version: '5.10'
 
-    // jackson and xml
-    implementation("io.micronaut.xml:micronaut-jackson-xml")
-
     runtimeOnly("com.h2database:h2")
+    // https://mvnrepository.com/artifact/com.h2database/h2
 
-    compileOnly("org.projectlombok:lombok")
     runtimeOnly("ch.qos.logback:logback-classic")
     implementation("io.micronaut:micronaut-validation")
+    // jackson and xml
+    implementation("io.micronaut.xml:micronaut-jackson-xml")
 }
 
-
-application {
-    mainClass.set("name.hergeth.Application")
-}
 
 dockerBuild {
     images = [

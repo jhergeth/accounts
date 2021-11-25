@@ -1,13 +1,14 @@
 package name.hergeth.eplan.domain;
 
 import com.fasterxml.jackson.annotation.JsonFormat;
-import io.micronaut.data.annotation.Id;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 import lombok.extern.jackson.Jacksonized;
 
+import javax.persistence.Entity;
+import javax.persistence.Id;
 import javax.validation.constraints.NotNull;
 import java.time.LocalDate;
 
@@ -27,6 +28,7 @@ import java.time.LocalDate;
 //12        Prozenzbasis ('U' für Unterricht oder 'S' für Jahressoll)
 //*1) muß angegeben sein (<= 0 neu anlegen, > 0 sofern vorhanden überschreiben sonst neu anlegen)
 
+@Entity
 @Data
 @Builder
 @NoArgsConstructor

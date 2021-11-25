@@ -3,7 +3,7 @@ package name.hergeth.eplan.domain;
 import io.micronaut.data.jdbc.annotation.JdbcRepository;
 import io.micronaut.data.repository.CrudRepository;
 import name.hergeth.eplan.responses.PivotTable;
-import name.hergeth.eplan.util.EPLAN;
+import name.hergeth.eplan.service.EPLAN;
 
 import java.util.List;
 import java.util.stream.Collectors;
@@ -12,9 +12,9 @@ import java.util.stream.StreamSupport;
 @JdbcRepository
 public abstract class AnrechungRepository implements CrudRepository<Anrechnung, Long> {
     private PivotTable anrPivot = null;
-    private String[] kuka = null;
-    private String[] anra = null;
-    private Double[][] dData = null;
+    private String[] kuka = new String[0];
+    private String[] anra = new String[0];
+    private Double[][] dData = new Double[0][0];
 
     public PivotTable getAnrechnungPivot(){
         if(dData == null  || dData.length == 0){
@@ -27,7 +27,7 @@ public abstract class AnrechungRepository implements CrudRepository<Anrechnung, 
     }
 
     public Double getAnrechnungKuK(String kuk){
-        if(dData == null ){
+        if(dData == null || dData.length == 0){
             calcAnrechnungPivot();
         }
 
@@ -77,20 +77,23 @@ public abstract class AnrechungRepository implements CrudRepository<Anrechnung, 
     }
 
     private void genStringPivot(){
-        String[][] sData = new String[kuka.length+1][anra.length+2];
-        for(int i = 0; i < kuka.length; i++){
-            sData[i+1][0] = kuka[i];
-        }
 
+        String[][] sData = new String[kuka.length+1][anra.length+2];
         sData[0][0] = "";
         sData[0][1] = "Sum";
-        for(int i = 0; i < anra.length; i++){
-            sData[0][i+2] = anra[i];
-        }
+        if(count() != 0){
+            for(int i = 0; i < kuka.length; i++){
+                sData[i+1][0] = kuka[i];
+            }
 
-        for(int r = 0; r < kuka.length; r++){
-            for(int c = 0; c < anra.length; c++) {
-                sData[r+1][c+1] = dData[r][c] != 0.0 ? Double.toString(dData[r][c]) : "";
+            for(int i = 0; i < anra.length; i++){
+                sData[0][i+2] = anra[i];
+            }
+
+            for(int r = 0; r < kuka.length; r++){
+                for(int c = 0; c < anra.length; c++) {
+                    sData[r+1][c+1] = dData[r][c] != 0.0 ? Double.toString(dData[r][c]) : "";
+                }
             }
         }
 

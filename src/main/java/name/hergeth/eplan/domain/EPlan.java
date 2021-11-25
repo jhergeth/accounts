@@ -4,16 +4,16 @@ import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
-import name.hergeth.eplan.util.EPLAN;
+import name.hergeth.eplan.service.EPLAN;
 
 import javax.persistence.*;
 import javax.validation.constraints.NotNull;
 
-@Entity
+@Data
+@Builder
 @NoArgsConstructor
 @AllArgsConstructor
-@Builder
-@Data
+@Entity
 public class EPlan {
     @Id
     @GeneratedValue

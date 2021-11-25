@@ -1,4 +1,4 @@
-package name.hergeth.eplan.util;
+package name.hergeth.eplan.service;
 
 import java.time.LocalDate;
 

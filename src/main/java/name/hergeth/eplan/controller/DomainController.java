@@ -80,18 +80,18 @@ public class DomainController extends BaseController{
         return ko;
     }
 
-    @Get("/anrechnungpivot")
-    PivotTable getAnrechnungPivot() {
-        PivotTable pt = anrechungRepository.getAnrechnungPivot();
-        LOG.info("Fetching Pivot of Anrechnungen: {}|{}", pt.rows.length, pt.cols.length);
-        return pt;
-    }
-
     @Post(value = "/anrechnungen/upload", consumes = MULTIPART_FORM_DATA, produces = TEXT_PLAIN)
     public Publisher<HttpResponse<String>> uploadAn(StreamingFileUpload file) {
         Publisher<HttpResponse<String>> res = uploadFileTo(file, p -> untisGPULoader.readAnrechnungen(p));
         anrechungRepository.calcAnrechnungPivot();
         return res;
+    }
+
+    @Get("/anrechnungpivot")
+    PivotTable getAnrechnungPivot() {
+        PivotTable pt = anrechungRepository.getAnrechnungPivot();
+        LOG.info("Fetching Pivot of Anrechnungen: {}|{}", pt.rows.length, pt.cols.length);
+        return pt;
     }
 
 }

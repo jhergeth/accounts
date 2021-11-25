@@ -13,12 +13,11 @@ import name.hergeth.eplan.domain.EPlanRepository;
 import name.hergeth.eplan.dto.EPlanSummen;
 import name.hergeth.eplan.service.EPlanLoader;
 import name.hergeth.eplan.service.EPlanLogic;
-import name.hergeth.eplan.util.EPLAN;
+import name.hergeth.eplan.service.EPLAN;
 import org.reactivestreams.Publisher;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import javax.annotation.security.RolesAllowed;
 import javax.validation.constraints.NotNull;
 import java.util.List;
 
