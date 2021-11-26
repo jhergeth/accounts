@@ -76,6 +76,8 @@ public class DataSrvc implements IDataSrvc {
     // load student accounts from SchILD-Export
     //
     public boolean loadData(File file, String oname){
+        initCmd();
+
         int lines = 0;
         status.start(0, Utils.countLines(file, LOG), "Reading data from file " + oname);
 
@@ -207,6 +209,8 @@ public class DataSrvc implements IDataSrvc {
     }
 
     public AccUpdate compareAccounts(){
+        initCmd();
+
         loadExtAccounts();
 
         accUpdate = new AccUpdate();
@@ -381,6 +385,8 @@ public class DataSrvc implements IDataSrvc {
         int anz = 0;
         int noCreated = 0;
         int deleted = 0;
+
+        initCmd();
 
         List<String> klassenLDAP = usrLDAPCmd.getExternalGroups();
 

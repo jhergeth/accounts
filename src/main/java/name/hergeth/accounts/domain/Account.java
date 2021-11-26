@@ -1,6 +1,7 @@
 package name.hergeth.accounts.domain;
 
 import io.micronaut.core.annotation.Introspected;
+import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NonNull;
 
@@ -21,7 +22,7 @@ public class Account {
     @NonNull
     private String vorname;
 
-    @NonNull
+//    @NonNull
     private String geburtstag;
 
     @NonNull
@@ -30,10 +31,10 @@ public class Account {
     @NonNull
     private String loginName;
 
-    @NonNull
+//    @NonNull
     private String email;
 
-    @NonNull
+//    @NonNull
     private String maxSize;
 
     private boolean bKlasse = false;
@@ -45,6 +46,17 @@ public class Account {
     private boolean bEmail = false;
     private boolean bMaxSize = false;
 
+    public Account(@NonNull String id, @NonNull String klasse, @NonNull String nachname, @NonNull String vorname, String geburtstag, @NonNull String anzeigeName, @NonNull String loginName, String email, String maxSize) {
+        this.id = id;
+        this.klasse = klasse;
+        this.nachname = nachname;
+        this.vorname = vorname;
+        this.geburtstag = geburtstag;
+        this.anzeigeName = anzeigeName;
+        this.loginName = loginName;
+        this.email = email;
+        this.maxSize = maxSize;
+    }
 
     public boolean changed(Account n){
         bKlasse = !this.klasse.equalsIgnoreCase(n.klasse);

@@ -1,5 +1,5 @@
 {
-  "DefaultUserMailDomain" : "@a133f.de",
+  "DefaultUserMailDomain" : "_",
   "KlassenDir" : "KLASSEN",
   "Schuljahr" : "2122",
   "StringDistance" : "0.95",
@@ -16,5 +16,6 @@
   "accSuSSize" : "256 MB",
   "accUserPW" : "bkest2122",
   "datadir" : ".",
-  "defKuKPassword" : "1BKGKlehrer-"
+  "defKuKPassword" : "1BKGKlehrer-",
+  "susAccountsLoaded" : "2021-11-26T07:27:56.671392900"
 }
