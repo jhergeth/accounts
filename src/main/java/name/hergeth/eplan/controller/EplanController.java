@@ -13,7 +13,6 @@ import name.hergeth.eplan.domain.EPlanRepository;
 import name.hergeth.eplan.dto.EPlanSummen;
 import name.hergeth.eplan.service.EPlanLoader;
 import name.hergeth.eplan.service.EPlanLogic;
-import name.hergeth.eplan.service.EPLAN;
 import org.reactivestreams.Publisher;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -48,9 +47,14 @@ public class EplanController   extends BaseController {
         return ePlanLogic.getEPlan(ber);
     }
 
+    @Post(value="/bereich/all", consumes = MediaType.MULTIPART_FORM_DATA, produces = MediaType.TEXT_PLAIN)
+    public Publisher<HttpResponse<String>> uploadAll(StreamingFileUpload file) {
+        return uploadFileTo(file, p -> eplLoader.excelBereichFromFile(p, ePlanLogic.getBereiche()));
+    }
+
     @Post(value="/bereich/{bereich}", consumes = MediaType.MULTIPART_FORM_DATA, produces = MediaType.TEXT_PLAIN)
     public Publisher<HttpResponse<String>> uploadBereich(StreamingFileUpload file, String bereich) {
-        return uploadFileTo(file, p -> eplLoader.excelBereichFromFile(p, ePlanLogic.getBereiche()));
+        return uploadFileTo(file, p -> eplLoader.excelBereichFromFile(p, bereich));
     }
 
     @Post(value="/row")
@@ -82,19 +86,19 @@ public class EplanController   extends BaseController {
     @Get("/lehrer/{val}")
     List<EPlan> getLehrer(@NotNull String val){
         LOG.info("Fetching EPlan for KuK {}", val);
-        return ePlanRepository.findBySchuleAndLehrerOrderByNo(EPLAN.SCHULE, val);
+        return ePlanRepository.findByLehrerOrderByNo(val);
     }
 
     @Get("/klasse/{val}")
     List<EPlan> getKlasse(@NotNull String val){
         LOG.info("Fetching EPlan for Klasse {}", val);
-        return ePlanRepository.findBySchuleAndKlasseOrderByNo(EPLAN.SCHULE, val);
+        return ePlanRepository.findByKlasseOrderByNo(val);
     }
 
     @Get("/fach/{val}")
     List<EPlan> getFach(@NotNull String val){
         LOG.info("Fetching EPlan for Fach {}", val);
-        return ePlanRepository.findBySchuleAndFachOrderByNo(EPLAN.SCHULE, val);
+        return ePlanRepository.findByFachOrderByNo(val);
     }
 
 

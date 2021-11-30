@@ -1,10 +1,11 @@
 package name.hergeth.eplan.domain;
 
+import io.micronaut.core.annotation.NonNull;
+import io.micronaut.data.annotation.GeneratedValue;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
-import name.hergeth.eplan.service.EPLAN;
 
 import javax.persistence.*;
 import javax.validation.constraints.NotNull;
@@ -17,10 +18,11 @@ import javax.validation.constraints.NotNull;
 public class EPlan {
     @Id
     @GeneratedValue
+    @NonNull
     private Long id;
 
-    @NotNull
-    @Builder.Default private String schule = EPLAN.SCHULE;
+//    @NotNull
+//    @Builder.Default private String schule = EPLAN.SCHULE;
 
     @NotNull
     private String bereich;
@@ -52,4 +54,5 @@ public class EPlan {
     private Double lgz;
 
     @Builder.Default private String bemerkung = "";
+
 }

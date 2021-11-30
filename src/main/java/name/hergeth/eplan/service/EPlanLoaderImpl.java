@@ -108,6 +108,7 @@ public class EPlanLoaderImpl implements EPlanLoader {
 
     @Override
     public void excelBereichFromFile(String file, Iterable<String> bereiche){
+        LOG.info("Load all bereiche from excel file {}", file);
         for(String ber : bereiche){
             excelBereichFromFile(file, ber);
         }
@@ -115,10 +116,14 @@ public class EPlanLoaderImpl implements EPlanLoader {
 
     @Override
     public void excelBereichFromFile(String file, String bereich){
+        LOG.info("Load bereich {} from excel file {}", bereich, file);
+
         List<EPlan> res = new LinkedList<>();
         Sheet sheet = null;
         int colIdxs[] = null;
 
+        int titleRow = -1;
+        int rowAnz = 0;
         try{
             int sIdx = 0;
             FileInputStream is = new FileInputStream(file);
@@ -136,8 +141,6 @@ public class EPlanLoaderImpl implements EPlanLoader {
 
             LOG.info("Opening file {} on sheet {}.", file, wb.getSheetName(sIdx));
 
-            // read first row with col-titles
-            org.apache.poi.ss.usermodel.Row fRow = sheet.getRow(0);
             List<String> colTitles = List.of(
                     "Abteilung", "Klasse", "Fakultas", "Fach", "Lehrer", "Raum", "WSt/SJ", "LGZ", "Bemerkung"
             );
@@ -146,11 +149,33 @@ public class EPlanLoaderImpl implements EPlanLoader {
             for(int col = 0; col < colTitles.size(); col++){
                 colIdxs[col] = -1;
             }
+
+            rowAnz = sheet.getLastRowNum();
+            for(int row = 0; row < rowAnz; row++){
+                // search rows for colTitles
+                org.apache.poi.ss.usermodel.Row fRow = sheet.getRow(row);
+                for(int col = 0; col < fRow.getLastCellNum(); col++){
+                    String val = getCellAsString(fRow.getCell(col));
+                    ExtractedResult eres = FuzzySearch.extractOne(val, colTitles);
+                    if(eres.getScore() > 80){
+                        // found title row
+                        titleRow = row;
+                        break;
+                    }
+                }
+                if(titleRow >=0){
+                    break;
+                }
+            }
+            // read first row with col-titles
+            org.apache.poi.ss.usermodel.Row fRow = sheet.getRow(titleRow);
             for(int col = 0; col < fRow.getLastCellNum(); col++){
-                String val = fRow.getCell(col).getStringCellValue();
-                ExtractedResult eres = FuzzySearch.extractOne(val, colTitles);
-                if(eres.getScore() > 80){
-                    colIdxs[eres.getIndex()] = col;
+                String val = getCellAsString(fRow.getCell(col));
+                if(val.length() > 0){
+                    ExtractedResult eres = FuzzySearch.extractOne(val, colTitles);
+                    if(eres.getScore() > 80){
+                        colIdxs[eres.getIndex()] = col;
+                    }
                 }
             }
             for(int col = 0; col < colTitles.size(); col++){
@@ -164,10 +189,8 @@ public class EPlanLoaderImpl implements EPlanLoader {
             return;
         }
 
-        int rowAnz = sheet.getLastRowNum();
-        int row = 0;
+        int row = titleRow+1;
         try{
-            row = 1;
             int cnt = 1;
             for (int i = row; i <= rowAnz; i++) {
                 org.apache.poi.ss.usermodel.Row cRow = sheet.getRow(i);
@@ -175,7 +198,7 @@ public class EPlanLoaderImpl implements EPlanLoader {
                 if(cRow != null && cRow.getCell(colIdxs[1]).getStringCellValue().length() > 2){ // klasse länger als 2 Zeichen
                     EPlan epl = EPlan.builder()
                             .no(cnt++)
-                            .schule(EPLAN.SCHULE)
+//                            .schule(EPLAN.SCHULE)
 //                            .bereich(getCellAsString(cRow.getCell(colIdxs[0])))
                             .bereich(bereich)
                             .klasse(getCellAsString(cRow.getCell(colIdxs[1])))
@@ -198,7 +221,7 @@ public class EPlanLoaderImpl implements EPlanLoader {
             return;
         }
 
-        ePlanRepository.deleteBySchuleLikeAndBereichLike("BKEST", bereich);
+        ePlanRepository.deleteByBereichLike(bereich);
         ePlanRepository.saveAll(res);
     }
 

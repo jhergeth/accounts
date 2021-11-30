@@ -1,6 +1,7 @@
 package name.hergeth.eplan.domain;
 
 import io.micronaut.data.jdbc.annotation.JdbcRepository;
+import io.micronaut.data.model.query.builder.sql.Dialect;
 import io.micronaut.data.repository.CrudRepository;
 import name.hergeth.eplan.responses.PivotTable;
 import name.hergeth.eplan.service.EPLAN;
@@ -9,7 +10,7 @@ import java.util.List;
 import java.util.stream.Collectors;
 import java.util.stream.StreamSupport;
 
-@JdbcRepository
+@JdbcRepository(dialect = Dialect.MYSQL)
 public abstract class AnrechungRepository implements CrudRepository<Anrechnung, Long> {
     private PivotTable anrPivot = null;
     private String[] kuka = new String[0];

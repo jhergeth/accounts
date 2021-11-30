@@ -10,7 +10,7 @@ import javax.validation.constraints.NotBlank;
 import javax.validation.constraints.NotNull;
 import java.util.Optional;
 
-@JdbcRepository(dialect = Dialect.H2)
+@JdbcRepository(dialect = Dialect.MYSQL)
 public interface RefreshTokenRepository  extends CrudRepository<RefreshToken, Long> {
     @Transactional
     RefreshToken save(@NonNull @NotBlank String username,

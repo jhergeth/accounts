@@ -7,6 +7,7 @@ import lombok.Data;
 import lombok.NoArgsConstructor;
 import lombok.extern.jackson.Jacksonized;
 
+import javax.persistence.Column;
 import javax.persistence.Entity;
 import javax.persistence.Id;
 import javax.validation.constraints.NotNull;
@@ -28,14 +29,15 @@ import java.time.LocalDate;
 //12        Prozenzbasis ('U' für Unterricht oder 'S' für Jahressoll)
 //*1) muß angegeben sein (<= 0 neu anlegen, > 0 sofern vorhanden überschreiben sonst neu anlegen)
 
-@Entity
 @Data
 @Builder
 @NoArgsConstructor
 @AllArgsConstructor
 @Jacksonized
+@Entity
 public class  Anrechnung {
     @Id
+    @Column(name = "id", nullable = false)
     private Long id;
 
     @NotNull
@@ -55,4 +57,12 @@ public class  Anrechnung {
     private String text;
 
     private Double jwert;
+
+    public Long getId() {
+        return id;
+    }
+
+    public void setId(Long id) {
+        this.id = id;
+    }
 }

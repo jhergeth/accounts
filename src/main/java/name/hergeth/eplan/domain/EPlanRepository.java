@@ -9,18 +9,18 @@ import org.slf4j.LoggerFactory;
 import java.util.List;
 import java.util.Optional;
 
-@JdbcRepository(dialect= Dialect.H2)
+@JdbcRepository(dialect = Dialect.MYSQL)
 public abstract class EPlanRepository implements CrudRepository<EPlan, Long> {
     private static final Logger LOG = LoggerFactory.getLogger(EPlanRepository.class);
 
     public abstract Optional<EPlan> find(Long id);
-    public abstract List<EPlan> findBySchuleAndBereichOrderByNo(String schule, String bereich);
-    public abstract void deleteBySchuleLikeAndBereichLike(String schule, String bereich);
+    public abstract List<EPlan> findByBereichOrderByNo(String bereich);
+    public abstract void deleteByBereichLike(String bereich);
     public abstract void delete(Long id);
 
-    public abstract List<EPlan> findBySchuleAndKlasseOrderByNo(String schule, String klasse);
-    public abstract List<EPlan> findBySchuleAndLehrerOrderByNo(String schule, String lehrer);
-    public abstract List<EPlan> findBySchuleAndFachOrderByNo(String schule, String fach);
+    public abstract List<EPlan> findByKlasseOrderByNo(String klasse);
+    public abstract List<EPlan> findByLehrerOrderByNo(String lehrer);
+    public abstract List<EPlan> findByFachOrderByNo(String fach);
 
     public void duplicate(Long id){
         Optional<EPlan> oe = find(id);

@@ -6,6 +6,9 @@
         </Console>
     </Appenders>
     <Loggers>
+        <Logger name="io.micronaut.data.query" level="trace" >
+            <AppenderRef ref="LogToConsole"/>
+        </Logger>
         <Logger name="name.hergeth" level="debug" additivity="false">
             <AppenderRef ref="LogToConsole"/>
         </Logger>

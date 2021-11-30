@@ -1,0 +1,20 @@
+# Use root/example as user/password credentials
+version: '3.1'
+
+services:
+
+  db:
+    image: mariadb
+    restart: always
+    environment:
+      - MYSQL_ROOT_PASSWORD='Kj4UTwpXriajMuH5Ho3t'
+      - MYSQL_PASSWORD='FAvV3yoTf3tHXggs'  #SQL Benutzer Passwort eingeben
+      - MYSQL_DATABASE='db' #Datenbank Name
+      - MYSQL_USER='bkestctrl' #SQL Nutzername
+      - MYSQL_INITDB_SKIP_TZINFO=1
+    ports:
+      - '3307:3306'
+
+
+
+

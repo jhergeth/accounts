@@ -12,8 +12,6 @@ import java.util.Map;
 public class EPlanSummen {
     @NonNull
     private String lehrer;
-    @NonNull
-    private Kollege kollege;
 
     private Map<String,Double> bereichsSummen;
 

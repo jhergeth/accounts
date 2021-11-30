@@ -64,7 +64,7 @@ public class EPlanLogicImp implements EPlanLogic {
         if(oe.isPresent()){
             String ber = oe.get().getBereich();
             ePlanRep.delete(id);
-            renumberBereich(EPLAN.SCHULE, ber);
+            renumberBereich(ber);
         }
     }
 
@@ -74,12 +74,12 @@ public class EPlanLogicImp implements EPlanLogic {
         if(oe.isPresent()){
             String ber = oe.get().getBereich();
             ePlanRep.duplicate(oe.get());
-            renumberBereich(EPLAN.SCHULE, ber);
+            renumberBereich(ber);
         }
     }
 
-    private void renumberBereich(String schule, String bereich){
-        List<EPlan> lep = ePlanRep.findBySchuleAndBereichOrderByNo(schule, bereich);
+    private void renumberBereich(String bereich){
+        List<EPlan> lep = ePlanRep.findByBereichOrderByNo(bereich);
 
         int no = 1;
 
@@ -93,7 +93,7 @@ public class EPlanLogicImp implements EPlanLogic {
     @Override
     public List<EPlan> getEPlan(String bereich){
         if(ePlanRep.count() > 0){
-            return ePlanRep.findBySchuleAndBereichOrderByNo(EPLAN.SCHULE, bereich);
+            return ePlanRep.findByBereichOrderByNo(bereich);
         }
         return new ArrayList<>();
     }
@@ -108,7 +108,7 @@ public class EPlanLogicImp implements EPlanLogic {
             EPlanSummen eps = epsMap.get(kuk);
             if(eps == null){
 //                eps = new EPlanSummen(k.getKuerzel(), k, new HashMap<String,Double>(), 0.0, k.getSoll(), 0.0);
-                List<EPlan> kukEPLs = ePlanRep.findBySchuleAndLehrerOrderByNo(EPLAN.SCHULE, kuk);
+                List<EPlan> kukEPLs = ePlanRep.findByLehrerOrderByNo(kuk);
                 Map<String,Double> kukInBer = kukEPLs.stream()
                         .reduce(
                                 new HashMap<String,Double>(),
@@ -123,12 +123,12 @@ public class EPlanLogicImp implements EPlanLogic {
                                     return m1;
                                 }
                         );
-                Double ist = kukInBer.entrySet().stream().reduce(0.0, (v,e) -> v+e.getValue(),(v1,v2) -> v1+v2);
+                Double ist = kukInBer.entrySet().stream()
+                        .reduce(0.0, (v,e) -> v+e.getValue(),(v1,v2) -> v1+v2);
                 Double anr = anrechungRepository.getAnrechnungKuK(kuk);
                 Double diff = ist + anr - k.getSoll();
                 eps = EPlanSummen.builder()
                         .lehrer(kuk)
-                        .kollege(k)
                         .bereichsSummen(kukInBer)
                         .soll(k.getSoll())
                         .gesamt(ist)
