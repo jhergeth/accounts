@@ -1,14 +1,19 @@
 package name.hergeth.accounts.services;
 
+import ezvcard.VCard;
 import info.debatty.java.stringsimilarity.JaroWinkler;
 import jakarta.inject.Singleton;
-import name.hergeth.config.Configuration;
 import name.hergeth.accounts.controler.response.AccUpdate;
-import name.hergeth.accounts.domain.*;
+import name.hergeth.accounts.domain.AccList;
+import name.hergeth.accounts.domain.Account;
+import name.hergeth.accounts.domain.ListPlus;
+import name.hergeth.accounts.domain.ScannerBuilder;
 import name.hergeth.accounts.services.external.LDAPUserApi;
 import name.hergeth.accounts.services.external.NCFileApi;
 import name.hergeth.accounts.services.external.NCUserApi;
+import name.hergeth.accounts.services.external.NCVCardApi;
 import name.hergeth.accounts.services.external.io.Meta;
+import name.hergeth.config.Configuration;
 import name.hergeth.util.Utils;
 import org.apache.commons.collections4.MapIterator;
 import org.apache.commons.collections4.map.HashedMap;
@@ -19,8 +24,12 @@ import org.slf4j.LoggerFactory;
 
 import java.io.File;
 import java.net.MalformedURLException;
+import java.net.URI;
 import java.time.LocalDateTime;
-import java.util.*;
+import java.util.Collections;
+import java.util.List;
+import java.util.Locale;
+import java.util.Map;
 import java.util.function.BiFunction;
 import java.util.function.Consumer;
 
@@ -61,6 +70,7 @@ public class DataSrvc implements IDataSrvc {
     private LDAPUserApi usrLDAPCmd = null;
     private NCUserApi usrNCCmd = null;
     private NCFileApi fileCmd = null;
+    private NCVCardApi cardApi = null;
 
     public DataSrvc(Configuration configuration, StatusSrvc status) {
         this.configuration = configuration;
@@ -501,6 +511,17 @@ public class DataSrvc implements IDataSrvc {
         return 0;
     }
 
+    public String getPrincipal(){
+        String adrBookName = configuration.get("VCARDAdressBookName", "BKEST-KuK");
+
+        initNCCard();
+
+        URI adrBookUrl = cardApi.getAdressBook(adrBookName);
+        List<VCard> xdata = cardApi.getXCards(adrBookUrl);
+
+        return Integer.toString(xdata.size());
+    }
+
     //
     //  set up Nextcloud, moodle an LDAP connections
     //
@@ -552,6 +573,15 @@ public class DataSrvc implements IDataSrvc {
         } catch (MalformedURLException e) {
             e.printStackTrace();
         }
+    }
+
+    private void initNCCard(){
+        // https://cloud.berufskolleg-geilenkirchen.de/remote.php/dav/addressbooks/users/admin/bkest-kuk-1/
+        String server = configuration.get("VCARDURL", "https://cloud.berufskolleg-geilenkirchen.de");
+        String usr = configuration.get("VCARDAcc", "admin");
+        String pw = configuration.get("VCARDPW", "2kiMd-dyz4t-jE7HF-TqjZ6-eZzBD"); // Bv3YI7RY8WMCEXVCRgON
+
+        cardApi = new NCVCardApi(server, usr, pw);
     }
 
 }

@@ -26,4 +26,5 @@ public interface IDataSrvc {
     public List<String> getLDAPKlassen();
     public List<Account> getLDAPAccounts(String[] klassen);
     public int putMoodleAccounts(String[] klassen);
+    public String getPrincipal();
 }

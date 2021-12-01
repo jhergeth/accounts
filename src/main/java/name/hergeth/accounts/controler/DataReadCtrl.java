@@ -54,4 +54,7 @@ public class DataReadCtrl {
 
     @Get(value = "/checkextdup")
     public List<AccPair> getAllDuplicates() { return dataSrvc.searchDupAllAccs(); }
+
+    @Get(value = "/getprincipal")
+    public String getPrincipal() { return dataSrvc.getPrincipal(); }
 }
