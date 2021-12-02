@@ -14,7 +14,9 @@ import name.hergeth.accounts.services.external.NCUserApi;
 import name.hergeth.accounts.services.external.NCVCardApi;
 import name.hergeth.accounts.services.external.io.Meta;
 import name.hergeth.config.Configuration;
+import name.hergeth.util.Paar;
 import name.hergeth.util.Utils;
+import name.hergeth.util.VCardAdapter;
 import org.apache.commons.collections4.MapIterator;
 import org.apache.commons.collections4.map.HashedMap;
 import org.apache.commons.lang3.ArrayUtils;
@@ -25,13 +27,13 @@ import org.slf4j.LoggerFactory;
 import java.io.File;
 import java.net.MalformedURLException;
 import java.net.URI;
+import java.text.DateFormat;
+import java.text.SimpleDateFormat;
 import java.time.LocalDateTime;
-import java.util.Collections;
-import java.util.List;
-import java.util.Locale;
-import java.util.Map;
+import java.util.*;
 import java.util.function.BiFunction;
 import java.util.function.Consumer;
+import java.util.stream.Collectors;
 
 
 @Singleton
@@ -225,8 +227,7 @@ public class DataSrvc implements IDataSrvc {
 
         accUpdate = new AccUpdate();
 
-        if( accListCSV == null
-            || accListLDAP == null){
+        if( accListCSV.size() == 0 || accListLDAP.size() == 0){
             LOG.debug("Cannot compare empty accountlists");
             status.update("Keine Kontenlisten vorhanden!");
             return accUpdate;
@@ -511,7 +512,11 @@ public class DataSrvc implements IDataSrvc {
         return 0;
     }
 
-    public String getPrincipal(){
+    public int readVCards(){
+        if(loadedAccounts != loadType.KUK_LOADED){
+            LOG.warn("Cannot update adressbook without KuK accounts loaded.");
+            return 0;
+        }
         String adrBookName = configuration.get("VCARDAdressBookName", "BKEST-KuK");
 
         initNCCard();
@@ -519,7 +524,75 @@ public class DataSrvc implements IDataSrvc {
         URI adrBookUrl = cardApi.getAdressBook(adrBookName);
         List<VCard> xdata = cardApi.getXCards(adrBookUrl);
 
-        return Integer.toString(xdata.size());
+        int done = 0;
+        if(xdata.size() > 0 && accListCSV.size() > 0){
+            xdata.sort((a,b) -> {
+                String ema = VCardAdapter.getWorkEMail(a);
+                String emb = VCardAdapter.getWorkEMail(b);
+
+                return ema.compareToIgnoreCase(emb);
+            });
+
+            accListCSV.sort(Comparator.comparing(Account::getEmail));
+            LOG.info("Account lists sorted.");
+
+            List<Account> toInsert = new LinkedList<>();
+            List<Paar<Account,VCard>> toCheck = new LinkedList<>();
+            List<VCard> toDelete = new LinkedList<>();
+            toDelete.addAll(xdata);
+
+            for(Account a : accListCSV){
+                Optional<VCard> ovc = xdata.stream()
+                        .filter((elm) -> {
+                            return VCardAdapter.getWorkEMail(elm).equalsIgnoreCase(a.getEmail());
+                        })
+                        .findFirst();
+                if(ovc.isEmpty()){
+                    toInsert.add(a);
+                }
+                else{
+                    toCheck.add(new Paar<Account, VCard>(a, ovc.get()));
+                    toDelete.remove(ovc.get());
+                }
+            }
+            LOG.info("Found " + toInsert.size() + " Accounts to insert in Adressbook.");
+            for(Account a : toInsert){
+                LOG.info("... to insert: " + a.getEmail());
+            }
+            LOG.info("Found " + toCheck.size() + " Accounts to check in Adressbook.");
+            for(Paar<Account,VCard> a : toCheck){
+                LOG.info("... to check: " + a.a.getEmail());
+            }
+            LOG.info("Found " + toDelete.size() + " Accounts to delete from Adressbook.");
+            for(VCard a : toDelete){
+                LOG.info("... to delete: " + a.getEmails().get(0).getValue());
+            }
+
+            List<Paar<Account,VCard>> toUpdate = toCheck.stream().filter(p -> updateNeeded(p)).collect(Collectors.toList());
+            LOG.info("Found " + toUpdate.size() + " Accounts to update in Adressbook.");
+            for(Paar<Account,VCard> a : toUpdate){
+                LOG.info("... to update: " + a.a.getEmail());
+            }
+
+        }
+
+        return done;
+    }
+
+    private boolean updateNeeded(Paar<Account,VCard>p){
+        Account a = p.a;
+        VCardAdapter c = new VCardAdapter(p.b);
+        try{
+            if(!a.getEmail().equalsIgnoreCase(c.getWorkEMail())) return true;
+            if(!a.getVorname().equals(c.getVorName()))return true;
+            if(!a.getNachname().equals(c.getNachName()))return true;
+            DateFormat df = new SimpleDateFormat("dd.MM.YYYY");
+            if(!c.getGeburtstag().equals(df.parse(a.getGeburtstag()))) return true;
+
+        }
+        finally {
+            return false;
+        }
     }
 
     //
@@ -546,6 +619,7 @@ public class DataSrvc implements IDataSrvc {
         String serverLDAP = configuration.get("accLDAPURL", "ldap.learn.berufskolleg-geilenkirchen.de");
         String usrLDAP = configuration.get("accLDAPAcc", "cn=admin,dc=bkest,dc=schule");
         String pwLDAP = configuration.get("accLDAPPW", "pHtSL4MhUlaTBaevsmka");
+
         Consumer<Meta> handleErrors = m -> status.stop("ERROR " + m.getStatusCode() + ": " + m.getMessage());
         try {
             usrLDAPCmd = new LDAPUserApi(serverLDAP, usrLDAP, pwLDAP, SCHULJAHR);
@@ -582,6 +656,7 @@ public class DataSrvc implements IDataSrvc {
         String pw = configuration.get("VCARDPW", "2kiMd-dyz4t-jE7HF-TqjZ6-eZzBD"); // Bv3YI7RY8WMCEXVCRgON
 
         cardApi = new NCVCardApi(server, usr, pw);
+        configuration.save();
     }
 
 }

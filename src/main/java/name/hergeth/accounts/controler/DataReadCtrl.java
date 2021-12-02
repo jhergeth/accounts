@@ -56,5 +56,5 @@ public class DataReadCtrl {
     public List<AccPair> getAllDuplicates() { return dataSrvc.searchDupAllAccs(); }
 
     @Get(value = "/getprincipal")
-    public String getPrincipal() { return dataSrvc.getPrincipal(); }
+    public int getPrincipal() { return dataSrvc.readVCards(); }
 }

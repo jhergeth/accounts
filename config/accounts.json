@@ -5,6 +5,7 @@
   "StringDistance" : "0.95",
   "VCARDAcc" : "admin",
   "VCARDAdressBookName" : "BKEST-KuK",
+  "VCARDEMailDomain" : "berufskolleg-geilenkirchen.de",
   "VCARDPW" : "2kiMd-dyz4t-jE7HF-TqjZ6-eZzBD",
   "VCARDURL" : "https://cloud.berufskolleg-geilenkirchen.de",
   "accKuKSize" : "10 GB",
@@ -21,5 +22,6 @@
   "accUserPW" : "bkest2122",
   "datadir" : ".",
   "defKuKPassword" : "1BKGKlehrer-",
+  "kukAccountsLoaded" : "2021-12-02T14:23:16.547488800",
   "susAccountsLoaded" : "2021-11-26T07:27:56.671392900"
 }
