@@ -73,6 +73,8 @@ dependencies {
     implementation 'com.google.code.gson:gson:2.8.8'
 
     compileOnly 'com.googlecode.ez-vcard:ez-vcard:0.11.3'
+    // https://mvnrepository.com/artifact/com.googlecode.libphonenumber/libphonenumber
+    implementation 'com.googlecode.libphonenumber:libphonenumber:8.12.38'
 
 // https://mvnrepository.com/artifact/org.apache.directory.api/api-all
     implementation group: 'org.apache.directory.api', name: 'api-all', version: '2.1.0'

@@ -53,17 +53,18 @@ public class AccList extends DomainList<Account> {
 //                      @Nonnull String email) {
     @Override
     public Account scanLine(String[] elm){
-        Account a = new Account(
-                elm[5],         // uniqueId
-                elm[0],         // class
-                elm[1],         // surname
-                elm[2],         // first name
-                elm[3],         // date of birth
-                elm[4],         // displayname
-                elm[6],         // logon name
-                elm[8],          // e-mail
-                ""
-        );
+        Account a = Account.builder()
+                .anzeigeName(elm[4])
+                .id(elm[5])
+                .klasse(elm[0])
+                .nachname(elm[1])
+                .vorname(elm[2])
+                .email(elm[8])
+                .loginName(elm[6])
+                .geburtstag(elm[3])
+                .maxSize("")
+                .build();
+
         add(a);
         return a;
     }

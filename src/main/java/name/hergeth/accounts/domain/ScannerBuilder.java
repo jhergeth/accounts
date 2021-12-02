@@ -23,7 +23,8 @@ public class ScannerBuilder {
         String[] elms = Utils.readFirstLine(file, LOG);
 
         head = new String[]{
-                "Nachname", "Vorname", "E-Mail (Dienstlich)", "Kürzel", "Geburtsdatum"
+                "Nachname", "Vorname", "E-Mail (Dienstlich)", "Kürzel", "Geburtsdatum", "Telefon (Festnetz)",   // 0 - 5
+                "Telefon (Mobil)", "Anrede", "E-Mail", "Ortsname", "Postleitzahl", "Straße", "Geschlecht"       // 6 - 12
         };
         match = new int[head.length];
         if (buildMatcher(head, elms, match)) {
@@ -33,17 +34,27 @@ public class ScannerBuilder {
                 @Override
                 public Boolean apply(AccList accounts, String[] strings) {
                     if (!skipNext.get()) {    // not first line with col headers
-                        accounts.add(new Account(
-                                strings[match[3]],        // uniqueId
-                                "KuK",              // class
-                                strings[match[0]],        // surname
-                                strings[match[1]],        // first name
-                                strings[match[4]],        // date of birth
-                                strings[match[1]] + " " + strings[match[0]],        // displayname
-                                strings[match[3]],        // logon name
-                                strings[match[2]],         // e-mail
-                                kukSize
-                        ));
+                        Account a = Account.builder()
+                                .anzeigeName(strings[match[0]] + ", " + strings[match[1]])
+                                .id(strings[match[3]])
+                                .klasse("KuK")
+                                .nachname(strings[match[0]])
+                                .vorname(strings[match[1]])
+                                .email(strings[match[2]])
+                                .loginName(strings[match[3]])
+                                .geburtstag(strings[match[4]])
+                                .maxSize(kukSize)
+
+                                .homePhone(strings[match[5]])
+                                .cellPhone(strings[match[6]])
+                                .homeEMail(strings[match[8]])
+                                .homeOrt(strings[match[9]])
+                                .homePLZ(strings[match[10]])
+                                .homeStrasse(strings[match[11]])
+                                .anrede(strings[match[7]])
+
+                                .build();
+                        accounts.add(a);
                     } else {
                         skipNext.set(false);
                     }
@@ -62,17 +73,16 @@ public class ScannerBuilder {
                 @Override
                 public Boolean apply(AccList accounts, String[] strings) {
                     if (!skipNext.get()) {    // not first line with col headers
-                        accounts.add(new Account(
-                                strings[match[0]],        // uniqueId
-                                strings[match[1]],        // class
-                                strings[match[2]],        // surname
-                                strings[match[3]],        // first name
-                                strings[match[4]],        // date of birth
-                                "",            // displayname
-                                "",              // logon name
-                                strings[match[5]],         // e-mail
-                                susSize
-                        ));
+                        Account a = Account.builder()
+                                        .id(strings[match[0]])
+                                        .klasse(strings[match[1]])
+                                        .nachname(strings[match[2]])
+                                        .vorname(strings[match[3]])
+                                        .geburtstag(strings[match[4]])
+                                        .email(strings[match[5]])
+                                        .maxSize(susSize)
+                                        .build();
+                        accounts.add(a);
                     } else {
                         skipNext.set(false);
                     }

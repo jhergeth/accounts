@@ -395,7 +395,7 @@ public class LDAPUserApi {
             String uid = getAttribute(e, "uid");
             Account res = null;
             if (uid != null && uid.length() > 1) {
-                res = new Account(
+/*                res = new Account(
                         getAttribute(e, "uid"),
                         getAttribute(e, "businessCategory"),        // Klasse
                         getAttribute(e, "sn"),
@@ -405,7 +405,18 @@ public class LDAPUserApi {
                         getAttribute(e, "cn"),
                         getAttribute(e, "mail"),
                         getAttribute(e, "destinationIndicator")
-                );
+                );*/
+                res = Account.builder()
+                        .id(getAttribute(e, "uid"))
+                        .klasse(getAttribute(e, "businessCategory"))
+                        .nachname(getAttribute(e, "sn"))
+                        .vorname(getAttribute(e, "givenName"))
+                        .geburtstag(getAttribute(e, "pager"))
+                        .anzeigeName(getAttribute(e, "displayName"))
+                        .loginName(getAttribute(e, "cn"))
+                        .email(getAttribute(e, "mail"))
+                        .maxSize(getAttribute(e, "destinationIndicator"))
+                        .build();
             }
             return res;
         });

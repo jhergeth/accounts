@@ -1,6 +1,7 @@
 package name.hergeth.accounts.services;
 
-import ezvcard.VCard;
+import com.google.i18n.phonenumbers.PhoneNumberUtil;
+import com.google.i18n.phonenumbers.Phonenumber;
 import info.debatty.java.stringsimilarity.JaroWinkler;
 import jakarta.inject.Singleton;
 import name.hergeth.accounts.controler.response.AccUpdate;
@@ -38,9 +39,8 @@ import java.util.stream.Collectors;
 
 @Singleton
 public class DataSrvc implements IDataSrvc {
-
-
     private static final Logger LOG = LoggerFactory.getLogger(DataSrvc.class);
+    private static final PhoneNumberUtil PU = PhoneNumberUtil.getInstance();
 
     private Configuration configuration;
     private AccList accListCSV;
@@ -136,6 +136,23 @@ public class DataSrvc implements IDataSrvc {
             acc.setEmail(login + defaultUserMailDomain);
         }
 
+        acc.setHomePhone(fixPhoneNumber(acc.getHomePhone()));
+        acc.setCellPhone(fixPhoneNumber(acc.getCellPhone()));
+    }
+
+    private String fixPhoneNumber(String no){
+        if(no.length() < 4){
+            LOG.info("Phonenumber {} to short.", no);
+            return "";
+        }
+        try{
+            Phonenumber.PhoneNumber pn = PU.parse(no, "DE");
+            return PU.format(pn, PhoneNumberUtil.PhoneNumberFormat.NATIONAL);
+        }
+        catch(Exception e){
+            LOG.info("Could not parse phonenumber {}.", no);
+            return "";
+        }
     }
 
     //
@@ -522,77 +539,107 @@ public class DataSrvc implements IDataSrvc {
         initNCCard();
 
         URI adrBookUrl = cardApi.getAdressBook(adrBookName);
-        List<VCard> xdata = cardApi.getXCards(adrBookUrl);
+        List<VCardAdapter> vCards = cardApi.getXCards(adrBookUrl);
 
         int done = 0;
-        if(xdata.size() > 0 && accListCSV.size() > 0){
-            xdata.sort((a,b) -> {
-                String ema = VCardAdapter.getWorkEMail(a);
-                String emb = VCardAdapter.getWorkEMail(b);
-
-                return ema.compareToIgnoreCase(emb);
-            });
-
-            accListCSV.sort(Comparator.comparing(Account::getEmail));
-            LOG.info("Account lists sorted.");
-
+        if(vCards.size() > 0 && accListCSV.size() > 0){
             List<Account> toInsert = new LinkedList<>();
-            List<Paar<Account,VCard>> toCheck = new LinkedList<>();
-            List<VCard> toDelete = new LinkedList<>();
-            toDelete.addAll(xdata);
+            List<Paar<Account,VCardAdapter>> toCheck = new LinkedList<>();
+            List<VCardAdapter> toDelete = new LinkedList<>();
+            toDelete.addAll(vCards);
 
             for(Account a : accListCSV){
-                Optional<VCard> ovc = xdata.stream()
+                Optional<VCardAdapter> ovc = vCards.stream()
                         .filter((elm) -> {
-                            return VCardAdapter.getWorkEMail(elm).equalsIgnoreCase(a.getEmail());
+                            return elm.getWorkEMail().equalsIgnoreCase(a.getEmail());
                         })
                         .findFirst();
                 if(ovc.isEmpty()){
                     toInsert.add(a);
                 }
                 else{
-                    toCheck.add(new Paar<Account, VCard>(a, ovc.get()));
+                    toCheck.add(new Paar<Account, VCardAdapter>(a, ovc.get()));
                     toDelete.remove(ovc.get());
                 }
             }
             LOG.info("Found " + toInsert.size() + " Accounts to insert in Adressbook.");
             for(Account a : toInsert){
-                LOG.info("... to insert: " + a.getEmail());
+                LOG.info("... to insert: {}", a.getEmail());
+                cardApi.createVCard(new VCardAdapter(a, adrBookUrl.getPath()));
             }
             LOG.info("Found " + toCheck.size() + " Accounts to check in Adressbook.");
-            for(Paar<Account,VCard> a : toCheck){
-                LOG.info("... to check: " + a.a.getEmail());
-            }
+//            for(Paar<Account,VCard> a : toCheck){
+//                LOG.info("... to check: " + a.a.getEmail());
+//            }
             LOG.info("Found " + toDelete.size() + " Accounts to delete from Adressbook.");
-            for(VCard a : toDelete){
-                LOG.info("... to delete: " + a.getEmails().get(0).getValue());
+            for(VCardAdapter a : toDelete){
+                LOG.info("... to delete: {}",  a.getWorkEMail());
+                cardApi.deleteVCard(a);
             }
 
-            List<Paar<Account,VCard>> toUpdate = toCheck.stream().filter(p -> updateNeeded(p)).collect(Collectors.toList());
+            List<Paar<Account,VCardAdapter>> toUpdate = toCheck.stream()
+                    .filter(p -> updateNeeded(p))
+                    .collect(Collectors.toList());
             LOG.info("Found " + toUpdate.size() + " Accounts to update in Adressbook.");
-            for(Paar<Account,VCard> a : toUpdate){
-                LOG.info("... to update: " + a.a.getEmail());
+
+            for(Paar<Account,VCardAdapter> p : toUpdate){
+                LOG.info("Updating vCard: {}", p.a.getEmail());
+                p.b.updateFromAccount(p.a);
+                cardApi.putVCard(p.b);
             }
 
+//            LOG.info("Liste toCheck:");
+//            prettyPrint(toCheck,"heg@berufskolleg-geilenkirchen.de");
         }
 
         return done;
     }
 
-    private boolean updateNeeded(Paar<Account,VCard>p){
-        Account a = p.a;
-        VCardAdapter c = new VCardAdapter(p.b);
-        try{
-            if(!a.getEmail().equalsIgnoreCase(c.getWorkEMail())) return true;
-            if(!a.getVorname().equals(c.getVorName()))return true;
-            if(!a.getNachname().equals(c.getNachName()))return true;
-            DateFormat df = new SimpleDateFormat("dd.MM.YYYY");
-            if(!c.getGeburtstag().equals(df.parse(a.getGeburtstag()))) return true;
+    private void prettyPrint(List<VCardAdapter> l, String em){
+        Optional<VCardAdapter> oc = l.stream()
+                .filter(c -> c.getWorkEMail().equalsIgnoreCase(em))
+                .findFirst();
+        if(oc.isPresent()){
+            VCardAdapter va = oc.get();
+            va.prettyPrint();
+        }
+        else{
+            LOG.info("Data from {} not in list.", em);
+        }
 
+
+    }
+
+    private void updateOne(List<Paar<Account,VCardAdapter>> list, String mail){
+        Optional<Paar<Account,VCardAdapter>> oc = list.stream()
+                .filter(c -> c.a.getEmail().equalsIgnoreCase(mail))
+                .findFirst();
+        if(oc.isPresent()){
+            updateNeeded(oc.get());
         }
-        finally {
-            return false;
+
+    }
+
+    private boolean updateNeeded(Paar<Account,VCardAdapter>p){
+        Account a = p.a;
+        VCardAdapter c = p.b;
+        if(!a.getEmail().equalsIgnoreCase(c.getWorkEMail())) return true;
+        if(!a.getVorname().equals(c.getVorName()))return true;
+        if(!a.getNachname().equals(c.getNachName()))return true;
+        if(!a.getCellPhone().equals(c.getCellPhone())) return true;
+        if(!a.getHomeEMail().equals(c.getHomeEMail())) return true;
+        if(!a.getHomePhone().equals(c.getHomePhone())) return true;
+        if(!a.getHomeOrt().equals(c.getHomeOrt())) return true;
+        if(!a.getHomeStrasse().equals(c.getHomeStrasse())) return true;
+        if(!a.getHomePLZ().equals(c.getHomePLZ())) return true;
+        if(!a.getAnrede().equals(c.getAnrede())) return true;
+        try{
+            DateFormat df = new SimpleDateFormat("dd.MM.yyyy");
+            if(!c.getGeburtstag().equals(df.parse(a.getGeburtstag()))) return true;
         }
+        catch(Exception e) {
+        }
+        return false;
     }
 
     //

@@ -6,12 +6,14 @@ import com.github.sardine.SardineFactory;
 import com.github.sardine.report.SyncCollectionReport;
 import ezvcard.VCard;
 import ezvcard.io.text.VCardReader;
+import name.hergeth.util.VCardAdapter;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import javax.xml.namespace.QName;
 import java.io.InputStream;
 import java.net.URI;
+import java.nio.charset.StandardCharsets;
 import java.util.HashSet;
 import java.util.LinkedList;
 import java.util.List;
@@ -64,7 +66,7 @@ public class NCVCardApi {
         return urlAdressbook;
     }
 
-    public List<VCard> getXCards(URI adrBook){
+    public List<VCardAdapter> getXCards(URI adrBook){
         Sardine sardine = SardineFactory.begin(user, passw);
         sardine.setCredentials(user, passw);
         Set<QName> props = new HashSet<>();
@@ -75,7 +77,7 @@ public class NCVCardApi {
             SyncCollectionReport syncRep = new SyncCollectionReport("", SyncCollectionReport.SyncLevel.LEVEL_1, props, 0);
             SyncCollectionReport.Result res = sardine.report(baseURL + adrBook.getPath(), 1, syncRep );
 
-            List<VCard> vcards = new LinkedList<>();
+            List<VCardAdapter> vcards = new LinkedList<>();
             LOG.info("syncToken: " + res.getSyncToken());
             for(DavResource dr : res.getResources()){
                 LOG.info("Fetching vcard: "+dr.getHref());
@@ -83,7 +85,7 @@ public class NCVCardApi {
                 String vcs = new String(is.readAllBytes());
                 VCardReader reader = new VCardReader(vcs);
                 VCard vc = reader.readNext();
-                vcards.add(vc);
+                vcards.add(new VCardAdapter(vc, dr.getHref().toString()));
                 reader.close();
             }
             return vcards;
@@ -92,5 +94,49 @@ public class NCVCardApi {
             LOG.error("Exception: " + e);
         }
         return new LinkedList<>();
+    }
+
+    public void putVCard(VCardAdapter vc){
+        Sardine sardine = SardineFactory.begin(user, passw);
+        sardine.setCredentials(user, passw);
+
+        try{
+            String url = vc.getHRef();
+            LOG.info("Writing vcard: "+url);
+            String sCard = vc.getVCard().write();
+            sardine.put(baseURL + url, sCard.getBytes(StandardCharsets.UTF_8));
+        }
+        catch(Exception e){
+            LOG.error("Exception: " + e);
+        }
+    }
+
+    public void createVCard(VCardAdapter vc){
+        Sardine sardine = SardineFactory.begin(user, passw);
+        sardine.setCredentials(user, passw);
+
+        try{
+            String url = vc.getHRef();
+            LOG.info("Creating vcard: "+url);
+            String sCard = vc.getVCard().write();
+            sardine.put(baseURL + url, sCard.getBytes(StandardCharsets.UTF_8));
+        }
+        catch(Exception e){
+            LOG.error("Exception: " + e);
+        }
+    }
+
+    public void deleteVCard(VCardAdapter vc){
+        Sardine sardine = SardineFactory.begin(user, passw);
+        sardine.setCredentials(user, passw);
+
+        try{
+            String url = vc.getHRef();
+            LOG.info("Deleting vcard: "+url);
+            sardine.delete(baseURL + url);
+        }
+        catch(Exception e){
+            LOG.error("Exception: " + e);
+        }
     }
 }

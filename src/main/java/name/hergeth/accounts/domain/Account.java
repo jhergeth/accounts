@@ -1,7 +1,7 @@
 package name.hergeth.accounts.domain;
 
 import io.micronaut.core.annotation.Introspected;
-import lombok.AllArgsConstructor;
+import lombok.Builder;
 import lombok.Data;
 import lombok.NonNull;
 
@@ -9,6 +9,7 @@ import java.util.function.Consumer;
 
 @Data
 @Introspected
+@Builder
 public class Account {
     @NonNull
     private String id;
@@ -25,11 +26,11 @@ public class Account {
 //    @NonNull
     private String geburtstag;
 
-    @NonNull
-    private String anzeigeName;
+    @Builder.Default
+    private String anzeigeName = "";
 
-    @NonNull
-    private String loginName;
+    @Builder.Default
+    private String loginName = "";
 
 //    @NonNull
     private String email;
@@ -37,15 +38,34 @@ public class Account {
 //    @NonNull
     private String maxSize;
 
+    @Builder.Default private String homeStrasse = "";
+    @Builder.Default private String homeOrt = "";
+    @Builder.Default private String homePLZ = "";
+    @Builder.Default private String homeEMail = "";
+    @Builder.Default private String cellPhone = "";
+    @Builder.Default private String homePhone = "";
+    @Builder.Default private String anrede = "";
+    @Builder.Default private String geschlecht = "";
+
+    @Builder.Default
     private boolean bKlasse = false;
+    @Builder.Default
     private boolean bNachname = false;
+    @Builder.Default
     private boolean bVorname = false;
+    @Builder.Default
     private boolean bGeburtstag = false;
+    @Builder.Default
     private boolean bAnzeigeName = false;
+    @Builder.Default
     private boolean bLoginName = false;
+    @Builder.Default
     private boolean bEmail = false;
+    @Builder.Default
     private boolean bMaxSize = false;
 
+
+/*
     public Account(@NonNull String id, @NonNull String klasse, @NonNull String nachname, @NonNull String vorname, String geburtstag, @NonNull String anzeigeName, @NonNull String loginName, String email, String maxSize) {
         this.id = id;
         this.klasse = klasse;
@@ -57,6 +77,7 @@ public class Account {
         this.email = email;
         this.maxSize = maxSize;
     }
+*/
 
     public boolean changed(Account n){
         bKlasse = !this.klasse.equalsIgnoreCase(n.klasse);
