@@ -28,6 +28,7 @@ public class ScannerBuilder {
         };
         match = new int[head.length];
         if (buildMatcher(head, elms, match)) {
+            LOG.info("Reading file as KuK-File.");
             skipNext.set(true);
             isSuS = false;
             return new BiFunction<AccList, String[], Boolean>() {
@@ -67,6 +68,7 @@ public class ScannerBuilder {
         };
         match = new int[head.length];
         if (buildMatcher(head, elms, match)) {
+            LOG.info("Reading file as SuS-File.");
             isSuS = true;
             skipNext.set(true);
             return new BiFunction<AccList, String[], Boolean>() {
@@ -90,6 +92,7 @@ public class ScannerBuilder {
                 }
             };
         }
+        LOG.info("No matching scanner found!");
         return null;
     }
 
@@ -101,6 +104,7 @@ public class ScannerBuilder {
         for(int i = 0; i < match.length; i++){
             match[i] = Utils.inArray(elms, head[i]);
             if(match[i] == -1){
+                LOG.info("Could not find {} in header: {}", head[i], elms);
                 return false;
             }
         }
