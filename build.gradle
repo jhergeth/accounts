@@ -72,7 +72,7 @@ dependencies {
 //    implementation("com.google.guava:guava")
     implementation 'com.google.code.gson:gson:2.8.8'
 
-    compileOnly 'com.googlecode.ez-vcard:ez-vcard:0.11.3'
+    implementation 'com.googlecode.ez-vcard:ez-vcard:0.11.3'
     // https://mvnrepository.com/artifact/com.googlecode.libphonenumber/libphonenumber
     implementation 'com.googlecode.libphonenumber:libphonenumber:8.12.38'
 
