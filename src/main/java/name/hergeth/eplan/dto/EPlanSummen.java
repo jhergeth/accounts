@@ -1,7 +1,6 @@
 package name.hergeth.eplan.dto;
 
 import lombok.*;
-import name.hergeth.eplan.domain.Kollege;
 
 import java.util.Map;
 

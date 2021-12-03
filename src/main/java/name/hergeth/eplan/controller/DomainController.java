@@ -14,8 +14,6 @@ import org.reactivestreams.Publisher;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import javax.annotation.security.RolesAllowed;
-
 import static io.micronaut.http.MediaType.MULTIPART_FORM_DATA;
 import static io.micronaut.http.MediaType.TEXT_PLAIN;
 

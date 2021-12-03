@@ -105,8 +105,16 @@ public class ScannerBuilder {
         for(int i = 0; i < match.length; i++){
             match[i] = Utils.inArray(elms, head[i]);
             if(match[i] == -1){
-                LOG.info("Could not find {} in header: {}", head[i], elms);
-                return false;
+                if(i == 3){
+                    match[i] = 4;
+                }
+                else if(i == 11){
+                    match[i] = 12;
+                }
+                else{
+                    LOG.info("Could not find {} in header: {}", head[i], elms);
+                    return false;
+                }
             }
         }
         return true;

@@ -2,7 +2,8 @@ package name.hergeth.eplan.domain;
 
 import lombok.*;
 
-import javax.persistence.*;
+import javax.persistence.Entity;
+import javax.persistence.Id;
 
 @Entity
 @Data
