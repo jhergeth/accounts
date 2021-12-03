@@ -81,8 +81,8 @@ dependencies {
 // https://mvnrepository.com/artifact/org.wso2.orbit.org.apache.commons/commons-compress
     implementation 'org.wso2.orbit.org.apache.commons:commons-compress:1.18.0.wso2v1'
     // Apache commons
-    compileOnly "org.apache.commons:commons-email:1.5"
-    compileOnly "commons-validator:commons-validator:1.7"
+    implementation "org.apache.commons:commons-email:1.5"
+    implementation "commons-validator:commons-validator:1.7"
     // https://mvnrepository.com/artifact/org.apache.commons/commons-text
     implementation group: 'org.apache.commons', name: 'commons-text', version: '1.9'
     // https://mvnrepository.com/artifact/org.apache.commons/commons-lang3
@@ -90,7 +90,7 @@ dependencies {
 
 // https://mvnrepository.com/artifact/commons-io/commons-io
 //    implementation 'commons-io:commons-io:20030203.000550'
-    compileOnly 'commons-io:commons-io:2.11.0'
+    implementation 'commons-io:commons-io:2.11.0'
     // https://mvnrepository.com/artifact/org.apache.poi/poi-ooxml
     implementation group: 'org.apache.poi', name: 'poi-ooxml', version: '5.0.0'
 
