@@ -9,6 +9,10 @@ public interface IStatusSrvc {
 
     void update(int d, String s);
 
+    void update(int d);
+
+    void inc();
+
     void inc(String s);
 
     void inc(int c, String s);

@@ -539,16 +539,20 @@ public class DataSrvc implements IDataSrvc {
         initNCCard();
 
         URI adrBookUrl = cardApi.getAdressBook(adrBookName);
-        List<VCardAdapter> vCards = cardApi.getXCards(adrBookUrl);
+        List<VCardAdapter> vCards = cardApi.getXCards(adrBookUrl, cv -> {
+            status.update("Adresse von " + cv.getFormattedName().getValue() + " gelesen.");
+        });
 
         int done = 0;
         if(vCards.size() > 0 && accListCSV.size() > 0){
+            status.start(0, accListCSV.size(), "Vergleiche Adressbuch mit neuen Daten.");
             List<Account> toInsert = new LinkedList<>();
             List<Paar<Account,VCardAdapter>> toCheck = new LinkedList<>();
             List<VCardAdapter> toDelete = new LinkedList<>();
             toDelete.addAll(vCards);
 
             for(Account a : accListCSV){
+                status.inc();
                 Optional<VCardAdapter> ovc = vCards.stream()
                         .filter((elm) -> {
                             return elm.getWorkEMail().equalsIgnoreCase(a.getEmail());
@@ -563,34 +567,42 @@ public class DataSrvc implements IDataSrvc {
                 }
             }
             LOG.info("Found " + toInsert.size() + " Accounts to insert in Adressbook.");
+            status.stop("Adressen geprüft.");
+            status.start(0, toInsert.size(), "Füge neue Adressen ein ...");
             for(Account a : toInsert){
                 LOG.info("... to insert: {}", a.getEmail());
                 cardApi.createVCard(new VCardAdapter(a, adrBookUrl.getPath()));
+                status.inc();
             }
+            status.stop("Neue Adressen eingefügt.");
             LOG.info("Found " + toCheck.size() + " Accounts to check in Adressbook.");
 //            for(Paar<Account,VCard> a : toCheck){
 //                LOG.info("... to check: " + a.a.getEmail());
 //            }
             LOG.info("Found " + toDelete.size() + " Accounts to delete from Adressbook.");
+            status.start(0, toDelete.size(), "Lösche alte Adressen ...");
             for(VCardAdapter a : toDelete){
                 LOG.info("... to delete: {}",  a.getWorkEMail());
                 cardApi.deleteVCard(a);
+                status.inc();
             }
+            status.stop("Alte Adressen gelöscht.");
 
             List<Paar<Account,VCardAdapter>> toUpdate = toCheck.stream()
                     .filter(p -> updateNeeded(p))
                     .collect(Collectors.toList());
             LOG.info("Found " + toUpdate.size() + " Accounts to update in Adressbook.");
 
+            status.start(0, toUpdate.size(), "Adressen werden aktualisiert.");
             for(Paar<Account,VCardAdapter> p : toUpdate){
                 LOG.info("Updating vCard: {}", p.a.getEmail());
                 p.b.updateFromAccount(p.a);
                 cardApi.putVCard(p.b);
+                status.inc();
             }
-
-//            LOG.info("Liste toCheck:");
-//            prettyPrint(toCheck,"heg@berufskolleg-geilenkirchen.de");
+            done = toInsert.size() + toDelete.size() + toUpdate.size();
         }
+        status.stop("Adressbuch bearbeitet." + ((done != 0) ? " " + done + " Adressen bearbeitet." : " Nichts zu tun."));
 
         return done;
     }

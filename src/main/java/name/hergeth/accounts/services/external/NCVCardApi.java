@@ -18,6 +18,7 @@ import java.util.HashSet;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Set;
+import java.util.function.Consumer;
 
 import static com.github.sardine.util.SardineUtil.createQNameWithDefaultNamespace;
 
@@ -66,7 +67,12 @@ public class NCVCardApi {
         return urlAdressbook;
     }
 
-    public List<VCardAdapter> getXCards(URI adrBook){
+    public List<VCardAdapter> getXCards(URI adrBook) {
+        return getXCards(adrBook, c -> {});
+    }
+
+    public List<VCardAdapter> getXCards(URI adrBook, Consumer<VCard> consumer){
+
         Sardine sardine = SardineFactory.begin(user, passw);
         sardine.setCredentials(user, passw);
         Set<QName> props = new HashSet<>();
@@ -87,6 +93,7 @@ public class NCVCardApi {
                 VCard vc = reader.readNext();
                 vcards.add(new VCardAdapter(vc, dr.getHref().toString()));
                 reader.close();
+                consumer.accept(vc);
             }
             return vcards;
         }

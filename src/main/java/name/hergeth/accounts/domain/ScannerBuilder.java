@@ -22,6 +22,7 @@ public class ScannerBuilder {
 
         String[] elms = Utils.readFirstLine(file, LOG);
         LOG.info("First line of file is: {}", elms);
+        LOG.info("Umlaute sind: ae oe ue ss -> ä ö ü ß");
 
         head = new String[]{
                 "Nachname", "Vorname", "E-Mail (Dienstlich)", "Kürzel", "Geburtsdatum", "Telefon (Festnetz)",   // 0 - 5
@@ -77,14 +78,14 @@ public class ScannerBuilder {
                 public Boolean apply(AccList accounts, String[] strings) {
                     if (!skipNext.get()) {    // not first line with col headers
                         Account a = Account.builder()
-                                        .id(strings[match[0]])
-                                        .klasse(strings[match[1]])
-                                        .nachname(strings[match[2]])
-                                        .vorname(strings[match[3]])
-                                        .geburtstag(strings[match[4]])
-                                        .email(strings[match[5]])
-                                        .maxSize(susSize)
-                                        .build();
+                                .id(strings[match[0]])
+                                .klasse(strings[match[1]])
+                                .nachname(strings[match[2]])
+                                .vorname(strings[match[3]])
+                                .geburtstag(strings[match[4]])
+                                .email(strings[match[5]])
+                                .maxSize(susSize)
+                                .build();
                         accounts.add(a);
                     } else {
                         skipNext.set(false);
@@ -97,21 +98,23 @@ public class ScannerBuilder {
         return null;
     }
 
-    public static boolean wasSuS(){ return isSuS;}
+    public static boolean wasSuS() {
+        return isSuS;
+    }
 
-    private static boolean buildMatcher(String[] head, String[] elms, int[] match){
+    private static boolean buildMatcher(String[] head, String[] elms, int[] match) {
         int mCnt = 0;
 
-        for(int i = 0; i < match.length; i++){
+        for (int i = 0; i < match.length; i++) {
             match[i] = Utils.inArray(elms, head[i]);
-            if(match[i] == -1){
-                if(i == 3){
+            if (match[i] == -1) {
+                if (i == 3) {       // FIXME charset issue in String constants
+                    LOG.warn("Patching {} to {}", head[i], elms[4]);
                     match[i] = 4;
-                }
-                else if(i == 11){
+                } else if (i == 11) {
+                    LOG.warn("Patching {} to {}", head[i], elms[12]);
                     match[i] = 12;
-                }
-                else{
+                } else {
                     LOG.info("Could not find {} in header: {}", head[i], elms);
                     return false;
                 }
