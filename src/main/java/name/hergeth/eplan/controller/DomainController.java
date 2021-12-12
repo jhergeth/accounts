@@ -2,6 +2,7 @@ package name.hergeth.eplan.controller;
 
 
 import io.micronaut.http.HttpResponse;
+import io.micronaut.http.annotation.Body;
 import io.micronaut.http.annotation.Controller;
 import io.micronaut.http.annotation.Get;
 import io.micronaut.http.annotation.Post;
@@ -13,6 +14,8 @@ import name.hergeth.eplan.service.UntisGPULoader;
 import org.reactivestreams.Publisher;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
+import java.util.Optional;
 
 import static io.micronaut.http.MediaType.MULTIPART_FORM_DATA;
 import static io.micronaut.http.MediaType.TEXT_PLAIN;
@@ -26,15 +29,19 @@ public class DomainController extends BaseController{
     private final KollegeRepository kollegeRepository;
     private final KlasseRepository klasseRepository;
     private final UntisGPULoader untisGPULoader;
+    private final UGruppenRepository uGruppenRepository;
 
     public DomainController(AnrechungRepository anrechungRepository,
                             KollegeRepository kollegeRepository,
                             KlasseRepository klasseRepository,
-                            UntisGPULoader untisGPULoader) {
+                            UntisGPULoader untisGPULoader,
+                            UGruppenRepository uGruppenRepository
+    ) {
         this.anrechungRepository = anrechungRepository;
         this.kollegeRepository = kollegeRepository;
         this.klasseRepository = klasseRepository;
         this.untisGPULoader = untisGPULoader;
+        this.uGruppenRepository = uGruppenRepository;
     }
 
     @Get("/klassen")
@@ -86,10 +93,44 @@ public class DomainController extends BaseController{
     }
 
     @Get("/anrechnungpivot")
-    PivotTable getAnrechnungPivot() {
+    public PivotTable getAnrechnungPivot() {
         PivotTable pt = anrechungRepository.getAnrechnungPivot();
         LOG.info("Fetching Pivot of Anrechnungen: {}|{}", pt.rows.length, pt.cols.length);
         return pt;
     }
+
+    @Get("/ugruppe")
+    public Iterable<UGruppe> getUGruppen(){
+        Iterable<UGruppe> res = uGruppenRepository.findAll();
+        LOG.info("Fetching UGruppen.");
+        return res;
+    }
+
+
+    @Post(value="/ugruppe")
+    public UGruppe uploadRow(@Body UGruppe row) {
+        LOG.info("Update for UGruppe: {}", row);
+        return uGruppenRepository.updateFix(row);
+    }
+
+    @Post(value="/ugruppe/duplicate")
+    public HttpResponse<String> duplicateRow(Long id) {
+        LOG.info("Duplicate UGruppe {}", id);
+        Optional<UGruppe> ug = uGruppenRepository.find(id);
+        if(ug.isPresent()){
+            uGruppenRepository.duplicate(ug.get());
+        }
+        return HttpResponse.ok();
+    }
+
+    @Post(value="/ugruppe/delete")
+    public HttpResponse<String> deleteRow(Long id) {
+        LOG.info("Delete row {}", id);
+        uGruppenRepository.delete(id);
+        return HttpResponse.ok();
+    }
+
+
+
 
 }

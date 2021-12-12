@@ -1,15 +1,15 @@
 package name.hergeth.eplan.domain;
 
-import io.micronaut.core.annotation.NonNull;
-import io.micronaut.data.annotation.GeneratedValue;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
 import javax.persistence.Entity;
-import javax.persistence.Id;
+import javax.persistence.GeneratedValue;
+import javax.persistence.GenerationType;
 import javax.validation.constraints.NotNull;
+
 
 @Data
 @Builder
@@ -17,9 +17,8 @@ import javax.validation.constraints.NotNull;
 @AllArgsConstructor
 @Entity
 public class EPlan {
-    @Id
-    @GeneratedValue
-    @NonNull
+    @javax.persistence.Id
+    @GeneratedValue(strategy = GenerationType.AUTO)
     private Long id;
 
 //    @NotNull
@@ -27,9 +26,6 @@ public class EPlan {
 
     @NotNull
     private String bereich;
-
-    @NotNull
-    @Builder.Default private Integer typ = 1;
 
     @NotNull
     @Builder.Default private Integer no = 1;
@@ -52,8 +48,14 @@ public class EPlan {
 
     private Double wstd;
 
-    private Double lgz;
+    @Builder.Default private Double wstdeff = 0.0;
+    public Double calc(Double f){ return wstdeff = wstd * f; }
+
+    @Builder.Default private String lernGruppe = "";
+
+    @Builder.Default private Double lgz = 1.0;
+
+    private Long uGruppenId;
 
     @Builder.Default private String bemerkung = "";
-
 }

@@ -34,4 +34,6 @@ public class Klasse {
     private String anlage;
 
     private String alias;
+
+    private Long uGruppenId;
 }

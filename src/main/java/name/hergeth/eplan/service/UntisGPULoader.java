@@ -31,15 +31,18 @@ public class UntisGPULoader {
     private final KollegeRepository kollegeRepository;
     private final KlasseRepository klasseRepository;
     private final AnrechungRepository anrechungRepository;
+    private final UGruppenRepository uGruppenRepository;
 
     private static LocalDateTime lastLoad = null;
 
     public UntisGPULoader(KollegeRepository kollegeRepository,
                           KlasseRepository klasseRepository,
+                          UGruppenRepository uGruppenRepository,
                           AnrechungRepository anrechungRepository) {
         this.kollegeRepository = kollegeRepository;
         this.klasseRepository = klasseRepository;
         this.anrechungRepository = anrechungRepository;
+        this.uGruppenRepository = uGruppenRepository;
 
         LOG.info("... created:");
     }
@@ -114,6 +117,7 @@ public class UntisGPULoader {
                     .abteilung(itm[22])
                     .raum(itm[3])
                     .bemerkung(itm[21])
+                    .uGruppenId(uGruppenRepository.getSJ().getId())
                     .build();
             klasseRepository.save(kl);
         });
@@ -133,7 +137,7 @@ public class UntisGPULoader {
 
             BufferedReader br = new BufferedReader(new FileReader(file));
             while ((line = br.readLine()) != null) {
-                String[] elm = line.split(",(?=([^\"]*\"[^\"]*\")*[^\"]*$)", -1);
+                String[] elm = line.split("[;,](?=([^\"]*\"[^\"]*\")*[^\"]*$)", -1);
 
                 for(int i = 0; i < elm.length; i++){
                     elm[i] = elm[i].replace("\"", "");

@@ -14,7 +14,10 @@ public abstract class EPlanRepository implements CrudRepository<EPlan, Long> {
     private static final Logger LOG = LoggerFactory.getLogger(EPlanRepository.class);
 
     public abstract Optional<EPlan> find(Long id);
+
     public abstract List<EPlan> findByBereichOrderByNo(String bereich);
+    public abstract List<EPlan> listOrderByKlasse();
+
     public abstract void deleteByBereichLike(String bereich);
     public abstract void delete(Long id);
 

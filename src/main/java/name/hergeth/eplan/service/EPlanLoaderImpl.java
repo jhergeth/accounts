@@ -4,9 +4,11 @@ package name.hergeth.eplan.service;
 import jakarta.inject.Singleton;
 import me.xdrop.fuzzywuzzy.FuzzySearch;
 import me.xdrop.fuzzywuzzy.model.ExtractedResult;
+import name.hergeth.accounts.services.StatusSrvc;
 import name.hergeth.eplan.domain.EPlan;
 import name.hergeth.eplan.domain.EPlanRepository;
 import name.hergeth.eplan.domain.Klasse;
+import name.hergeth.eplan.domain.UGruppenRepository;
 import org.apache.poi.ss.usermodel.*;
 import org.apache.poi.xssf.usermodel.XSSFWorkbook;
 import org.slf4j.Logger;
@@ -25,9 +27,14 @@ public class EPlanLoaderImpl implements EPlanLoader {
     static FormulaEvaluator evaluator = null;
 
     private final EPlanRepository ePlanRepository;
+    private final UGruppenRepository uGruppenRepository;
+    private final StatusSrvc status;
 
-    public EPlanLoaderImpl(EPlanRepository ePlanRepository){
+    public EPlanLoaderImpl(EPlanRepository ePlanRepository, StatusSrvc status, UGruppenRepository uGruppenRepository){
         this.ePlanRepository = ePlanRepository;
+        this.uGruppenRepository = uGruppenRepository;
+        uGruppenRepository.initLoad();;
+        this.status = status;
     }
 
 
@@ -109,9 +116,12 @@ public class EPlanLoaderImpl implements EPlanLoader {
     @Override
     public void excelBereichFromFile(String file, Iterable<String> bereiche){
         LOG.info("Load all bereiche from excel file {}", file);
+        status.update("Bereiche werden eingelesen.");
         for(String ber : bereiche){
+            status.update("Lese Bereich " + ber);
             excelBereichFromFile(file, ber);
         }
+        status.update("Bereiche gelesen.");
     }
 
     @Override
@@ -195,23 +205,29 @@ public class EPlanLoaderImpl implements EPlanLoader {
             for (int i = row; i <= rowAnz; i++) {
                 org.apache.poi.ss.usermodel.Row cRow = sheet.getRow(i);
                 // read over empty starting rows
-                if(cRow != null && cRow.getCell(colIdxs[1]).getStringCellValue().length() > 2){ // klasse länger als 2 Zeichen
-                    EPlan epl = EPlan.builder()
-                            .no(cnt++)
-//                            .schule(EPLAN.SCHULE)
-//                            .bereich(getCellAsString(cRow.getCell(colIdxs[0])))
-                            .bereich(bereich)
-                            .klasse(getCellAsString(cRow.getCell(colIdxs[1])))
-                            .fakultas(getCellAsString(cRow.getCell(colIdxs[2])))
-                            .fach(getCellAsString(cRow.getCell(colIdxs[3])))
-                            .lehrer(getCellAsString(cRow.getCell(colIdxs[4])))
-                            .raum(getCellAsString(cRow.getCell(colIdxs[5])))
-                            .wstd(getCellAsDouble(cRow.getCell(colIdxs[6])))
-                            .lgz(getCellAsDouble(cRow.getCell(colIdxs[7])))
-                            .bemerkung(getCellAsString(cRow.getCell(colIdxs[8])))
-                            .build();
-                    res.add(epl);
-                    LOG.info("Read Eplanentry ({}).",epl.toString());
+                String klasse = getCellAsString(cRow.getCell(colIdxs[1]));
+                if(cRow != null && klasse.length() > 2){ // klasse länger als 2 Zeichen
+                    String lehrer = getCellAsString(cRow.getCell(colIdxs[4]));
+                    String[] kl = klasse.split("[,;| ]", -1);
+                    String[] le = lehrer.split("[,;| ]", -1);
+                    for(String l : le){
+                        String lernGruppe = l;
+                        if(kl.length > 1){
+                            for(String k : kl ) {
+                                if(k.length() > 1 ) {
+                                    lernGruppe += "." + k;
+                                }
+                            }
+                        }
+                        else{
+                            lernGruppe = "";
+                        }
+                        for(String k : kl ){
+                            if(k.length() > 1 ) {
+                                cnt = insertUnterricht(bereich, res, colIdxs, cnt, cRow, k, l, lernGruppe);
+                            }
+                        }
+                    }
                 }
             }
         }catch(Exception e){
@@ -223,6 +239,28 @@ public class EPlanLoaderImpl implements EPlanLoader {
 
         ePlanRepository.deleteByBereichLike(bereich);
         ePlanRepository.saveAll(res);
+    }
+
+    private int insertUnterricht(String bereich, List<EPlan> res, int[] colIdxs, int cnt, Row cRow, String klasse, String lehrer, String lernGruppe) {
+        EPlan epl = EPlan.builder()
+                .no(cnt++)
+//                            .schule(EPLAN.SCHULE)
+//                            .bereich(getCellAsString(cRow.getCell(colIdxs[0])))
+                .bereich(bereich)
+                .klasse(klasse)
+                .fakultas(getCellAsString(cRow.getCell(colIdxs[2])))
+                .fach(getCellAsString(cRow.getCell(colIdxs[3])))
+                .lehrer(lehrer)
+                .raum(getCellAsString(cRow.getCell(colIdxs[5])))
+                .wstd(getCellAsDouble(cRow.getCell(colIdxs[6])))
+                .lgz(getCellAsDouble(cRow.getCell(colIdxs[7])))
+                .uGruppenId(uGruppenRepository.getSJ().getId())
+                .lernGruppe(lernGruppe)
+                .bemerkung(getCellAsString(cRow.getCell(colIdxs[8])))
+                .build();
+        res.add(epl);
+        LOG.info("Read Eplanentry ({}).",epl.toString());
+        return cnt;
     }
 
     private String getCellAsString(Cell c){

@@ -9,6 +9,8 @@ public interface EPlanLogic {
     void delete(Long id);
 
     void duplicate(Long id);
+    void reCalc();
+    public EPlan reCalc(EPlan e);
 
     public List<EPlan> getEPlan(String bereich);
     public List<String> getBereiche();

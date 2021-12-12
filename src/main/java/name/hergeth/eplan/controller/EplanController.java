@@ -49,7 +49,9 @@ public class EplanController   extends BaseController {
 
     @Post(value="/bereich/all", consumes = MediaType.MULTIPART_FORM_DATA, produces = MediaType.TEXT_PLAIN)
     public Publisher<HttpResponse<String>> uploadAll(StreamingFileUpload file) {
-        return uploadFileTo(file, p -> eplLoader.excelBereichFromFile(p, ePlanLogic.getBereiche()));
+        Publisher<HttpResponse<String>> res = uploadFileTo(file, p -> eplLoader.excelBereichFromFile(p, ePlanLogic.getBereiche()));
+        ePlanLogic.reCalc();
+        return res;
     }
 
     @Post(value="/bereich/{bereich}", consumes = MediaType.MULTIPART_FORM_DATA, produces = MediaType.TEXT_PLAIN)
@@ -58,10 +60,11 @@ public class EplanController   extends BaseController {
     }
 
     @Post(value="/row")
-    public HttpResponse<String> uploadRow(@Body EPlan row) {
+    public EPlan uploadRow(@Body EPlan row) {
         LOG.info("Got new data {}", row);
-        ePlanRepository.update(row);
-        return HttpResponse.ok();
+
+        row = ePlanRepository.update(row);
+        return ePlanLogic.reCalc(row);
     }
 
     @Post(value="/duplicate")
@@ -86,7 +89,9 @@ public class EplanController   extends BaseController {
     @Get("/lehrer/{val}")
     List<EPlan> getLehrer(@NotNull String val){
         LOG.info("Fetching EPlan for KuK {}", val);
-        return ePlanRepository.findByLehrerOrderByNo(val);
+
+        List<EPlan> eplan = ePlanRepository.findByLehrerOrderByNo(val);
+        return eplan;
     }
 
     @Get("/klasse/{val}")

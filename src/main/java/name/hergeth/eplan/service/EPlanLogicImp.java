@@ -10,6 +10,7 @@ import org.slf4j.LoggerFactory;
 
 import javax.annotation.PostConstruct;
 import java.util.*;
+import java.util.stream.Collectors;
 
 
 @Singleton
@@ -19,6 +20,7 @@ public class EPlanLogicImp implements EPlanLogic {
     private final KlasseRepository klasseRep;
     private final KollegeRepository kollegeRep;
     private final AnrechungRepository anrechungRepository;
+    private final UGruppenRepository uGruppenRepository;
 
     @Property(name = "eplan.bereiche")
     String[] bereiche;
@@ -26,11 +28,13 @@ public class EPlanLogicImp implements EPlanLogic {
     public EPlanLogicImp(EPlanRepository ePlanRepository,
                          KlasseRepository klasseRepository,
                          KollegeRepository kollegeRepository,
+                         UGruppenRepository uGruppenRepository,
                          AnrechungRepository anrechungRepository) {
         this.ePlanRep = ePlanRepository;
         this.klasseRep = klasseRepository;
         this.kollegeRep = kollegeRepository;
         this.anrechungRepository = anrechungRepository;
+        this.uGruppenRepository = uGruppenRepository;
 
         LOG.info("Constructing.");
     }
@@ -78,6 +82,51 @@ public class EPlanLogicImp implements EPlanLogic {
         }
     }
 
+    private Map<String,Double> getWFaktors(){
+        return klasseRep.listOrderByKuerzel().stream()
+                .collect(Collectors.toMap(
+                        Klasse::getKuerzel,
+                        k -> {
+                            Optional<UGruppe> ou = uGruppenRepository.find(k.getUGruppenId());
+                            if(ou.isPresent()){
+                                return ou.get().getWFaktor();
+                            }
+                            return 1.0;
+                        }
+                ));
+    }
+
+    public EPlan reCalc(EPlan e) {
+        Map<String, Double> kw = getWFaktors();
+
+        return reCalc(e, kw);
+    }
+
+    private EPlan reCalc(EPlan e, Map<String,Double> kw){
+        Double f = 1.0;
+        if(kw.size() > 0){
+            f = kw.get(e.getKlasse());
+            f = f != null ? f : 1.0;
+            f *= uGruppenRepository.find(e.getUGruppenId()).get().getWFaktor();
+        }
+        e.calc(f);
+        e = ePlanRep.update(e);
+        return e;
+    }
+
+    public void reCalc(){
+        List<EPlan> epls = ePlanRep.listOrderByKlasse();
+
+        if(epls.size() > 0 ){
+            Map<String,Double> kw = getWFaktors();
+
+            for(EPlan e : epls){
+                reCalc(e, kw);
+            }
+            LOG.info("Effective WStd calculated.");
+        }
+    }
+
     private void renumberBereich(String bereich){
         List<EPlan> lep = ePlanRep.findByBereichOrderByNo(bereich);
 
@@ -102,6 +151,8 @@ public class EPlanLogicImp implements EPlanLogic {
     public List<EPlanSummen> getSummen(){
         Map<String,EPlanSummen> epsMap = new HashMap<>();
 
+        reCalc();
+
         Iterable<Kollege> kList = kollegeRep.findAll();
         for(Kollege k : kList){
             final String kuk = k.getKuerzel();
@@ -113,7 +164,7 @@ public class EPlanLogicImp implements EPlanLogic {
                         .reduce(
                                 new HashMap<String,Double>(),
                                 (m,epl) ->{
-                                    m.merge(epl.getBereich(), epl.getWstd(), (v1,v2) -> v1 + v2);
+                                    m.merge(epl.getBereich(), epl.getWstdeff(), (v1,v2) -> v1 + v2);
                                     return m;
                                 },
                                 (m1,m2) -> {
