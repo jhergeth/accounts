@@ -105,6 +105,7 @@ public class UntisGPULoader {
 
     public void readKlassen(String uFile) {
         klasseRepository.deleteAll();
+        uGruppenRepository.initLoad();
 
         readCSV(uFile, (String[] itm) -> {
             Klasse kl = Klasse.builder()

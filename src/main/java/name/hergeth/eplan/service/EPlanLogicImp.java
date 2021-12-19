@@ -4,6 +4,7 @@ package name.hergeth.eplan.service;
 import io.micronaut.context.annotation.Property;
 import jakarta.inject.Singleton;
 import name.hergeth.eplan.domain.*;
+import name.hergeth.eplan.dto.EPlanDTO;
 import name.hergeth.eplan.dto.EPlanSummen;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -37,6 +38,7 @@ public class EPlanLogicImp implements EPlanLogic {
         this.uGruppenRepository = uGruppenRepository;
 
         LOG.info("Constructing.");
+        uGruppenRepository.initLoad();
     }
 
     @PostConstruct
@@ -96,6 +98,28 @@ public class EPlanLogicImp implements EPlanLogic {
                 ));
     }
 
+    public List<EPlanDTO>  ungroup(EPlanDTO rowDTO){
+        Optional<EPlan> oRowEP = ePlanRep.find(rowDTO.getId());
+        if(oRowEP.isPresent()){
+            EPlan e = oRowEP.get();
+            String lgrp = e.getLernGruppe();
+            e.setLernGruppe("");
+            e = ePlanRep.update(e);
+
+            List<EPlan> grp = ePlanRep.findByLernGruppeOrderByNo(lgrp);
+            if(grp.size() == 1){
+                EPlan f = grp.get(0);
+                f.setLernGruppe("");
+                ePlanRep.update((f));
+            }
+            grp.add(e);
+
+            return getEPlanDTOList(grp);
+        }
+        return new LinkedList<>();
+    }
+
+
     public EPlan reCalc(EPlan e) {
         Map<String, Double> kw = getWFaktors();
 
@@ -140,11 +164,37 @@ public class EPlanLogicImp implements EPlanLogic {
     }
 
     @Override
-    public List<EPlan> getEPlan(String bereich){
+    public List<EPlanDTO> getEPlan(String bereich){
         if(ePlanRep.count() > 0){
-            return ePlanRep.findByBereichOrderByNo(bereich);
+            List<EPlan> eList = ePlanRep.findByBereichOrderByNo(bereich);
+            return getEPlanDTOList(eList);
         }
-        return new ArrayList<>();
+        return new LinkedList<>();
+    }
+
+    private List<EPlanDTO> getEPlanDTOList(List<EPlan> eList) {
+        Map<String,EPlanDTO> eMap = new HashMap<>();
+        List<EPlanDTO> eRes = new LinkedList<>();
+
+        for(Iterator<EPlan> iter = eList.listIterator(); iter.hasNext();){
+            EPlan e = iter.next();
+            EPlanDTO ed = new EPlanDTO(e);
+            String lg = e.getLernGruppe();
+            if( lg != null && lg.length() > 0){
+                EPlanDTO edp = eMap.get(lg);
+                if(edp != null){
+                    edp.addSubEntry(ed);
+                }
+                else{
+                    eMap.put(lg,ed);
+                    eRes.add(ed);
+                }
+            }
+            else{
+                eRes.add(ed);
+            }
+        }
+        return eRes;
     }
 
     @Override

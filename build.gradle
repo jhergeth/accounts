@@ -18,7 +18,7 @@ application {
 }
 
 micronaut {
-    version "3.2.0"
+    version "3.2.2"
 }
 repositories {
     mavenCentral()
@@ -110,7 +110,7 @@ dependencies {
     // https://mvnrepository.com/artifact/com.h2database/h2
     runtimeOnly("io.micronaut.sql:micronaut-jdbc-hikari")
 
-    runtimeOnly("ch.qos.logback:logback-classic")
+    runtimeOnly('ch.qos.logback:logback-classic:1.2.8')
     implementation("io.micronaut:micronaut-validation")
     // jackson and xml
     implementation("io.micronaut.xml:micronaut-jackson-xml")

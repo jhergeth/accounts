@@ -1,5 +1,6 @@
 package name.hergeth.eplan.domain;
 
+import io.micronaut.data.annotation.Id;
 import io.micronaut.data.jdbc.annotation.JdbcRepository;
 import io.micronaut.data.model.query.builder.sql.Dialect;
 import io.micronaut.data.repository.CrudRepository;
@@ -15,12 +16,15 @@ public abstract class EPlanRepository implements CrudRepository<EPlan, Long> {
 
     public abstract Optional<EPlan> find(Long id);
 
-    public abstract List<EPlan> findByBereichOrderByNo(String bereich);
     public abstract List<EPlan> listOrderByKlasse();
 
     public abstract void deleteByBereichLike(String bereich);
     public abstract void delete(Long id);
 
+    public abstract void update(@Id Long id, String lernGruppe);
+
+    public abstract List<EPlan> findByLernGruppeOrderByNo(String lgrp);
+    public abstract List<EPlan> findByBereichOrderByNo(String bereich);
     public abstract List<EPlan> findByKlasseOrderByNo(String klasse);
     public abstract List<EPlan> findByLehrerOrderByNo(String lehrer);
     public abstract List<EPlan> findByFachOrderByNo(String fach);

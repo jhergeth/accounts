@@ -10,6 +10,7 @@ import io.micronaut.http.multipart.StreamingFileUpload;
 import io.micronaut.validation.Validated;
 import name.hergeth.eplan.domain.EPlan;
 import name.hergeth.eplan.domain.EPlanRepository;
+import name.hergeth.eplan.dto.EPlanDTO;
 import name.hergeth.eplan.dto.EPlanSummen;
 import name.hergeth.eplan.service.EPlanLoader;
 import name.hergeth.eplan.service.EPlanLogic;
@@ -42,7 +43,7 @@ public class EplanController   extends BaseController {
     }
 
     @Get("/bereich/{ber}")
-    List<EPlan> getBereich(@NotNull String ber){
+    List<EPlanDTO> getBereich(@NotNull String ber){
         LOG.info("Fetching EPlan of Bereich {}", ber);
         return ePlanLogic.getEPlan(ber);
     }
@@ -79,6 +80,12 @@ public class EplanController   extends BaseController {
         LOG.info("Delete row {}", id);
         ePlanLogic.delete(id);
         return HttpResponse.ok();
+    }
+
+    @Post(value="/ungroup")
+    public List<EPlanDTO> ungroupRow(EPlanDTO row) {
+        LOG.info("Ungroup row {} from parent {}", row.getId(), row.getParentID());
+        return ePlanLogic.ungroup(row);
     }
 
     @Get("/summen")

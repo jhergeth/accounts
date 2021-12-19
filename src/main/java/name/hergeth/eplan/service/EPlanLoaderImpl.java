@@ -215,7 +215,7 @@ public class EPlanLoaderImpl implements EPlanLoader {
                         if(kl.length > 1){
                             for(String k : kl ) {
                                 if(k.length() > 1 ) {
-                                    lernGruppe += "." + k;
+                                    lernGruppe += "." + k + "." + getCellAsString(cRow.getCell(colIdxs[3])).trim();
                                 }
                             }
                         }
