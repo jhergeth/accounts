@@ -98,6 +98,26 @@ public class EPlanLogicImp implements EPlanLogic {
                 ));
     }
 
+    public List<EPlanDTO>  group(List<EPlanDTO> rowDTOs) {
+        List<EPlan> eList = getEPlanList(rowDTOs);
+        List<EPlan> res = new LinkedList<>();
+        if (eList.size() > 1) {
+            Iterator<EPlan> iter = eList.listIterator();
+            EPlan base = iter.next();
+            String lg = UUID.randomUUID().toString();
+            base.setLernGruppe(lg);
+            ePlanRep.update(base);
+            while(iter.hasNext()) {
+                EPlan e = iter.next();
+                e.setLernGruppe(lg);
+                e.setWstd(base.getWstd());
+                e.setWstdeff(base.getWstdeff());
+                ePlanRep.update(e);
+            }
+        }
+        return getEPlanDTOList(res);
+    }
+
     public List<EPlanDTO>  ungroup(EPlanDTO rowDTO){
         Optional<EPlan> oRowEP = ePlanRep.find(rowDTO.getId());
         if(oRowEP.isPresent()){
@@ -195,6 +215,18 @@ public class EPlanLogicImp implements EPlanLogic {
             }
         }
         return eRes;
+    }
+
+    private List<EPlan> getEPlanList(List<EPlanDTO> dtos){
+        List<EPlan> res = new LinkedList<>();
+        for(Iterator<EPlanDTO> iter = dtos.listIterator(); iter.hasNext();){
+            EPlanDTO d = iter.next();
+            Optional<EPlan> oRowEP = ePlanRep.find(d.getId());
+            if(oRowEP.isPresent()) {
+                res.add(oRowEP.get());
+            }
+        }
+        return res;
     }
 
     @Override

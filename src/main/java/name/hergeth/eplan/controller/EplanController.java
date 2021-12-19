@@ -82,6 +82,12 @@ public class EplanController   extends BaseController {
         return HttpResponse.ok();
     }
 
+    @Post(value="/group")
+    public List<EPlanDTO> groupRow(List<EPlanDTO> row) {
+        LOG.info("Group {} row to parent {}", row.size()-1, row.get(0).getId());
+        return ePlanLogic.group(row);
+    }
+
     @Post(value="/ungroup")
     public List<EPlanDTO> ungroupRow(EPlanDTO row) {
         LOG.info("Ungroup row {} from parent {}", row.getId(), row.getParentID());

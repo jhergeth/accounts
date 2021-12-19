@@ -10,6 +10,7 @@ public interface EPlanLogic {
     public void delete(Long id);
     public void duplicate(Long id);
     public List<EPlanDTO>  ungroup(EPlanDTO row);
+    public List<EPlanDTO>  group(List<EPlanDTO> row);
 
     void reCalc();
     public EPlan reCalc(EPlan e);
