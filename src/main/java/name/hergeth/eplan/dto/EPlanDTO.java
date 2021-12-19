@@ -20,7 +20,7 @@ public class EPlanDTO {
 
     private Long id;
 
-    private Integer no = 1;
+    private Integer no;
 
     private String bereich;
 
@@ -48,7 +48,7 @@ public class EPlanDTO {
 
     private List<EPlanDTO> subEntries;
 
-    private Long parentID = null;
+    private Long parentID;
 
     public EPlanDTO(EPlan e){
         id = e.getId();
