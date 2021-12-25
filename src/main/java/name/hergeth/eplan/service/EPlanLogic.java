@@ -1,10 +1,11 @@
 package name.hergeth.eplan.service;
 
 import name.hergeth.eplan.domain.EPlan;
-import name.hergeth.eplan.dto.EPlanDTO;
-import name.hergeth.eplan.dto.EPlanSummen;
+import name.hergeth.eplan.domain.dto.EPlanDTO;
+import name.hergeth.eplan.domain.dto.EPlanSummen;
 
 import java.util.List;
+import java.util.Optional;
 
 public interface EPlanLogic {
     public void delete(Long id);
@@ -12,10 +13,11 @@ public interface EPlanLogic {
     public List<EPlanDTO>  ungroup(EPlanDTO row);
     public List<EPlanDTO>  group(List<EPlanDTO> row);
 
-    void reCalc();
-    public EPlan reCalc(EPlan e);
+    public List<EPlanDTO>  findAllByKlasse(String klasse);
 
     public List<EPlanDTO> getEPlan(String bereich);
+    public Optional<EPlan> getEPlanFromEPlanDTO(EPlanDTO d);
+    public Optional<EPlanDTO> updateEPlan(EPlanDTO d);
     public List<String> getBereiche();
     public List<EPlanSummen> getSummen();
 }

@@ -211,20 +211,23 @@ public class EPlanLoaderImpl implements EPlanLoader {
                     String[] kl = klasse.split("[,;| ]", -1);
                     String[] le = lehrer.split("[,;| ]", -1);
                     for(String l : le){
+                        Double susFaktor = 0.0;
                         String lernGruppe = l;
                         if(kl.length > 1){
                             for(String k : kl ) {
                                 if(k.length() > 1 ) {
                                     lernGruppe += "." + k + "." + getCellAsString(cRow.getCell(colIdxs[3])).trim();
+                                    susFaktor += 1.0;
                                 }
                             }
                         }
                         else{
                             lernGruppe = "";
+                            susFaktor = 1.0;
                         }
                         for(String k : kl ){
                             if(k.length() > 1 ) {
-                                cnt = insertUnterricht(bereich, res, colIdxs, cnt, cRow, k, l, lernGruppe);
+                                cnt = insertUnterricht(bereich, res, colIdxs, cnt, cRow, k, l, lernGruppe, susFaktor);
                             }
                         }
                     }
@@ -241,25 +244,29 @@ public class EPlanLoaderImpl implements EPlanLoader {
         ePlanRepository.saveAll(res);
     }
 
-    private int insertUnterricht(String bereich, List<EPlan> res, int[] colIdxs, int cnt, Row cRow, String klasse, String lehrer, String lernGruppe) {
-        EPlan epl = EPlan.builder()
-                .no(cnt++)
+    private int insertUnterricht(String bereich, List<EPlan> res, int[] colIdxs, int cnt, Row cRow, String klasse, String lehrer, String lernGruppe, Double susBruchteil) {
+        if(getCellAsDouble(cRow.getCell(colIdxs[6])) > 0){
+            EPlan epl = EPlan.builder()
+                    .no(cnt++)
 //                            .schule(EPLAN.SCHULE)
 //                            .bereich(getCellAsString(cRow.getCell(colIdxs[0])))
-                .bereich(bereich)
-                .klasse(klasse)
-                .fakultas(getCellAsString(cRow.getCell(colIdxs[2])))
-                .fach(getCellAsString(cRow.getCell(colIdxs[3])))
-                .lehrer(lehrer)
-                .raum(getCellAsString(cRow.getCell(colIdxs[5])))
-                .wstd(getCellAsDouble(cRow.getCell(colIdxs[6])))
-                .lgz(getCellAsDouble(cRow.getCell(colIdxs[7])))
-                .uGruppenId(uGruppenRepository.getSJ().getId())
-                .lernGruppe(lernGruppe)
-                .bemerkung(getCellAsString(cRow.getCell(colIdxs[8])))
-                .build();
-        res.add(epl);
-        LOG.info("Read Eplanentry ({}).",epl.toString());
+                    .bereich(bereich)
+                    .klasse(klasse)
+                    .fakultas(getCellAsString(cRow.getCell(colIdxs[2])))
+                    .fach(getCellAsString(cRow.getCell(colIdxs[3])))
+                    .lehrer(lehrer)
+                    .raum(getCellAsString(cRow.getCell(colIdxs[5])))
+                    .wstd(getCellAsDouble(cRow.getCell(colIdxs[6])))
+                    .lgz(getCellAsDouble(cRow.getCell(colIdxs[7])))
+                    .ugid(uGruppenRepository.getSJ().getId())
+                    .ugruppe(uGruppenRepository.getSJ())
+                    .lernGruppe(lernGruppe)
+                    .susBruchteil(susBruchteil)
+                    .bemerkung(getCellAsString(cRow.getCell(colIdxs[8])))
+                    .build();
+            res.add(epl);
+            LOG.info("Read Eplanentry ({}).",epl.toString());
+        }
         return cnt;
     }
 

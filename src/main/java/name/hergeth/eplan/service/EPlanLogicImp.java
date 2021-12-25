@@ -4,14 +4,16 @@ package name.hergeth.eplan.service;
 import io.micronaut.context.annotation.Property;
 import jakarta.inject.Singleton;
 import name.hergeth.eplan.domain.*;
-import name.hergeth.eplan.dto.EPlanDTO;
-import name.hergeth.eplan.dto.EPlanSummen;
+import name.hergeth.eplan.domain.dto.EPlanDTO;
+import name.hergeth.eplan.domain.dto.EPlanSummen;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import javax.annotation.PostConstruct;
 import java.util.*;
 import java.util.stream.Collectors;
+
+import static name.hergeth.eplan.domain.dto.EPlanDTO.fromEPlanList;
 
 
 @Singleton
@@ -105,17 +107,40 @@ public class EPlanLogicImp implements EPlanLogic {
             Iterator<EPlan> iter = eList.listIterator();
             EPlan base = iter.next();
             String lg = UUID.randomUUID().toString();
+            Double fak = (double)eList.size();
             base.setLernGruppe(lg);
+            base.setSusBruchteil(fak);
             ePlanRep.update(base);
             while(iter.hasNext()) {
                 EPlan e = iter.next();
                 e.setLernGruppe(lg);
                 e.setWstd(base.getWstd());
-                e.setWstdeff(base.getWstdeff());
+                e.setSusBruchteil(fak);
                 ePlanRep.update(e);
             }
         }
-        return getEPlanDTOList(res);
+        return fromEPlanList(res);
+    }
+
+    @Override
+    public List<EPlanDTO> findAllByKlasse(String klasse) {
+        List<EPlan> res = ePlanRep.findByKlasseOrderByNo(klasse);
+        List<EPlan> subs = new LinkedList<>();
+        List<String> lgs = res.stream()
+                .filter(e -> e.getLernGruppe().length()> 0)
+                .map( EPlan::getLernGruppe)
+                .distinct()
+                .collect(Collectors.toList());
+
+        lgs.stream()
+                .forEach(lg -> {
+                    List<EPlan> lgl = ePlanRep.findByLernGruppeOrderByNo(lg);
+                    subs.addAll(lgl.stream().filter(e -> !klasse.equalsIgnoreCase(e.getKlasse())).collect(Collectors.toList()));
+                });
+
+        res.addAll(subs.stream().distinct().collect(Collectors.toList()));
+
+        return fromEPlanList(res);
     }
 
     public List<EPlanDTO>  ungroup(EPlanDTO rowDTO){
@@ -124,52 +149,65 @@ public class EPlanLogicImp implements EPlanLogic {
             EPlan e = oRowEP.get();
             String lgrp = e.getLernGruppe();
             e.setLernGruppe("");
+            e.setSusBruchteil(1.0);
             e = ePlanRep.update(e);
 
             List<EPlan> grp = ePlanRep.findByLernGruppeOrderByNo(lgrp);
             if(grp.size() == 1){
                 EPlan f = grp.get(0);
                 f.setLernGruppe("");
-                ePlanRep.update((f));
+                f.setSusBruchteil(1.0);
+                ePlanRep.update(f);
+            }
+            else{
+                Double fak = (double) grp.size();
+                for(EPlan f : grp){
+                    f.setSusBruchteil(fak);
+                    ePlanRep.update(f);
+                }
             }
             grp.add(e);
 
-            return getEPlanDTOList(grp);
+            return fromEPlanList(grp);
         }
         return new LinkedList<>();
     }
 
-
-    public EPlan reCalc(EPlan e) {
-        Map<String, Double> kw = getWFaktors();
-
-        return reCalc(e, kw);
+    public Optional<EPlanDTO> updateEPlan(EPlanDTO ed){
+        Optional<EPlan> oe = getEPlanFromEPlanDTO(ed);
+        if(oe.isPresent()){
+            EPlan e = oe.get();
+            fromEPlanDTO(ed, e);
+            ePlanRep.update(e);
+            return Optional.of(EPlanDTO.fromEPlan(e));
+        }
+        else{
+            return Optional.empty();
+        }
     }
 
-    private EPlan reCalc(EPlan e, Map<String,Double> kw){
-        Double f = 1.0;
-        if(kw.size() > 0){
-            f = kw.get(e.getKlasse());
-            f = f != null ? f : 1.0;
-            f *= uGruppenRepository.find(e.getUGruppenId()).get().getWFaktor();
+    private EPlan fromEPlanDTO(EPlanDTO ed, EPlan e){
+        e.setBereich(ed.getBereich());
+        e.setKlasse(ed.getKlasse());
+        e.setFakultas(ed.getFakultas());
+        e.setFach(ed.getFach());
+        e.setType(ed.getType());
+        e.setLehrer(ed.getLehrer());
+        e.setRaum(ed.getRaum());
+        e.setWstd(ed.getWstd());
+        e.setLernGruppe(ed.getLerngruppe());
+        e.setLgz(ed.getLgz());
+        Optional<UGruppe> ou = uGruppenRepository.find(ed.getUgid());
+        if(ou.isPresent()){
+            e.setUgruppe(ou.get());
+            e.setUgid(ou.get().getId());
         }
-        e.calc(f);
-        e = ePlanRep.update(e);
+        else{
+            LOG.error("Cannot find UGruppe {}", ed.getUgid());
+        }
         return e;
     }
 
-    public void reCalc(){
-        List<EPlan> epls = ePlanRep.listOrderByKlasse();
-
-        if(epls.size() > 0 ){
-            Map<String,Double> kw = getWFaktors();
-
-            for(EPlan e : epls){
-                reCalc(e, kw);
-            }
-            LOG.info("Effective WStd calculated.");
-        }
-    }
 
     private void renumberBereich(String bereich){
         List<EPlan> lep = ePlanRep.findByBereichOrderByNo(bereich);
@@ -187,41 +225,17 @@ public class EPlanLogicImp implements EPlanLogic {
     public List<EPlanDTO> getEPlan(String bereich){
         if(ePlanRep.count() > 0){
             List<EPlan> eList = ePlanRep.findByBereichOrderByNo(bereich);
-            return getEPlanDTOList(eList);
+            return fromEPlanList(eList);
         }
         return new LinkedList<>();
     }
 
-    private List<EPlanDTO> getEPlanDTOList(List<EPlan> eList) {
-        Map<String,EPlanDTO> eMap = new HashMap<>();
-        List<EPlanDTO> eRes = new LinkedList<>();
-
-        for(Iterator<EPlan> iter = eList.listIterator(); iter.hasNext();){
-            EPlan e = iter.next();
-            EPlanDTO ed = new EPlanDTO(e);
-            String lg = e.getLernGruppe();
-            if( lg != null && lg.length() > 0){
-                EPlanDTO edp = eMap.get(lg);
-                if(edp != null){
-                    edp.addSubEntry(ed);
-                }
-                else{
-                    eMap.put(lg,ed);
-                    eRes.add(ed);
-                }
-            }
-            else{
-                eRes.add(ed);
-            }
-        }
-        return eRes;
-    }
 
     private List<EPlan> getEPlanList(List<EPlanDTO> dtos){
         List<EPlan> res = new LinkedList<>();
         for(Iterator<EPlanDTO> iter = dtos.listIterator(); iter.hasNext();){
             EPlanDTO d = iter.next();
-            Optional<EPlan> oRowEP = ePlanRep.find(d.getId());
+            Optional<EPlan> oRowEP = getEPlanFromEPlanDTO(d);
             if(oRowEP.isPresent()) {
                 res.add(oRowEP.get());
             }
@@ -229,11 +243,14 @@ public class EPlanLogicImp implements EPlanLogic {
         return res;
     }
 
+    public Optional<EPlan> getEPlanFromEPlanDTO(EPlanDTO d) {
+        Optional<EPlan> oRowEP = ePlanRep.find(d.getId());
+        return oRowEP;
+    }
+
     @Override
     public List<EPlanSummen> getSummen(){
         Map<String,EPlanSummen> epsMap = new HashMap<>();
-
-        reCalc();
 
         Iterable<Kollege> kList = kollegeRep.findAll();
         for(Kollege k : kList){
@@ -246,7 +263,7 @@ public class EPlanLogicImp implements EPlanLogic {
                         .reduce(
                                 new HashMap<String,Double>(),
                                 (m,epl) ->{
-                                    m.merge(epl.getBereich(), epl.getWstdeff(), (v1,v2) -> v1 + v2);
+                                    m.merge(epl.getBereich(), epl.getWstdEff(), (v1,v2) -> v1 + v2);
                                     return m;
                                 },
                                 (m1,m2) -> {

@@ -1,5 +1,6 @@
 package name.hergeth.eplan.domain;
 
+import io.micronaut.data.annotation.Join;
 import io.micronaut.data.jdbc.annotation.JdbcRepository;
 import io.micronaut.data.model.query.builder.sql.Dialect;
 import io.micronaut.data.repository.CrudRepository;
@@ -10,6 +11,8 @@ import java.util.Optional;
 
 @JdbcRepository(dialect = Dialect.MYSQL)
 public abstract class UGruppenRepository implements CrudRepository<UGruppe, Long> {
+    @Join(value = "ePlanSet", type = Join.Type.LEFT_FETCH)
+
     private static final Logger LOG = LoggerFactory.getLogger(UGruppe.class);
 
     public static UGruppe SJ = null;
@@ -42,9 +45,9 @@ public abstract class UGruppenRepository implements CrudRepository<UGruppe, Long
             save(new UGruppe("QU2", "2.Quartal", 10, 0.25));
             save(new UGruppe("QU3", "3.Quartal", 10, 0.25));
             save(new UGruppe("QU4", "4.Quartal", 10, 0.25));
-            save(new UGruppe("BKU", "Unterstufenblock", 40/3, 1/3));
-            save(new UGruppe("BKM", "Mittelstufenblock", 40/3, 1/3));
-            save(new UGruppe("BKO", "Oberstufenblock", 40/3, 1/3));
+            save(new UGruppe("BKU", "Unterstufenblock", 40/3, 1.0/3.0));
+            save(new UGruppe("BKM", "Mittelstufenblock", 40/3, 1.0/3.0));
+            save(new UGruppe("BKO", "Oberstufenblock", 40/3, 1.0/3.0));
         }
         else{
             Optional<UGruppe> ou = findByName("SJ");

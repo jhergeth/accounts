@@ -1,13 +1,13 @@
 package name.hergeth.eplan.domain;
 
+
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
+import name.hergeth.eplan.domain.dto.EPlanDTO;
 
-import javax.persistence.Entity;
-import javax.persistence.GeneratedValue;
-import javax.persistence.GenerationType;
+import javax.persistence.*;
 import javax.validation.constraints.NotNull;
 
 
@@ -17,8 +17,8 @@ import javax.validation.constraints.NotNull;
 @AllArgsConstructor
 @Entity
 public class EPlan {
-    @javax.persistence.Id
-    @GeneratedValue(strategy = GenerationType.AUTO)
+    @GeneratedValue
+    @Id
     private Long id;
 
 //    @NotNull
@@ -42,20 +42,28 @@ public class EPlan {
 
     private String fach;
 
+    @Builder.Default private Integer type = 1;
+
     private String lehrer;
 
     @Builder.Default private String raum = "";
 
     private Double wstd;
 
-    @Builder.Default private Double wstdeff = 0.0;
-    public Double calc(Double f){ return wstdeff = wstd * f; }
+    public Double getWstdEff(){ return wstd * ugruppe.getWFaktor(); }
 
     @Builder.Default private String lernGruppe = "";
+    @Builder.Default private Double susBruchteil = 1.0;
+    public Double susWStd(){ return getWstdEff() / susBruchteil; }
 
     @Builder.Default private Double lgz = 1.0;
 
-    private Long uGruppenId;
+    private Long ugid;
+
+    @ManyToOne(optional = false, fetch = FetchType.EAGER, cascade = CascadeType.ALL)
+//    @JoinColumn(name = "ugruppe_id", referencedColumnName = "id")
+    private UGruppe ugruppe;
 
     @Builder.Default private String bemerkung = "";
+
 }

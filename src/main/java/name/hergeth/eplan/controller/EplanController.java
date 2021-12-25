@@ -2,7 +2,6 @@ package name.hergeth.eplan.controller;
 
 import io.micronaut.http.HttpResponse;
 import io.micronaut.http.MediaType;
-import io.micronaut.http.annotation.Body;
 import io.micronaut.http.annotation.Controller;
 import io.micronaut.http.annotation.Get;
 import io.micronaut.http.annotation.Post;
@@ -10,8 +9,8 @@ import io.micronaut.http.multipart.StreamingFileUpload;
 import io.micronaut.validation.Validated;
 import name.hergeth.eplan.domain.EPlan;
 import name.hergeth.eplan.domain.EPlanRepository;
-import name.hergeth.eplan.dto.EPlanDTO;
-import name.hergeth.eplan.dto.EPlanSummen;
+import name.hergeth.eplan.domain.dto.EPlanDTO;
+import name.hergeth.eplan.domain.dto.EPlanSummen;
 import name.hergeth.eplan.service.EPlanLoader;
 import name.hergeth.eplan.service.EPlanLogic;
 import org.reactivestreams.Publisher;
@@ -20,6 +19,9 @@ import org.slf4j.LoggerFactory;
 
 import javax.validation.constraints.NotNull;
 import java.util.List;
+import java.util.Optional;
+
+import static name.hergeth.eplan.domain.dto.EPlanDTO.fromEPlanList;
 
 @Validated
 @Controller("/api/eplan")
@@ -51,7 +53,6 @@ public class EplanController   extends BaseController {
     @Post(value="/bereich/all", consumes = MediaType.MULTIPART_FORM_DATA, produces = MediaType.TEXT_PLAIN)
     public Publisher<HttpResponse<String>> uploadAll(StreamingFileUpload file) {
         Publisher<HttpResponse<String>> res = uploadFileTo(file, p -> eplLoader.excelBereichFromFile(p, ePlanLogic.getBereiche()));
-        ePlanLogic.reCalc();
         return res;
     }
 
@@ -60,12 +61,15 @@ public class EplanController   extends BaseController {
         return uploadFileTo(file, p -> eplLoader.excelBereichFromFile(p, bereich));
     }
 
-    @Post(value="/row")
-    public EPlan uploadRow(@Body EPlan row) {
+    @Post(value="/update", consumes = MediaType.APPLICATION_JSON)
+    public Optional<EPlanDTO> uploadRow(EPlanDTO row, String test) {
+        if(row == null){
+            LOG.error("No data for row update!!!" + test);
+            return null;
+        }
         LOG.info("Got new data {}", row);
 
-        row = ePlanRepository.update(row);
-        return ePlanLogic.reCalc(row);
+        return ePlanLogic.updateEPlan(row);
     }
 
     @Post(value="/duplicate")
@@ -90,7 +94,7 @@ public class EplanController   extends BaseController {
 
     @Post(value="/ungroup")
     public List<EPlanDTO> ungroupRow(EPlanDTO row) {
-        LOG.info("Ungroup row {} from parent {}", row.getId(), row.getParentID());
+        LOG.info("Ungroup row {} from parent {}", row.getId(), row.getParentid());
         return ePlanLogic.ungroup(row);
     }
 
@@ -100,23 +104,23 @@ public class EplanController   extends BaseController {
     }
 
     @Get("/lehrer/{val}")
-    List<EPlan> getLehrer(@NotNull String val){
+    List<EPlanDTO> getLehrer(@NotNull String val){
         LOG.info("Fetching EPlan for KuK {}", val);
 
         List<EPlan> eplan = ePlanRepository.findByLehrerOrderByNo(val);
-        return eplan;
+        return fromEPlanList(eplan);
     }
 
     @Get("/klasse/{val}")
-    List<EPlan> getKlasse(@NotNull String val){
+    List<EPlanDTO> getKlasse(@NotNull String val){
         LOG.info("Fetching EPlan for Klasse {}", val);
-        return ePlanRepository.findByKlasseOrderByNo(val);
+        return ePlanLogic.findAllByKlasse(val);
     }
 
     @Get("/fach/{val}")
-    List<EPlan> getFach(@NotNull String val){
+    List<EPlanDTO> getFach(@NotNull String val){
         LOG.info("Fetching EPlan for Fach {}", val);
-        return ePlanRepository.findByFachOrderByNo(val);
+        return fromEPlanList(ePlanRepository.findByFachOrderByNo(val));
     }
 
 

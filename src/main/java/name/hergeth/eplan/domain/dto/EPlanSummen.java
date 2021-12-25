@@ -1,4 +1,4 @@
-package name.hergeth.eplan.dto;
+package name.hergeth.eplan.domain.dto;
 
 import lombok.*;
 

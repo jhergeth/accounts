@@ -138,9 +138,9 @@ datasources:
 logger:
   levels:
     'name.hergeth': DEBUG
-    'org.codehaus.jackson': INFO
+    'org.codehaus.jackson': DEBUG
     'io.micronaut': INFO
-    'io.micronaut.data.query': TRACE
+    'io.micronaut.data.query': ERROR
 #    'io.micronaut.security': DEBUG
 #    'io.micronaut.configuration.security.ldap': DEBUG
 

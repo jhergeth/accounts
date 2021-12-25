@@ -17,4 +17,5 @@ import javax.persistence.Id;
 public class Fach {
     @Id
     private String name;
+    @Builder.Default private Integer type = 1;
 }
