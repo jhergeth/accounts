@@ -7,6 +7,7 @@ import io.micronaut.context.event.ApplicationEventPublisher;
 import io.micronaut.data.repository.CrudRepository;
 import jakarta.inject.Inject;
 import jakarta.inject.Singleton;
+import name.hergeth.config.Cfg;
 import name.hergeth.eplan.domain.*;
 import org.apache.commons.lang3.math.NumberUtils;
 import org.slf4j.Logger;
@@ -58,8 +59,8 @@ public class UntisGPULoader {
         anrechungRepository.deleteAll();
 
         readCSV(uFile, (String[] itm) -> {
-            LocalDate begin = itm[6].length() > 2 ? LocalDate.from(f.parse(itm[6])) : EPLAN.MINDATE;
-            LocalDate end = itm[7].length() > 2 ? LocalDate.from(f.parse(itm[7])) : EPLAN.MAXDATE;
+            LocalDate begin = itm[6].length() > 2 ? LocalDate.from(f.parse(itm[6])) : Cfg.minDate();
+            LocalDate end = itm[7].length() > 2 ? LocalDate.from(f.parse(itm[7])) : Cfg.maxDate();
             Anrechnung kl = Anrechnung.builder()
                     .lehrer(itm[3])
                     .id(NumberUtils.toLong(itm[0]))
@@ -114,7 +115,7 @@ public class UntisGPULoader {
                     .anlage(itm[13])
                     .alias(itm[28])
                     .klassenlehrer(itm[29])
-                    .bigako(itm[14])
+                    .bigako("")        // no BiGaKo in csv export
                     .abteilung(itm[22])
                     .raum(itm[3])
                     .bemerkung(itm[21])

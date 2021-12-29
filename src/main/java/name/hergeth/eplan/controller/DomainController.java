@@ -10,7 +10,10 @@ import io.micronaut.http.multipart.StreamingFileUpload;
 import io.micronaut.validation.Validated;
 import name.hergeth.eplan.domain.*;
 import name.hergeth.eplan.responses.PivotTable;
+import name.hergeth.eplan.service.EPlanLoader;
 import name.hergeth.eplan.service.UntisGPULoader;
+import org.apache.commons.compress.utils.FileNameUtils;
+import org.apache.commons.lang3.StringUtils;
 import org.reactivestreams.Publisher;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -30,18 +33,21 @@ public class DomainController extends BaseController{
     private final KlasseRepository klasseRepository;
     private final UntisGPULoader untisGPULoader;
     private final UGruppenRepository uGruppenRepository;
+    private final EPlanLoader ePlanLoader;
 
     public DomainController(AnrechungRepository anrechungRepository,
                             KollegeRepository kollegeRepository,
                             KlasseRepository klasseRepository,
                             UntisGPULoader untisGPULoader,
-                            UGruppenRepository uGruppenRepository
+                            UGruppenRepository uGruppenRepository,
+                            EPlanLoader ePlanLoader
     ) {
         this.anrechungRepository = anrechungRepository;
         this.kollegeRepository = kollegeRepository;
         this.klasseRepository = klasseRepository;
         this.untisGPULoader = untisGPULoader;
         this.uGruppenRepository = uGruppenRepository;
+        this.ePlanLoader = ePlanLoader;
     }
 
     @Get("/klassen")
@@ -61,7 +67,15 @@ public class DomainController extends BaseController{
 
     @Post(value = "/klassen/upload", consumes = MULTIPART_FORM_DATA, produces = TEXT_PLAIN)
     public Publisher<HttpResponse<String>> uploadKl(StreamingFileUpload file) {
-        return uploadFileTo(file, p -> untisGPULoader.readKlassen(p));
+        return uploadFileTo(file, p -> {
+            String ext = FileNameUtils.getExtension(p);
+            if(StringUtils.equalsAnyIgnoreCase(ext, "xls", "xlsx", "xlsm")){
+                ePlanLoader.excelKlassenFromFile(p);
+            }
+            else{
+                untisGPULoader.readKlassen(p);
+            }
+        });
     }
 
     @Get("/lehrer")

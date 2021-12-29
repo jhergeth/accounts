@@ -22,6 +22,7 @@ public abstract class EPlanRepository implements CrudRepository<EPlan, Long> {
     public abstract List<EPlan> listOrderByKlasse();
 
     public abstract void deleteByBereichLike(String bereich);
+    public abstract void deleteByLernGruppeLike(String lernGruppe);
     public abstract void delete(Long id);
 
 //    public abstract void update(Long id, String lernGruppe);
@@ -36,6 +37,8 @@ public abstract class EPlanRepository implements CrudRepository<EPlan, Long> {
     public abstract List<EPlan> findByLehrerOrderByNo(String lehrer);
     @Join(value = "ugruppe", type = Join.Type.FETCH)
     public abstract List<EPlan> findByFachOrderByNo(String fach);
+    @Join(value = "ugruppe", type = Join.Type.FETCH)
+    public abstract List<EPlan> findByBereichOrderByKlasseAscAndLehrerAscAndFachAsc(String bereich);
 
     public void duplicate(Long id){
         Optional<EPlan> oe = find(id);

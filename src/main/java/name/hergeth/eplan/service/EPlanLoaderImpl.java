@@ -2,23 +2,18 @@ package name.hergeth.eplan.service;
 
 
 import jakarta.inject.Singleton;
-import me.xdrop.fuzzywuzzy.FuzzySearch;
-import me.xdrop.fuzzywuzzy.model.ExtractedResult;
 import name.hergeth.accounts.services.StatusSrvc;
-import name.hergeth.eplan.domain.EPlan;
-import name.hergeth.eplan.domain.EPlanRepository;
-import name.hergeth.eplan.domain.Klasse;
-import name.hergeth.eplan.domain.UGruppenRepository;
+import name.hergeth.config.Cfg;
+import name.hergeth.eplan.domain.*;
+import name.hergeth.eplan.domain.dto.EPlanDTO;
+import name.hergeth.eplan.util.Func;
 import org.apache.poi.ss.usermodel.*;
 import org.apache.poi.xssf.usermodel.XSSFWorkbook;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.io.File;
 import java.io.FileInputStream;
-import java.text.NumberFormat;
-import java.util.LinkedList;
-import java.util.List;
+import java.util.*;
 
 @Singleton
 public class EPlanLoaderImpl implements EPlanLoader {
@@ -26,27 +21,51 @@ public class EPlanLoaderImpl implements EPlanLoader {
     static DataFormatter formatter = new DataFormatter();
     static FormulaEvaluator evaluator = null;
 
+    private final Cfg cfg;
     private final EPlanRepository ePlanRepository;
     private final UGruppenRepository uGruppenRepository;
     private final StatusSrvc status;
 
-    public EPlanLoaderImpl(EPlanRepository ePlanRepository, StatusSrvc status, UGruppenRepository uGruppenRepository){
+    private final String SPLITTER;
+    String[] colTitleArr = null;
+    final int COL_ABT = 0;
+    final int COL_KLA = 1;
+    final int COL_FAK = 2;
+    final int COL_FAC = 3;
+    final int COL_LEH = 4;
+    final int COL_RAU = 5;
+    final int COL_WST = 6;
+    final int COL_LGZ = 7;
+    final int COL_BEM = 8;
+    final int COL_UZT = 9;
+
+
+    public EPlanLoaderImpl(Cfg cfg,
+                           EPlanRepository ePlanRepository,
+                           StatusSrvc status,
+                           UGruppenRepository uGruppenRepository){
+        this.cfg = cfg;
         this.ePlanRepository = ePlanRepository;
         this.uGruppenRepository = uGruppenRepository;
+        SPLITTER = cfg.get("REGEX_SPLITTER");
+        colTitleArr = cfg.getStrArr("EPLAN_COL_TITLES",
+                "[\"Abteilung\", \"Klasse\", \"Fakultas\", \"Fach\", \"Lehrer\", \"Raum\", \"WSt/SJ\", \"LGZ\", \"Bemerkung\", \"UZ\"]"
+        );
+
         uGruppenRepository.initLoad();;
         this.status = status;
     }
 
 
     @Override
-    public List<Klasse> excelKlassenFromFile(File file){
+    public List<Klasse> excelKlassenFromFile(String file){
         List<Klasse> resList = new LinkedList<>();
         try{
             FileInputStream is = new FileInputStream(file);
             Workbook wb = new XSSFWorkbook(is);
             evaluator = wb.getCreationHelper().createFormulaEvaluator();
             Sheet sheet = wb.getSheetAt(0);
-            LOG.info("Opening file {} on sheet {}.", file.getName(), wb.getSheetName(0));
+            LOG.info("Opening file {} on sheet {}.", file, wb.getSheetName(0));
 
             int rowAnz = sheet.getLastRowNum();
             int row = 0;
@@ -126,143 +145,88 @@ public class EPlanLoaderImpl implements EPlanLoader {
 
     @Override
     public void excelBereichFromFile(String file, String bereich){
+        List<String> colTitles = List.of(colTitleArr);
+
         LOG.info("Load bereich {} from excel file {}", bereich, file);
 
         List<EPlan> res = new LinkedList<>();
-        Sheet sheet = null;
-        int colIdxs[] = null;
 
-        int titleRow = -1;
-        int rowAnz = 0;
-        try{
-            int sIdx = 0;
-            FileInputStream is = new FileInputStream(file);
-            Workbook wb = new XSSFWorkbook(is);
-            evaluator = wb.getCreationHelper().createFormulaEvaluator();
+        SheetAdapter shtAdap = new SheetAdapter(file, bereich, colTitleArr);
 
-            sheet = wb.getSheet(bereich);
-            if(sheet == null ){
-                sheet = wb.getSheetAt(0);
-                sIdx = 0;
-            }
-            else{
-                sIdx = wb.getSheetIndex(bereich);
-            }
+        int titleRow = shtAdap.findTitleRow();
 
-            LOG.info("Opening file {} on sheet {}.", file, wb.getSheetName(sIdx));
+        int[] titleCols = shtAdap.getTitleCols(titleRow);
 
-            List<String> colTitles = List.of(
-                    "Abteilung", "Klasse", "Fakultas", "Fach", "Lehrer", "Raum", "WSt/SJ", "LGZ", "Bemerkung"
-            );
-
-            colIdxs = new int[colTitles.size()];
-            for(int col = 0; col < colTitles.size(); col++){
-                colIdxs[col] = -1;
+        int idx = 0;
+        shtAdap.readRows(titleRow+1, idx, (id, sarr) -> {
+            if(sarr[COL_KLA].length() > 2) {   // klasse länger als 2
+                if(titleCols[COL_UZT] < 0) sarr[COL_UZT] = "SJ";
+                id = insertAlleUnterrichte(bereich, res, id, sarr);
             }
-
-            rowAnz = sheet.getLastRowNum();
-            for(int row = 0; row < rowAnz; row++){
-                // search rows for colTitles
-                org.apache.poi.ss.usermodel.Row fRow = sheet.getRow(row);
-                for(int col = 0; col < fRow.getLastCellNum(); col++){
-                    String val = getCellAsString(fRow.getCell(col));
-                    ExtractedResult eres = FuzzySearch.extractOne(val, colTitles);
-                    if(eres.getScore() > 80){
-                        // found title row
-                        titleRow = row;
-                        break;
-                    }
-                }
-                if(titleRow >=0){
-                    break;
-                }
-            }
-            // read first row with col-titles
-            org.apache.poi.ss.usermodel.Row fRow = sheet.getRow(titleRow);
-            for(int col = 0; col < fRow.getLastCellNum(); col++){
-                String val = getCellAsString(fRow.getCell(col));
-                if(val.length() > 0){
-                    ExtractedResult eres = FuzzySearch.extractOne(val, colTitles);
-                    if(eres.getScore() > 80){
-                        colIdxs[eres.getIndex()] = col;
-                    }
-                }
-            }
-            for(int col = 0; col < colTitles.size(); col++){
-                LOG.info("Found col {} at col {}.", colTitles.get(col), colIdxs[col]);
-            }
-        }catch(Exception e){
-            if (LOG.isErrorEnabled()) {
-                LOG.error("Exception during opening of excel file {}", file);
-                LOG.error(e.toString());
-            }
-            return;
-        }
-
-        int row = titleRow+1;
-        try{
-            int cnt = 1;
-            for (int i = row; i <= rowAnz; i++) {
-                org.apache.poi.ss.usermodel.Row cRow = sheet.getRow(i);
-                // read over empty starting rows
-                String klasse = getCellAsString(cRow.getCell(colIdxs[1]));
-                if(cRow != null && klasse.length() > 2){ // klasse länger als 2 Zeichen
-                    String lehrer = getCellAsString(cRow.getCell(colIdxs[4]));
-                    String[] kl = klasse.split("[,;| ]", -1);
-                    String[] le = lehrer.split("[,;| ]", -1);
-                    for(String l : le){
-                        Double susFaktor = 0.0;
-                        String lernGruppe = l;
-                        if(kl.length > 1){
-                            for(String k : kl ) {
-                                if(k.length() > 1 ) {
-                                    lernGruppe += "." + k + "." + getCellAsString(cRow.getCell(colIdxs[3])).trim();
-                                    susFaktor += 1.0;
-                                }
-                            }
-                        }
-                        else{
-                            lernGruppe = "";
-                            susFaktor = 1.0;
-                        }
-                        for(String k : kl ){
-                            if(k.length() > 1 ) {
-                                cnt = insertUnterricht(bereich, res, colIdxs, cnt, cRow, k, l, lernGruppe, susFaktor);
-                            }
-                        }
-                    }
-                }
-            }
-        }catch(Exception e){
-            if (LOG.isErrorEnabled()) {
-                LOG.error("Exception during reading of excel file {} in row {}/{}: {} ", file, row, rowAnz, e.getMessage());
-            }
-            return;
-        }
+            return id;
+        });
 
         ePlanRepository.deleteByBereichLike(bereich);
         ePlanRepository.saveAll(res);
     }
 
-    private int insertUnterricht(String bereich, List<EPlan> res, int[] colIdxs, int cnt, Row cRow, String klasse, String lehrer, String lernGruppe, Double susBruchteil) {
-        if(getCellAsDouble(cRow.getCell(colIdxs[6])) > 0){
+    public Integer insertAlleUnterrichte(String bereich, List<EPlan> res, Integer id, EPlanDTO edt){
+        return insertAlleUnterrichte(bereich, res, id, fromEDTO(edt));
+    }
+
+    private Integer insertAlleUnterrichte(String bereich, List<EPlan> res, Integer id, String[] sarr) {
+        String lehrer = sarr[COL_LEH];
+        String klasse = sarr[COL_KLA];
+        String[] kl = Func.addToSet(new HashSet<String>(), klasse, SPLITTER).toArray(String[]::new);
+        String[] le = Func.addToSet(new HashSet<String>(), lehrer, SPLITTER).toArray(String[]::new);
+        if (kl.length > 1 || le.length > 1) {
+            String lernGruppe = UUID.randomUUID().toString();
+            Double susFaktor = 1.0 / le.length;
+            Double kukFaktor = 1.0 / kl.length;
+            for (String l : le) {
+                for (String k : kl) {
+                    if (k.length() > 1) {
+                        id = insertUnterricht(bereich, res, sarr, id, k, l, lernGruppe, susFaktor, kukFaktor);
+                    }
+                }
+            }
+            LOG.debug("Found {} [{}] klassen and {} [{}] teacher in line {}, adding {} unterrichte", kl.length, klasse, le.length, lehrer, id, le.length * kl.length);
+        } else {
+            id = insertUnterricht(bereich, res, sarr, id, klasse, lehrer, "", 1.0, 1.0);
+        }
+        return id;
+    }
+
+    private int insertUnterricht(String bereich, List<EPlan> res, String[] cols, int cnt, String klasse, String lehrer, String lernGruppe, Double susFaktor, double kukFaktor) {
+        if(Func.isNumeric(cols[COL_WST])){
+
+            Double lgz = Func.parseDouble(cols[COL_LGZ]);
+            if(Math.abs(lgz) < .02)lgz = 1.0;
+
+            Optional<UGruppe> oug = uGruppenRepository.findByName(cols[COL_UZT]);
+            UGruppe ug = uGruppenRepository.getSJ();
+            if(oug.isPresent()){
+                ug = oug.get();
+            }
+
             EPlan epl = EPlan.builder()
                     .no(cnt++)
 //                            .schule(EPLAN.SCHULE)
 //                            .bereich(getCellAsString(cRow.getCell(colIdxs[0])))
                     .bereich(bereich)
                     .klasse(klasse)
-                    .fakultas(getCellAsString(cRow.getCell(colIdxs[2])))
-                    .fach(getCellAsString(cRow.getCell(colIdxs[3])))
+                    .fakultas(cols[COL_FAK])
+                    .fach(cols[COL_FAC])
                     .lehrer(lehrer)
-                    .raum(getCellAsString(cRow.getCell(colIdxs[5])))
-                    .wstd(getCellAsDouble(cRow.getCell(colIdxs[6])))
-                    .lgz(getCellAsDouble(cRow.getCell(colIdxs[7])))
-                    .ugid(uGruppenRepository.getSJ().getId())
-                    .ugruppe(uGruppenRepository.getSJ())
+                    .raum(cols[COL_RAU])
+                    .wstd(Func.parseDouble(cols[COL_WST]))
+                    .lgz(lgz)
+                    .ugid(ug.getId())
+                    .ugruppe(ug)
                     .lernGruppe(lernGruppe)
-                    .susBruchteil(susBruchteil)
-                    .bemerkung(getCellAsString(cRow.getCell(colIdxs[8])))
+                    .susFaktor(susFaktor)
+                    .kukFaktor(kukFaktor)
+                    .bemerkung(cols[COL_BEM])
                     .build();
             res.add(epl);
             LOG.info("Read Eplanentry ({}).",epl.toString());
@@ -270,21 +234,30 @@ public class EPlanLoaderImpl implements EPlanLoader {
         return cnt;
     }
 
+    private String[] fromEDTO(EPlanDTO edt){
+        String[] sarr = new String[colTitleArr.length];
+        sarr[COL_KLA] = edt.getKlasse();
+        sarr[COL_BEM] = edt.getBemerkung();
+        sarr[COL_LEH] = edt.getLehrer();
+        sarr[COL_WST] = Double.toString(edt.getWstd());
+        sarr[COL_RAU] = edt.getRaum();
+        sarr[COL_FAC] = edt.getFach();
+        sarr[COL_FAK] = edt.getFakultas();
+        sarr[COL_LGZ] = Double.toString(edt.getLgz());
+        sarr[COL_ABT] = edt.getBereich();
+        sarr[COL_UZT] = uGruppenRepository.getSJ().getName();
+        Optional<UGruppe> oug = uGruppenRepository.find(edt.getUgid());
+        if(oug.isPresent()){
+            sarr[COL_UZT] = oug.get().getName();
+        }
+
+        return sarr;
+    }
+
     private String getCellAsString(Cell c){
         // get the text that appears in the cell by getting the cell value and applying any data formats (Date, 0.00, 1.23e9, $1.23, etc)
         CellValue cv = evaluator.evaluate(c);
-        if(cv != null && cv.getCellType() == CellType.STRING){
-            return cv.getStringValue();
-        }
-        return "";
+        return formatter.formatCellValue(c);
     }
 
-    final NumberFormat nf = NumberFormat.getInstance();
-    private Double getCellAsDouble(Cell c) {
-        CellValue cv = evaluator.evaluate(c);
-        if(cv != null && cv.getCellType() == CellType.NUMERIC){
-            return cv.getNumberValue();
-        }
-        return 0.0;
-    }
 }

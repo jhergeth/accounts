@@ -1,6 +1,10 @@
 {
   "DefaultUserMailDomain" : "_",
+  "EPLAN_BEREICHE" : "[\"BauH\", \"ETIT\", \"JVA\", \"AV\", \"AIF\", \"FOS\", \"ErnPfl\", \"SozKi\", \"GesSoz\"]",
+  "EPLAN_COL_TITLES" : "[\"Abteilung\", \"Klasse\", \"Fakultas\", \"Fach\", \"Lehrer\", \"Raum\", \"WSt/SJ\", \"LGZ\", \"Bemerkung\", \"UZ\"]",
   "KlassenDir" : "KLASSEN",
+  "REGEX_SPLITTER" : ",(?=([^\\\"]*\\\"[^\\\"]*\\\")*(?![^\\\"]*\\\"))",
+  "SCHULE" : "BKEST",
   "Schuljahr" : "2122",
   "StringDistance" : "0.95",
   "VCARDAcc" : "admin",

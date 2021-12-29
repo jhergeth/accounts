@@ -2,7 +2,7 @@ package name.hergeth.config;
 
 import java.util.Map;
 
-public interface Configuration {
+public interface ConfigurationBAK {
     public String getConfigpfad();
 
     void setConfigpfad(String configpfad);
@@ -10,6 +10,8 @@ public interface Configuration {
     String get(String k);
     
     String get(String k, String d);
+
+    String[] getStrArr(String k, String d);
 
     void set(String k, String v);
 

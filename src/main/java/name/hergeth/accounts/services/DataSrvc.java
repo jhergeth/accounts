@@ -14,7 +14,7 @@ import name.hergeth.accounts.services.external.NCFileApi;
 import name.hergeth.accounts.services.external.NCUserApi;
 import name.hergeth.accounts.services.external.NCVCardApi;
 import name.hergeth.accounts.services.external.io.Meta;
-import name.hergeth.config.Configuration;
+import name.hergeth.config.Cfg;
 import name.hergeth.util.Paar;
 import name.hergeth.util.Utils;
 import name.hergeth.util.VCardAdapter;
@@ -42,7 +42,7 @@ public class DataSrvc implements IDataSrvc {
     private static final Logger LOG = LoggerFactory.getLogger(DataSrvc.class);
     private static final PhoneNumberUtil PU = PhoneNumberUtil.getInstance();
 
-    private Configuration configuration;
+    private Cfg cfg;
     private AccList accListCSV;
     private AccList accListLDAP;
     private HashedMap<String, AccPair> accPairs;
@@ -74,8 +74,8 @@ public class DataSrvc implements IDataSrvc {
     private NCFileApi fileCmd = null;
     private NCVCardApi cardApi = null;
 
-    public DataSrvc(Configuration configuration, StatusSrvc status) {
-        this.configuration = configuration;
+    public DataSrvc(Cfg cfg, StatusSrvc status) {
+        this.cfg = cfg;
         this.accListCSV = new AccList();
         this.accListLDAP = new AccList();
         this.status = status;
@@ -107,14 +107,14 @@ public class DataSrvc implements IDataSrvc {
             status.update(lines, "Read accounts from file " + oname);
             areSuSAccounts = ScannerBuilder.wasSuS();
             if(areSuSAccounts){
-                configuration.set("susAccountsLoaded", LocalDateTime.now().toString());
+                cfg.set("susAccountsLoaded", LocalDateTime.now().toString());
                 loadedAccounts = loadType.SUS_LOADED;
             }
             else{
-                configuration.set("kukAccountsLoaded", LocalDateTime.now().toString());
+                cfg.set("kukAccountsLoaded", LocalDateTime.now().toString());
                 loadedAccounts = loadType.KUK_LOADED;
             }
-            configuration.save();
+            cfg.save();
             return true;
         }
         return false;
@@ -534,7 +534,7 @@ public class DataSrvc implements IDataSrvc {
             LOG.warn("Cannot update adressbook without KuK accounts loaded.");
             return 0;
         }
-        String adrBookName = configuration.get("VCARDAdressBookName", "BKEST-KuK");
+        String adrBookName = cfg.get("VCARDAdressBookName", "BKEST-KuK");
 
         initNCCard();
 
@@ -658,26 +658,26 @@ public class DataSrvc implements IDataSrvc {
     //  set up Nextcloud, moodle an LDAP connections
     //
     private void initCmd() {
-        SCHULJAHR = configuration.get("Schuljahr", "2122");
-        DEFKUKPASSW = configuration.get("defKuKPassword", "1BKGKlehrer-");
-        defaultUserMailDomain = configuration.get("DefaultUserMailDomain", "@a133f.de");
-        STRINGDIST = Double.parseDouble(configuration.get("StringDistance", "0.95"));
+        SCHULJAHR = cfg.get("Schuljahr", "2122");
+        DEFKUKPASSW = cfg.get("defKuKPassword", "1BKGKlehrer-");
+        defaultUserMailDomain = cfg.get("DefaultUserMailDomain", "@a133f.de");
+        STRINGDIST = Double.parseDouble(cfg.get("StringDistance", "0.95"));
         initMoodle();
         initLDAP();
         initNC();
-        configuration.save();;
+        cfg.save();;
     }
 
     private void initMoodle() {
-        moodleServer = configuration.get("accMoodleURL", "schulen-online");
-        moodleUser = configuration.get("accMoodleAcc", "admin");
-        moodlePW = configuration.get("accMoodlePW", "");
+        moodleServer = cfg.get("accMoodleURL", "schulen-online");
+        moodleUser = cfg.get("accMoodleAcc", "admin");
+        moodlePW = cfg.get("accMoodlePW", "");
     }
 
     private void initLDAP(){
-        String serverLDAP = configuration.get("accLDAPURL", "ldap.learn.berufskolleg-geilenkirchen.de");
-        String usrLDAP = configuration.get("accLDAPAcc", "cn=admin,dc=bkest,dc=schule");
-        String pwLDAP = configuration.get("accLDAPPW", "pHtSL4MhUlaTBaevsmka");
+        String serverLDAP = cfg.get("accLDAPURL", "ldap.learn.berufskolleg-geilenkirchen.de");
+        String usrLDAP = cfg.get("accLDAPAcc", "cn=admin,dc=bkest,dc=schule");
+        String pwLDAP = cfg.get("accLDAPPW", "pHtSL4MhUlaTBaevsmka");
 
         Consumer<Meta> handleErrors = m -> status.stop("ERROR " + m.getStatusCode() + ": " + m.getMessage());
         try {
@@ -689,14 +689,14 @@ public class DataSrvc implements IDataSrvc {
     }
 
     private void initNC(){
-        String serverNC = configuration.get("accNCURL", "https://learn.berufskolleg-geilenkirchen.de");
-        String usrNC = configuration.get("accNCAcc", "admin");
-        String pwNC = configuration.get("accNCPW", "Bv3YI7RY8WMCEXVCRgON"); // Bv3YI7RY8WMCEXVCRgON
+        String serverNC = cfg.get("accNCURL", "https://learn.berufskolleg-geilenkirchen.de");
+        String usrNC = cfg.get("accNCAcc", "admin");
+        String pwNC = cfg.get("accNCPW", "Bv3YI7RY8WMCEXVCRgON"); // Bv3YI7RY8WMCEXVCRgON
 //        String pwNC = configuration.get("accNCPW", "dW4ZB-szLx9-oWEjr-xQrLq-bbqsN"); // Bv3YI7RY8WMCEXVCRgON
-        SKLASSENDIR = configuration.get("KlassenDir", "KLASSEN") + "/SJ" + SCHULJAHR;
-        accSuSSize = configuration.get("accSuSSize", "256 MB");
-        accKuKSize = configuration.get("accKuKSize", "10 GB");
-        accUserPW = configuration.get("accUserPW", "bkest" + SCHULJAHR);
+        SKLASSENDIR = cfg.get("KlassenDir", "KLASSEN") + "/SJ" + SCHULJAHR;
+        accSuSSize = cfg.get("accSuSSize", "256 MB");
+        accKuKSize = cfg.get("accKuKSize", "10 GB");
+        accUserPW = cfg.get("accUserPW", "bkest" + SCHULJAHR);
         Consumer<Meta> handleErrors = m -> status.stop("ERROR " + m.getStatusCode() + ": " + m.getMessage());
 
         try {
@@ -710,12 +710,12 @@ public class DataSrvc implements IDataSrvc {
 
     private void initNCCard(){
         // https://cloud.berufskolleg-geilenkirchen.de/remote.php/dav/addressbooks/users/admin/bkest-kuk-1/
-        String server = configuration.get("VCARDURL", "https://cloud.berufskolleg-geilenkirchen.de");
-        String usr = configuration.get("VCARDAcc", "admin");
-        String pw = configuration.get("VCARDPW", "2kiMd-dyz4t-jE7HF-TqjZ6-eZzBD"); // Bv3YI7RY8WMCEXVCRgON
+        String server = cfg.get("VCARDURL", "https://cloud.berufskolleg-geilenkirchen.de");
+        String usr = cfg.get("VCARDAcc", "admin");
+        String pw = cfg.get("VCARDPW", "2kiMd-dyz4t-jE7HF-TqjZ6-eZzBD"); // Bv3YI7RY8WMCEXVCRgON
 
         cardApi = new NCVCardApi(server, usr, pw);
-        configuration.save();
+        cfg.save();
     }
 
 }

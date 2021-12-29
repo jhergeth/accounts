@@ -22,11 +22,11 @@ public class AppCtrl {
     private DateTimeFormatter timeFormat = DateTimeFormatter.ofPattern("HH:mm:ss");
 
     @Inject
-    private Configuration vmConfig;
+    private Cfg vmConfig;
     @Inject
     private IStatusSrvc accSrvc;
 
-    public AppCtrl(Configuration vMailerConfig, IStatusSrvc accSrvc) {
+    public AppCtrl(Cfg vMailerConfig, IStatusSrvc accSrvc) {
         this.vmConfig = vMailerConfig;
         this.accSrvc = accSrvc;
     }

@@ -20,43 +20,56 @@ import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.time.LocalDate;
 import java.util.Map;
 import java.util.TreeMap;
 
 @Singleton
 @ConfigurationProperties("accounts")
-public class ConfigurationImp implements Configuration {
+public class Cfg {
+    static public String SCHULE;
+
+    public static LocalDate minDate(){
+        return LocalDate.now().minusYears(1000);
+    }
+    public static LocalDate maxDate(){
+        return LocalDate.now().plusYears(1000);
+    }
+
+
     @Property(name = "accounts.configpfad")
-    private String configpfad;
+    String configpfad;
 
     @Inject
     ApplicationEventPublisher eventPublisher;
 
-    private static final Logger LOG = LoggerFactory.getLogger(ConfigurationImp.class);
+    private static final Logger LOG = LoggerFactory.getLogger(Cfg.class);
     private Map<String, String> conf = new TreeMap<>();
     private static String dataPath = null;
+
 
     @PostConstruct
     private void initialize() {
         LOG.info("Starting AccountService version " + BuildInfo.getVersion());
         LOG.info("Starting configuration: Configpfad={}", configpfad);
         load();
+        SCHULE = get("SCHULE", "BKEST");
         dataPath = get("datadir", ".");
+        get("REGEX_SPLITTER", "[,;| ]");
+        getStrArr("EPLAN_BEREICHE",
+            "[\"BauH\", \"ETIT\", \"JVA\", \"AV\", \"AIF\", \"FOS\", \"ErnPfl\", \"SozKi\", \"GesSoz\"]");
         LOG.info("Configuration finalized");
     }
 
-    @Override
     public void save() {
         save("configuration", configpfad, conf);
     }
 
-    @Override
     public void save(Map<String,String> src) {
         conf = new TreeMap(src);
         save();
     }
 
-    @Override
     public void merge(Map<String,String> src){
         // add known config
         conf.putAll(src);
@@ -66,7 +79,6 @@ public class ConfigurationImp implements Configuration {
         eventPublisher.publishEvent(new ConfigChangedEvent(this));
     }
 
-    @Override
     public Map<String,String>  load(){
         conf = load("configuration", configpfad);
         if(conf == null){
@@ -76,17 +88,14 @@ public class ConfigurationImp implements Configuration {
         return conf;
     }
 
-    @Override
     public void set(String k, String v){
         conf.put(k, v);
     }
 
-    @Override
     public String get(String k){
         return conf.get(k);
     }
 
-    @Override
     public String get(String k, String d){
         String res = conf.get(k);
         if(res == null || res.length() == 0){
@@ -96,12 +105,28 @@ public class ConfigurationImp implements Configuration {
         return res;
     }
 
-    @Override
+    public String[] getStrArr(String k){
+        return getStrArr(k, "");
+    }
+
+    public String[] getStrArr(String k, String d){
+        String res = get(k, d);
+
+        ObjectMapper mapper = new ObjectMapper();
+        TypeReference<String[]> typeRef = new TypeReference<>() {};
+        String[] sArr = new String[0];
+        try {
+            sArr = mapper.readValue(res, typeRef);
+        } catch (JsonProcessingException e) {
+            e.printStackTrace();
+        }
+        return sArr;
+    }
+
     public String getConfigpfad() {
         return configpfad;
     }
 
-    @Override
     public void setConfigpfad(String configpfad) {
         this.configpfad = configpfad;
     }

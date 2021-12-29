@@ -14,8 +14,9 @@ public interface EPlanLogic {
     public List<EPlanDTO>  group(List<EPlanDTO> row);
 
     public List<EPlanDTO>  findAllByKlasse(String klasse);
-
     public List<EPlanDTO> getEPlan(String bereich);
+    public List<EPlanDTO> fromEPL(List<EPlan> el);
+
     public Optional<EPlan> getEPlanFromEPlanDTO(EPlanDTO d);
     public Optional<EPlanDTO> updateEPlan(EPlanDTO d);
     public List<String> getBereiche();

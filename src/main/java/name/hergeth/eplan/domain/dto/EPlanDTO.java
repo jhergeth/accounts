@@ -1,15 +1,14 @@
 package name.hergeth.eplan.domain.dto;
 
 import io.micronaut.core.annotation.Introspected;
-import io.micronaut.core.annotation.Nullable;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 import name.hergeth.eplan.domain.EPlan;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.util.*;
-import java.util.stream.Collectors;
+import java.util.LinkedList;
+import java.util.List;
 
 @Data
 @NoArgsConstructor
@@ -40,6 +39,8 @@ public class EPlanDTO {
     private Double wstdeff;     //    wstdeff: 2
 
     private Double suswstd;     //    suswstd: 2
+
+    private Double kukwstd;     //    suswstd: 2
 
     private Double lgz;         //     lgz: 0
 
@@ -78,6 +79,7 @@ public class EPlanDTO {
         ed.wstd = e.getWstd();
         ed.wstdeff = e.getWstdEff();
         ed.suswstd = e.susWStd();
+        ed.kukwstd = e.kukWStd();
         ed.lerngruppe = e.getLernGruppe();
         ed.lgz = e.getLgz();
         ed.ugid = e.getUgid();
@@ -87,41 +89,5 @@ public class EPlanDTO {
         return ed;
     }
 
-    public static  List<EPlanDTO> fromEPlanList(List<EPlan> eList) {
-        Map<String,EPlanDTO> eMap = new HashMap<>();
-        List<EPlanDTO> eRes = new LinkedList<>();
-
-        for(Iterator<EPlan> iter = eList.listIterator(); iter.hasNext();){
-            EPlan e = iter.next();
-            EPlanDTO ed = EPlanDTO.fromEPlan(e);
-            String lg = e.getLernGruppe();
-            if( lg != null && lg.length() > 0){
-                EPlanDTO edp = eMap.get(lg);
-                if(edp != null){
-                    edp.addSubEntry(ed);
-                }
-                else{
-                    eMap.put(lg,ed);
-                    eRes.add(ed);
-                }
-            }
-            else{
-                eRes.add(ed);
-            }
-        }
-
-        Comparator<EPlanDTO> cmpFachLGNo = Comparator
-                .comparing(EPlanDTO::getBereich)
-                .thenComparing(EPlanDTO::getKlasse)
-                .thenComparing(EPlanDTO::getType)
-                .thenComparing(EPlanDTO::getFach)
-                .thenComparing(EPlanDTO::getLerngruppe)
-                .thenComparing(EPlanDTO::getLehrer)
-                .thenComparing(EPlanDTO::getNo);
-
-        return eRes.stream()
-                .sorted(cmpFachLGNo)
-                .collect(Collectors.toList());
-    }
 
 }

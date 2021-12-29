@@ -22,14 +22,11 @@ import java.util.TreeMap;
 public class ConfigCtrl {
     private static final Logger LOG = LoggerFactory.getLogger(ConfigCtrl.class);
 
-    protected final Configuration config;
+    protected final Cfg config;
 
-    public ConfigCtrl(Configuration config){
+    public ConfigCtrl(Cfg config){
         this.config = config;
-    }
-
-
-    ;
+    };
 
     @Consumes(MediaType.APPLICATION_JSON)
     @Post(value = "/write")

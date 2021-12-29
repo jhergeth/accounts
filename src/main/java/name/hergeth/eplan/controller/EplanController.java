@@ -21,8 +21,6 @@ import javax.validation.constraints.NotNull;
 import java.util.List;
 import java.util.Optional;
 
-import static name.hergeth.eplan.domain.dto.EPlanDTO.fromEPlanList;
-
 @Validated
 @Controller("/api/eplan")
 public class EplanController   extends BaseController {
@@ -62,9 +60,9 @@ public class EplanController   extends BaseController {
     }
 
     @Post(value="/update", consumes = MediaType.APPLICATION_JSON)
-    public Optional<EPlanDTO> uploadRow(EPlanDTO row, String test) {
+    public Optional<EPlanDTO> uploadRow(EPlanDTO row) {
         if(row == null){
-            LOG.error("No data for row update!!!" + test);
+            LOG.error("No data for row update!!!");
             return null;
         }
         LOG.info("Got new data {}", row);
@@ -86,18 +84,6 @@ public class EplanController   extends BaseController {
         return HttpResponse.ok();
     }
 
-    @Post(value="/group")
-    public List<EPlanDTO> groupRow(List<EPlanDTO> row) {
-        LOG.info("Group {} row to parent {}", row.size()-1, row.get(0).getId());
-        return ePlanLogic.group(row);
-    }
-
-    @Post(value="/ungroup")
-    public List<EPlanDTO> ungroupRow(EPlanDTO row) {
-        LOG.info("Ungroup row {} from parent {}", row.getId(), row.getParentid());
-        return ePlanLogic.ungroup(row);
-    }
-
     @Get("/summen")
     List<EPlanSummen> getEplanSummen(){
         return ePlanLogic.getSummen();
@@ -108,7 +94,7 @@ public class EplanController   extends BaseController {
         LOG.info("Fetching EPlan for KuK {}", val);
 
         List<EPlan> eplan = ePlanRepository.findByLehrerOrderByNo(val);
-        return fromEPlanList(eplan);
+        return ePlanLogic.fromEPL(eplan);
     }
 
     @Get("/klasse/{val}")
@@ -120,7 +106,7 @@ public class EplanController   extends BaseController {
     @Get("/fach/{val}")
     List<EPlanDTO> getFach(@NotNull String val){
         LOG.info("Fetching EPlan for Fach {}", val);
-        return fromEPlanList(ePlanRepository.findByFachOrderByNo(val));
+        return ePlanLogic.fromEPL(ePlanRepository.findByFachOrderByNo(val));
     }
 
 

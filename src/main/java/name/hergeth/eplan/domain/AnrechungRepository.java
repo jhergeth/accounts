@@ -3,8 +3,8 @@ package name.hergeth.eplan.domain;
 import io.micronaut.data.jdbc.annotation.JdbcRepository;
 import io.micronaut.data.model.query.builder.sql.Dialect;
 import io.micronaut.data.repository.CrudRepository;
+import name.hergeth.config.Cfg;
 import name.hergeth.eplan.responses.PivotTable;
-import name.hergeth.eplan.service.EPLAN;
 
 import java.util.List;
 import java.util.stream.Collectors;
@@ -65,7 +65,7 @@ public abstract class AnrechungRepository implements CrudRepository<Anrechnung, 
             }
 
             findAll().forEach(a -> {
-                if(!a.getBeginn().isAfter(EPLAN.MINDATE) && !a.getEnde().isBefore(EPLAN.MAXDATE)){
+                if(!a.getBeginn().isAfter(Cfg.minDate()) && !a.getEnde().isBefore(Cfg.maxDate())){
                     int r = kukl.indexOf(a.getLehrer());
                     int c = anrl.indexOf(a.getGrund())+1;
                     dData[r][c] += a.getWwert();

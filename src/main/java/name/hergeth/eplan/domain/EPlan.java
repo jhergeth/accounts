@@ -5,7 +5,6 @@ import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
-import name.hergeth.eplan.domain.dto.EPlanDTO;
 
 import javax.persistence.*;
 import javax.validation.constraints.NotNull;
@@ -52,14 +51,16 @@ public class EPlan {
 
     public Double getWstdEff(){ return wstd * ugruppe.getWFaktor(); }
 
-    @Builder.Default private String lernGruppe = "";
-    @Builder.Default private Double susBruchteil = 1.0;
-    public Double susWStd(){ return getWstdEff() / susBruchteil; }
-
+    @Builder.Default private Double susFaktor = 1.0;
     @Builder.Default private Double lgz = 1.0;
+    public Double susWStd(){ return getWstdEff() * susFaktor / lgz; }
+
+    @Builder.Default private Double kukFaktor = 1.0;
+    public Double kukWStd(){ return getWstdEff() * kukFaktor; }
+
+    @Builder.Default private String lernGruppe = "";
 
     private Long ugid;
-
     @ManyToOne(optional = false, fetch = FetchType.EAGER, cascade = CascadeType.ALL)
 //    @JoinColumn(name = "ugruppe_id", referencedColumnName = "id")
     private UGruppe ugruppe;
