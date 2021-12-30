@@ -39,6 +39,8 @@ public abstract class EPlanRepository implements CrudRepository<EPlan, Long> {
     public abstract List<EPlan> findByFachOrderByNo(String fach);
     @Join(value = "ugruppe", type = Join.Type.FETCH)
     public abstract List<EPlan> findByBereichOrderByKlasseAscAndLehrerAscAndFachAsc(String bereich);
+    @Join(value = "ugruppe", type = Join.Type.FETCH)
+    public abstract List<EPlan> findByBereichAndNoGreaterThanEqualsOrderByNo(String bereich, int start);
 
     public void duplicate(Long id){
         Optional<EPlan> oe = find(id);

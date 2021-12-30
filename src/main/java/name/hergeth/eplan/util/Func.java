@@ -27,12 +27,12 @@ public class Func {
     }
 
     public static Set<String> addToSet(Set<String> s, String str, String split){
-        s.addAll(Arrays.asList(str.split(split, -1)).stream().map(String::trim).collect(Collectors.toList()));
+        s.addAll(Arrays.asList(str.split(split, -1)).stream().map(String::trim).sorted().collect(Collectors.toList()));
         return s;
     }
 
     public static String setToString(Set<String> set){
-        return set.stream().collect(Collectors.joining(","));
+        return set.stream().sorted().collect(Collectors.joining(","));
     }
 
     public static String strNormalize(String s, String split){

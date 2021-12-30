@@ -184,7 +184,8 @@ public class EPlanLogicImp implements EPlanLogic {
             }
         }
         List<EPlan> ins = new LinkedList<>();
-        ePlanLoader.insertAlleUnterrichte(ed.getBereich(), ins, 10000, ed);
+        ePlanLoader.insertAlleUnterrichte(ed.getBereich(), ins, ed.getNo(), ed);
+        moveBereich(ed.getBereich(), ed.getNo(), 100);
         ePlanRep.saveAll(ins);
 
         renumberBereich(ed.getBereich());
@@ -216,6 +217,17 @@ public class EPlanLogicImp implements EPlanLogic {
         return e;
     }
 
+
+    private void moveBereich(String bereich, int start, int delt){
+        List<EPlan> lep = ePlanRep.findByBereichAndNoGreaterThanEqualsOrderByNo(bereich, start);
+
+        int no = start+delt;
+        for(EPlan n : lep){
+            n.setNo(no++);
+            ePlanRep.update(n);
+        }
+
+    }
 
     private void renumberBereich(String bereich){
         List<EPlan> lep = ePlanRep.findByBereichOrderByKlasseAscAndLehrerAscAndFachAsc(bereich);

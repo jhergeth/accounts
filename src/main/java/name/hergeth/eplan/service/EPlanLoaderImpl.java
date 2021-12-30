@@ -192,7 +192,7 @@ public class EPlanLoaderImpl implements EPlanLoader {
             }
             LOG.debug("Found {} [{}] klassen and {} [{}] teacher in line {}, adding {} unterrichte", kl.length, klasse, le.length, lehrer, id, le.length * kl.length);
         } else {
-            id = insertUnterricht(bereich, res, sarr, id, klasse, lehrer, "", 1.0, 1.0);
+            id = insertUnterricht(bereich, res, sarr, id, kl[0], le[0], "", 1.0, 1.0);
         }
         return id;
     }
