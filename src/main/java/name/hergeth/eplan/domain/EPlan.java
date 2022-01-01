@@ -41,7 +41,7 @@ public class EPlan {
 
     private String fach;
 
-    @Builder.Default private Integer type = 1;
+    @Builder.Default private Integer type = 1;  //1: berufsbezogen, 2: berufsübergreifend, 3: differenzierung
 
     private String lehrer;
 

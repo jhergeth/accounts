@@ -28,11 +28,13 @@ public abstract class EPlanRepository implements CrudRepository<EPlan, Long> {
 //    public abstract void update(Long id, String lernGruppe);
 
     @Join(value = "ugruppe", type = Join.Type.FETCH)
+    public abstract List<String> findDistinctKlasseByBereichOrderByKlasse(String bereich);
+    @Join(value = "ugruppe", type = Join.Type.FETCH)
     public abstract List<EPlan> findByLernGruppeOrderByNo(String lernGruppe);
     @Join(value = "ugruppe", type = Join.Type.FETCH)
     public abstract List<EPlan> findByBereichOrderByNo(String bereich);
     @Join(value = "ugruppe", type = Join.Type.FETCH)
-    public abstract List<EPlan> findByKlasseOrderByNo(String klasse);
+    public abstract List<EPlan> findByKlasseOrderByTypeAscAndNoAsc(String klasse);
     @Join(value = "ugruppe", type = Join.Type.FETCH)
     public abstract List<EPlan> findByLehrerOrderByNo(String lehrer);
     @Join(value = "ugruppe", type = Join.Type.FETCH)

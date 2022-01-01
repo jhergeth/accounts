@@ -48,15 +48,21 @@ public class EplanController   extends BaseController {
         return ePlanLogic.getEPlan(ber);
     }
 
+    @Get("/klassen/{ber}")
+    List<String> getKlassen(@NotNull String ber){
+        LOG.info("Fetching klassen of Bereich {}", ber);
+        return ePlanRepository.findDistinctKlasseByBereichOrderByKlasse(ber);
+    }
+
     @Post(value="/bereich/all", consumes = MediaType.MULTIPART_FORM_DATA, produces = MediaType.TEXT_PLAIN)
     public Publisher<HttpResponse<String>> uploadAll(StreamingFileUpload file) {
-        Publisher<HttpResponse<String>> res = uploadFileTo(file, p -> eplLoader.excelBereichFromFile(p, ePlanLogic.getBereiche()));
+        Publisher<HttpResponse<String>> res = uploadFileTo(file, (p,ext) -> eplLoader.excelBereichFromFile(p, ePlanLogic.getBereiche()));
         return res;
     }
 
     @Post(value="/bereich/{bereich}", consumes = MediaType.MULTIPART_FORM_DATA, produces = MediaType.TEXT_PLAIN)
     public Publisher<HttpResponse<String>> uploadBereich(StreamingFileUpload file, String bereich) {
-        return uploadFileTo(file, p -> eplLoader.excelBereichFromFile(p, bereich));
+        return uploadFileTo(file, (p,ext) -> eplLoader.excelBereichFromFile(p, bereich));
     }
 
     @Post(value="/update", consumes = MediaType.APPLICATION_JSON)

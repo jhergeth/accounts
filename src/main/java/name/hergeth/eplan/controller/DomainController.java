@@ -12,12 +12,14 @@ import name.hergeth.eplan.domain.*;
 import name.hergeth.eplan.responses.PivotTable;
 import name.hergeth.eplan.service.EPlanLoader;
 import name.hergeth.eplan.service.UntisGPULoader;
-import org.apache.commons.compress.utils.FileNameUtils;
+import name.hergeth.eplan.util.Func;
 import org.apache.commons.lang3.StringUtils;
 import org.reactivestreams.Publisher;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.io.FileInputStream;
+import java.io.InputStream;
 import java.util.Optional;
 
 import static io.micronaut.http.MediaType.MULTIPART_FORM_DATA;
@@ -67,8 +69,7 @@ public class DomainController extends BaseController{
 
     @Post(value = "/klassen/upload", consumes = MULTIPART_FORM_DATA, produces = TEXT_PLAIN)
     public Publisher<HttpResponse<String>> uploadKl(StreamingFileUpload file) {
-        return uploadFileTo(file, p -> {
-            String ext = FileNameUtils.getExtension(p);
+        return uploadFileTo(file, (p, ext) -> {
             if(StringUtils.equalsAnyIgnoreCase(ext, "xls", "xlsx", "xlsm")){
                 ePlanLoader.excelKlassenFromFile(p);
             }
@@ -82,13 +83,40 @@ public class DomainController extends BaseController{
     Iterable<Kollege> getKollegen() {
         Iterable<Kollege> ko = kollegeRepository.findAll();
 //        LOG.info("Fetching Kollegenliste, size: {}", Iterables.size(ko) );
-        LOG.info("Fetching Kollegenliste, size: {}", -1 );
+        LOG.info("Fetching Kollegenliste");
         return ko;
     }
 
     @Post(value = "/lehrer/upload", consumes = MULTIPART_FORM_DATA, produces = TEXT_PLAIN)
     public Publisher<HttpResponse<String>> uploadKo(StreamingFileUpload file) {
-        return uploadFileTo(file, p -> untisGPULoader.readKollegen(p));
+        return uploadFileTo(file, (p,ext) -> {
+            if(StringUtils.equalsAnyIgnoreCase(ext, "txt")) {
+                untisGPULoader.readKollegen(p);
+            }
+            else if(StringUtils.equalsAnyIgnoreCase(ext, "zip")){
+                try(InputStream is = new FileInputStream(p)){
+                    Func.readZipStream(is, (name, zFile) -> {
+                        if(name.equalsIgnoreCase("GPU003.TXT")){
+                            LOG.info("Reading klassen from zip {} | {}.", p, name);
+                            untisGPULoader.readKlassen(zFile);
+                        }
+                        else if(name.equalsIgnoreCase("GPU004.TXT")){
+                            LOG.info("Reading kollegen from zip {} | {}.", p, name);
+                            untisGPULoader.readKollegen(zFile);
+                        }
+                        else if(name.equalsIgnoreCase("GPU020.TXT")){
+                            LOG.info("Reading anrechnungen from zip {} | {}.", p, name);
+                            untisGPULoader.readAnrechnungen(zFile);
+                            anrechungRepository.calcAnrechnungPivot();
+                        }
+                    });
+
+                } catch (Exception e) {
+                    LOG.error("Exception during zip-file read: {} -> {}", p, e.getMessage());
+                }
+            }
+
+        });
     }
 
     @Get("/anrechnungen")
@@ -101,7 +129,7 @@ public class DomainController extends BaseController{
 
     @Post(value = "/anrechnungen/upload", consumes = MULTIPART_FORM_DATA, produces = TEXT_PLAIN)
     public Publisher<HttpResponse<String>> uploadAn(StreamingFileUpload file) {
-        Publisher<HttpResponse<String>> res = uploadFileTo(file, p -> untisGPULoader.readAnrechnungen(p));
+        Publisher<HttpResponse<String>> res = uploadFileTo(file, (p,e) -> untisGPULoader.readAnrechnungen(p));
         anrechungRepository.calcAnrechnungPivot();
         return res;
     }

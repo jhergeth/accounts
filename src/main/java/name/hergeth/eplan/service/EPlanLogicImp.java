@@ -122,7 +122,7 @@ public class EPlanLogicImp implements EPlanLogic {
 
     @Override
     public List<EPlanDTO> findAllByKlasse(String klasse) {
-        List<EPlan> res = ePlanRep.findByKlasseOrderByNo(klasse);
+        List<EPlan> res = ePlanRep.findByKlasseOrderByTypeAscAndNoAsc(klasse);
         List<EPlan> subs = new LinkedList<>();
         List<String> lgs = res.stream()
                 .filter(e -> e.getLernGruppe().length()> 0)

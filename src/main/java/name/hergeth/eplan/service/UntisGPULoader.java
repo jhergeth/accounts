@@ -9,12 +9,14 @@ import jakarta.inject.Inject;
 import jakarta.inject.Singleton;
 import name.hergeth.config.Cfg;
 import name.hergeth.eplan.domain.*;
+import name.hergeth.eplan.util.Func;
 import org.apache.commons.lang3.math.NumberUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import javax.annotation.PostConstruct;
 import java.io.*;
+import java.nio.charset.Charset;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
@@ -135,9 +137,13 @@ public class UntisGPULoader {
 
         try {
             File file = new File(uFile);
+
+            String encoding = Func.guessEncoding(new FileInputStream(file));
+            LOG.info("File {} hs encoding {}", uFile, encoding);
+
             String line ="";
 
-            BufferedReader br = new BufferedReader(new FileReader(file));
+            BufferedReader br = new BufferedReader(new FileReader(file, Charset.forName(encoding)));
             while ((line = br.readLine()) != null) {
                 String[] elm = line.split("[;,](?=([^\"]*\"[^\"]*\")*[^\"]*$)", -1);
 

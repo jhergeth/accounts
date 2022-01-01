@@ -1,17 +1,20 @@
 package name.hergeth.eplan.util;
 
+import com.ibm.icu.text.CharsetDetector;
+import com.ibm.icu.text.CharsetMatch;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.io.*;
 import java.text.DecimalFormatSymbols;
 import java.text.NumberFormat;
-import java.util.Arrays;
-import java.util.HashSet;
-import java.util.Locale;
-import java.util.Set;
+import java.util.*;
+import java.util.function.BiConsumer;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
+import java.util.zip.ZipEntry;
+import java.util.zip.ZipInputStream;
 
 public class Func {
     private static final Logger LOG = LoggerFactory.getLogger(Func.class);
@@ -72,4 +75,62 @@ public class Func {
         return m.matches();
     }
 
+    public static void readZipStream(InputStream in, BiConsumer<String, String> fUser) throws IOException {
+        ZipInputStream zipIn = new ZipInputStream(in);
+        ZipEntry entry;
+        while ((entry = zipIn.getNextEntry()) != null) {
+            String zName = entry.getName();
+            File file = File.createTempFile(zName, "tmp");
+            readContents(new FilterInputStream(zipIn) {
+                @Override
+                public void close() throws IOException {
+                    zipIn.closeEntry();
+                }
+            }, file);
+            zName = zName.substring(zName.indexOf("/")+1);
+            fUser.accept(zName, file.getAbsolutePath());
+        }
+    }
+
+    private static void readContents(InputStream contentsIn, File destFile) throws IOException {
+        byte contents[] = new byte[4096];
+        try(FileOutputStream outputStream = new FileOutputStream(destFile);
+        ){
+            int data = contentsIn.read(contents, 0, contents.length);
+            while(data != -1){
+                outputStream.write(contents, 0, data);
+                data = contentsIn.read(contents, 0, contents.length);
+            }
+        }
+    }
+
+
+    public static String guessEncoding(InputStream input) throws IOException {
+        // Load input data
+        long count = 0;
+        int n = 0, EOF = -1;
+        byte[] buffer = new byte[4096];
+        ByteArrayOutputStream output = new ByteArrayOutputStream();
+
+        while ((EOF != (n = input.read(buffer))) && (count <= Integer.MAX_VALUE)) {
+            output.write(buffer, 0, n);
+            count += n;
+        }
+
+        if (count > Integer.MAX_VALUE) {
+            throw new RuntimeException("Inputstream too large.");
+        }
+
+        byte[] data = output.toByteArray();
+
+        // * ICU4j
+        CharsetDetector charsetDetector = new CharsetDetector();
+        charsetDetector.setText(data);
+        charsetDetector.enableInputFilter(true);
+        CharsetMatch cm = charsetDetector.detect();
+        if (cm != null) {
+            return cm.getName();
+        }
+        return null;
+    }
 }
