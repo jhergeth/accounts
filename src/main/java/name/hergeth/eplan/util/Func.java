@@ -133,4 +133,10 @@ public class Func {
         }
         return null;
     }
+
+    public static Double[] getZeroDouble(int anz){
+        Double[] res = new Double[anz];
+        Arrays.setAll(res, i -> 0d);
+        return res;
+    }
 }

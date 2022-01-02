@@ -6,6 +6,7 @@ import name.hergeth.config.Cfg;
 import name.hergeth.eplan.domain.*;
 import name.hergeth.eplan.domain.dto.EPlanDTO;
 import name.hergeth.eplan.domain.dto.EPlanSummen;
+import name.hergeth.eplan.domain.dto.KlassenSumDTO;
 import name.hergeth.eplan.util.Func;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -194,6 +195,46 @@ public class EPlanLogicImp implements EPlanLogic {
 
         return Optional.of(ed);
     }
+
+    @Override
+    public Optional<KlassenSumDTO> getSummenByKlasse(String s) {
+        final int ARRSIZ = 3;
+
+        List<EPlan> res = ePlanRep.findByKlasseOrderByTypeAscAndNoAsc(s);
+        if(res.size() > 0){
+            final KlassenSumDTO dto = new KlassenSumDTO();
+
+            dto.setAnlage("X9.99");
+            dto.setKllehrer("DUM");
+            dto.setKlasse(s);
+
+            final Double[] soll = Func.getZeroDouble(ARRSIZ);
+            final Double[] ist = Func.getZeroDouble(ARRSIZ);
+            final Double[] kuk = Func.getZeroDouble(ARRSIZ);
+            final Double[] sum = Func.getZeroDouble(ARRSIZ);
+
+            res.stream().forEach(e -> {
+                int i = e.getType() - 1;
+                if(i >= 0 && i < ARRSIZ){
+                    dto.setBereich(e.getBereich());
+                    ist[i] += e.susWStd();
+                    kuk[i] += e.kukWStd();
+                }
+            });
+
+            sum[0] = soll[0] + soll[1] + soll[2];
+            sum[1] = ist[0] + ist[1] + ist[2];
+            sum[2] = kuk[0] + kuk[1] + kuk[2];
+            dto.setSoll(soll);
+            dto.setIst(ist);
+            dto.setKuk(kuk);
+            dto.setSum(sum);
+
+            return Optional.of(dto);
+        }
+        return Optional.empty();
+    }
+
 
     private EPlan copyDTOtoEPlan(EPlanDTO ed, EPlan e){
         e.setBereich(ed.getBereich());
@@ -392,4 +433,6 @@ public class EPlanLogicImp implements EPlanLogic {
         }
         return ed;
     }
+
+
 }

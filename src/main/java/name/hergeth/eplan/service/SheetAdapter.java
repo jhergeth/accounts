@@ -8,6 +8,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.io.FileInputStream;
+import java.util.Arrays;
 import java.util.List;
 import java.util.function.BiFunction;
 
@@ -20,11 +21,12 @@ public class SheetAdapter {
     Workbook wb = null;
     Sheet sheet = null;
     String[] titles = null;
+    String[] defaults = null;
     List<String> lTitles = null;
     int[] titleCols = null;
     int lastRow = 0;
 
-    SheetAdapter(String file, String sht, String[] titles){
+    SheetAdapter(String file, String sht, String[] titles, String[] defaults){
         FileInputStream is = null;
         try {
             is = new FileInputStream(file);
@@ -47,13 +49,14 @@ public class SheetAdapter {
 
         lastRow = sheet.getLastRowNum();
         this.titles = titles;
+        this.defaults = defaults;
         lTitles = List.of(titles);
     }
 
     public int readRows(int firstRow, Integer start, BiFunction<Integer, String[], Integer> func) {
         Integer res = start;
         int num = 0;
-        String[] strCol = new String[titles.length];
+        String[] strCol = Arrays.copyOf(defaults, defaults.length);
         for (int i = firstRow; i <= lastRow; i++) {
             Row cRow = sheet.getRow(i);
             if(cRow != null){
@@ -64,9 +67,6 @@ public class SheetAdapter {
                         String val = getCellAsString(cRow.getCell(col));
                         strCol[c] = val;
                     }
-                    else{
-                        strCol[c] = "";
-                    }
                 }
 
                 res = func.apply(res, strCol);
@@ -74,6 +74,11 @@ public class SheetAdapter {
             }
         }
         return num;
+    }
+
+    public int[] getTitleCols(){
+        int titleRow = findTitleRow();
+        return getTitleCols(titleRow);
     }
 
     public int[] getTitleCols(int iTitleRow){

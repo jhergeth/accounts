@@ -14,6 +14,7 @@ import org.slf4j.LoggerFactory;
 
 import java.io.FileInputStream;
 import java.util.*;
+import java.util.concurrent.atomic.AtomicReference;
 
 @Singleton
 public class EPlanLoaderImpl implements EPlanLoader {
@@ -28,6 +29,7 @@ public class EPlanLoaderImpl implements EPlanLoader {
 
     private final String SPLITTER;
     String[] colTitleArr = null;
+    String[] colDefaultArr = null;
     final int COL_ABT = 0;
     final int COL_KLA = 1;
     final int COL_FAK = 2;
@@ -38,6 +40,7 @@ public class EPlanLoaderImpl implements EPlanLoader {
     final int COL_LGZ = 7;
     final int COL_BEM = 8;
     final int COL_UZT = 9;
+    final int COL_TYP = 10;
 
 
     public EPlanLoaderImpl(Cfg cfg,
@@ -49,7 +52,10 @@ public class EPlanLoaderImpl implements EPlanLoader {
         this.uGruppenRepository = uGruppenRepository;
         SPLITTER = cfg.get("REGEX_SPLITTER");
         colTitleArr = cfg.getStrArr("EPLAN_COL_TITLES",
-                "[\"Abteilung\", \"Klasse\", \"Fakultas\", \"Fach\", \"Lehrer\", \"Raum\", \"WSt/SJ\", \"LGZ\", \"Bemerkung\", \"UZ\"]"
+                "[\"Abteilung\", \"Klasse\", \"Fakultas\", \"Fach\", \"Lehrer\", \"Raum\", \"WSt/SJ\", \"LGZ\", \"Bemerkung\", \"UZ\", \"Typ\"]"
+        );
+        colDefaultArr = cfg.getStrArr("EPLAN_COL_DEFAULTS",
+                "[\"ETIT\", \"DUMMY\", \"Lehren\", \"FB\", \"___\", \"___\", \"0.0\", \"1\", \" \", \"SJ\", \"1\"]"
         );
 
         uGruppenRepository.initLoad();;
@@ -145,13 +151,11 @@ public class EPlanLoaderImpl implements EPlanLoader {
 
     @Override
     public void excelBereichFromFile(String file, String bereich){
-        List<String> colTitles = List.of(colTitleArr);
-
         LOG.info("Load bereich {} from excel file {}", bereich, file);
 
         List<EPlan> res = new LinkedList<>();
 
-        SheetAdapter shtAdap = new SheetAdapter(file, bereich, colTitleArr);
+        SheetAdapter shtAdap = new SheetAdapter(file, bereich, colTitleArr, colDefaultArr);
 
         int titleRow = shtAdap.findTitleRow();
 
@@ -166,12 +170,21 @@ public class EPlanLoaderImpl implements EPlanLoader {
             return id;
         });
 
+        renumberList(res, 1);
         ePlanRepository.deleteByBereichLike(bereich);
         ePlanRepository.saveAll(res);
     }
 
     public Integer insertAlleUnterrichte(String bereich, List<EPlan> res, Integer id, EPlanDTO edt){
         return insertAlleUnterrichte(bereich, res, id, fromEDTO(edt));
+    }
+
+    private int renumberList(List<EPlan> lst, int start){
+        AtomicReference<Integer> idx = new AtomicReference<>(start);
+        lst.stream().peek(e -> {
+            e.setNo(idx.getAndSet(idx.get() + 1));
+        });
+        return idx.get();
     }
 
     private Integer insertAlleUnterrichte(String bereich, List<EPlan> res, Integer id, String[] sarr) {
@@ -227,6 +240,7 @@ public class EPlanLoaderImpl implements EPlanLoader {
                     .susFaktor(susFaktor)
                     .kukFaktor(kukFaktor)
                     .bemerkung(cols[COL_BEM])
+                    .type(Integer.parseInt(cols[COL_TYP]))
                     .build();
             res.add(epl);
             LOG.info("Read Eplanentry ({}).",epl.toString());
@@ -250,6 +264,7 @@ public class EPlanLoaderImpl implements EPlanLoader {
         if(oug.isPresent()){
             sarr[COL_UZT] = oug.get().getName();
         }
+        sarr[COL_TYP] = Integer.toString(edt.getType());
 
         return sarr;
     }

@@ -11,6 +11,7 @@ import name.hergeth.eplan.domain.EPlan;
 import name.hergeth.eplan.domain.EPlanRepository;
 import name.hergeth.eplan.domain.dto.EPlanDTO;
 import name.hergeth.eplan.domain.dto.EPlanSummen;
+import name.hergeth.eplan.domain.dto.KlassenSumDTO;
 import name.hergeth.eplan.service.EPlanLoader;
 import name.hergeth.eplan.service.EPlanLogic;
 import org.reactivestreams.Publisher;
@@ -113,6 +114,12 @@ public class EplanController   extends BaseController {
     List<EPlanDTO> getFach(@NotNull String val){
         LOG.info("Fetching EPlan for Fach {}", val);
         return ePlanLogic.fromEPL(ePlanRepository.findByFachOrderByNo(val));
+    }
+
+    @Get("/klassesummen/{val}")
+    Optional<KlassenSumDTO> getKlasseSum(@NotNull String val){
+        LOG.info("Fetching Summen for Klasse {}", val);
+        return ePlanLogic.getSummenByKlasse(val);
     }
 
 
