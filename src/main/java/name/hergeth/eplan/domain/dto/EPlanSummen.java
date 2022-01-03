@@ -24,4 +24,6 @@ public class EPlanSummen {
     @Builder.Default private Double anrechnungen = 0.0;
     @NonNull
     @Builder.Default private Double anrAnpassung = 0.0;
+    @NonNull
+    @Builder.Default private String anrechliste = "";
 }

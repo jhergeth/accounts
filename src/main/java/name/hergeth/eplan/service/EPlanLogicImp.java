@@ -139,7 +139,7 @@ public class EPlanLogicImp implements EPlanLogic {
 
         res.addAll(subs.stream().distinct().collect(Collectors.toList()));
 
-        return fromEPL(res);
+        return fromEPL(res, true);
     }
 
     public List<EPlanDTO>  ungroup(EPlanDTO rowDTO){
@@ -337,6 +337,8 @@ public class EPlanLogicImp implements EPlanLogic {
                 Double ist = kukInBer.entrySet().stream()
                         .reduce(0.0, (v,e) -> v+e.getValue(),(v1,v2) -> v1+v2);
                 Double anr = anrechungRepository.getAnrechnungKuK(kuk);
+                List<Anrechnung> aList = anrechungRepository.findByLehrerOrderByGrund(kuk);
+                String atxt = aList.stream().map(a -> {return a.getGrund() + ": " + a.getWwert();}).collect(Collectors.joining("; "));
                 Double diff = ist + anr - k.getSoll();
                 eps = EPlanSummen.builder()
                         .lehrer(kuk)
@@ -345,6 +347,7 @@ public class EPlanLogicImp implements EPlanLogic {
                         .gesamt(ist)
                         .diff(diff)
                         .anrechnungen(anr)
+                        .anrechliste(atxt)
                         .build();
                 epsMap.put(kuk, eps);
             }
@@ -356,6 +359,9 @@ public class EPlanLogicImp implements EPlanLogic {
 
 
     public List<EPlanDTO> fromEPL(List<EPlan> el) {
+        return fromEPL( el, false);
+    }
+    public List<EPlanDTO> fromEPL(List<EPlan> el, boolean eineKlasse) {
         Set<String> lSet = new HashSet<>();
         List<EPlanDTO> eRes = new LinkedList<>();
 
@@ -366,32 +372,29 @@ public class EPlanLogicImp implements EPlanLogic {
             if(ed != null){
                 eRes.add(ed);
             }
-/*
-            String lg = e.getLernGruppe();
-            if( lg != null && lg.length() > 0){
-                EPlanDTO edp = eMap.get(lg);
-                if(edp != null){
-                    edp.addSubEntry(ed);
-                }
-                else{
-                    eMap.put(lg,ed);
-                    eRes.add(ed);
-                }
-            }
-            else{
-                eRes.add(ed);
-            }
-*/
         }
 
-        Comparator<EPlanDTO> cmpFachLGNo = Comparator
-                .comparing(EPlanDTO::getBereich)
-                .thenComparing(EPlanDTO::getKlasse)
-                .thenComparing(EPlanDTO::getType)
-                .thenComparing(EPlanDTO::getFach)
-                .thenComparing(EPlanDTO::getLerngruppe)
-                .thenComparing(EPlanDTO::getLehrer)
-                .thenComparing(EPlanDTO::getNo);
+        Comparator<EPlanDTO> cmpFachLGNo = null;
+        if(eineKlasse){
+            cmpFachLGNo = Comparator
+                    .comparing(EPlanDTO::getBereich)
+                    .thenComparing(EPlanDTO::getType)
+                    .thenComparing(EPlanDTO::getKlasse)
+                    .thenComparing(EPlanDTO::getFach)
+                    .thenComparing(EPlanDTO::getLerngruppe)
+                    .thenComparing(EPlanDTO::getLehrer)
+                    .thenComparing(EPlanDTO::getNo);
+        }
+        else{
+            cmpFachLGNo = Comparator
+                    .comparing(EPlanDTO::getBereich)
+                    .thenComparing(EPlanDTO::getKlasse)
+                    .thenComparing(EPlanDTO::getType)
+                    .thenComparing(EPlanDTO::getFach)
+                    .thenComparing(EPlanDTO::getLerngruppe)
+                    .thenComparing(EPlanDTO::getLehrer)
+                    .thenComparing(EPlanDTO::getNo);
+        }
 
         return eRes.stream()
                 .sorted(cmpFachLGNo)

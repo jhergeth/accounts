@@ -121,9 +121,17 @@ public class DomainController extends BaseController{
 
     @Get("/anrechnungen")
     Iterable<Anrechnung> getAnrechnungen() {
-        Iterable<Anrechnung> ko = anrechungRepository.findAll();
+        Iterable<Anrechnung> ko = anrechungRepository.findAllOrderByLehrerAndGrund();
 //        LOG.info("Fetching Anrechnungen, size: {}", Iterables.size(ko) );
-        LOG.info("Fetching Anrechnungen, size: {}", -1);
+        LOG.info("Fetching Anrechnungen");
+        return ko;
+    }
+
+    @Get("/anrechnung/{krzl}")
+    Iterable<Anrechnung> getAnrechnungen(String krzl) {
+        Iterable<Anrechnung> ko = anrechungRepository.findByLehrerOrderByGrund(krzl);
+//        LOG.info("Fetching Anrechnungen, size: {}", Iterables.size(ko) );
+        LOG.info("Fetching Anrechnungen of {}", krzl);
         return ko;
     }
 

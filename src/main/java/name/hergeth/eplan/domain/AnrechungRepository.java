@@ -17,6 +17,9 @@ public abstract class AnrechungRepository implements CrudRepository<Anrechnung, 
     private String[] anra = new String[0];
     private Double[][] dData = new Double[0][0];
 
+    public abstract List<Anrechnung> findByLehrerOrderByGrund(String lehrer);
+    public abstract List<Anrechnung> findAllOrderByLehrerAndGrund();
+
     public PivotTable getAnrechnungPivot(){
         if(dData == null  || dData.length == 0){
             calcAnrechnungPivot();
