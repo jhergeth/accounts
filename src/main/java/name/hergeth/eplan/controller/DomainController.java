@@ -35,6 +35,8 @@ public class DomainController extends BaseController{
     private final KlasseRepository klasseRepository;
     private final UntisGPULoader untisGPULoader;
     private final UGruppenRepository uGruppenRepository;
+    private final AnlageRepository anlageRepository;
+    private final StdnTafelRepository stdnTafelRepository;
     private final EPlanLoader ePlanLoader;
 
     public DomainController(AnrechungRepository anrechungRepository,
@@ -42,6 +44,8 @@ public class DomainController extends BaseController{
                             KlasseRepository klasseRepository,
                             UntisGPULoader untisGPULoader,
                             UGruppenRepository uGruppenRepository,
+                            AnlageRepository anlageRepository,
+                            StdnTafelRepository stdnTafelRepository,
                             EPlanLoader ePlanLoader
     ) {
         this.anrechungRepository = anrechungRepository;
@@ -49,7 +53,104 @@ public class DomainController extends BaseController{
         this.klasseRepository = klasseRepository;
         this.untisGPULoader = untisGPULoader;
         this.uGruppenRepository = uGruppenRepository;
+        this.anlageRepository = anlageRepository;
+        this.stdnTafelRepository = stdnTafelRepository;
         this.ePlanLoader = ePlanLoader;
+    }
+
+    @Get("/anlagens")
+    Iterable<String> getAnlagenNamen() {
+        Iterable<String> al = anlageRepository.listDistinctApobk();
+        LOG.info("Fetching Anlagennamen");
+        return al;
+    }
+
+    @Get("/anlagen")
+    Iterable<Anlage> getAnlagen() {
+        Iterable<Anlage> al = anlageRepository.findAll();
+        LOG.info("Fetching Anlagenliste");
+        return al;
+    }
+
+    @Get("/anlage/{name}")
+    Optional<Anlage> getAnlage(String name) {
+        Optional<Anlage> a = anlageRepository.findByApobk(name);
+        LOG.info("Fetching Anlage: {} {}", name, a.isPresent()?"found":"not found");
+        return a;
+    }
+
+    @Post("/anlage/{krzl}")
+    HttpResponse<String> setAnlage(String krzl, @Body Anlage a) {
+        LOG.info("Writing Anlage {}: {}", a.getApobk(), a);
+        anlageRepository.speichern(a);
+        return HttpResponse.ok();
+    }
+
+    @Post("/anlagedel/{krzl}")
+    HttpResponse<String> delAnlage(String krzl) {
+        LOG.info("Deleting Anlage {}", krzl);
+        anlageRepository.deleteByApobk(krzl);
+        return HttpResponse.ok();
+    }
+
+    @Post("/anlagedup/{krzl}")
+    Optional<Anlage> dupAnlage(String krzl) {
+        LOG.info("Duplicating Anlage {}", krzl);
+        Optional<Anlage> oa = anlageRepository.findByApobk(krzl);
+        if(oa.isPresent()){
+            Anlage na = oa.get().dup();
+            return Optional.of(anlageRepository.save(na));
+        }
+        return Optional.empty();
+    }
+
+    @Get("/stdntafel/{id}")
+    Optional<StdnTafel> getStdTafel(Integer id) {
+        Optional<StdnTafel> a = stdnTafelRepository.findById(id);
+        LOG.info("Fetching StdnTafel: {} {}", id, a.isPresent()?"found":"not found");
+        return a;
+    }
+
+    @Post("/stdntafel/{id}")
+    HttpResponse<String> setStdTafel(Integer id, @Body StdnTafel s) {
+        LOG.info("Writing StdnTafel {}: {}", id, s);
+        stdnTafelRepository.save(s);
+        return HttpResponse.ok();
+    }
+
+    @Post("/stdntafeldel/{id}")
+    Optional<Anlage> delStdTafel(Integer id) {
+        LOG.info("Deleteing StdnTafel {}: {}", id);
+        Optional<StdnTafel> os = stdnTafelRepository.findById(id);
+        if(os.isPresent()){
+            Optional<Anlage> oa = anlageRepository.findByApobk(os.get().getAnlage());
+            if(oa.isPresent()){
+                Anlage a = oa.get();
+                StdnTafel s = os.get();
+                a.del(s);
+                stdnTafelRepository.deleteById(s.getId().intValue());
+                Anlage b = anlageRepository.speichern(a);
+                return Optional.of(b);
+            }
+        }
+        return Optional.empty();
+    }
+
+    @Post("/stdntafeldup/{id}")
+    Optional<Anlage> dupStdTafel(Integer id) {
+        LOG.info("Duplicating StdnTafel {}: {}", id);
+        Optional<StdnTafel> os = stdnTafelRepository.findById(id);
+        if(os.isPresent()){
+            Optional<Anlage> oa = anlageRepository.findByApobk(os.get().getAnlage());
+            if(oa.isPresent()){
+                Anlage a = oa.get();
+                StdnTafel sn = os.get().copy();
+                a.add(sn);
+                return Optional.of(anlageRepository.save(a));
+
+            }
+        }
+        return Optional.empty();
     }
 
     @Get("/klassen")

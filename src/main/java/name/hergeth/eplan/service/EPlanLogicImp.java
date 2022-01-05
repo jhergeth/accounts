@@ -25,6 +25,7 @@ public class EPlanLogicImp implements EPlanLogic {
     private final KlasseRepository klasseRep;
     private final KollegeRepository kollegeRep;
     private final AnrechungRepository anrechungRepository;
+    private final AnlageRepository anlageRepository;
     private final UGruppenRepository uGruppenRepository;
 
     private final String SPLITTER;
@@ -35,6 +36,7 @@ public class EPlanLogicImp implements EPlanLogic {
                          KollegeRepository kollegeRepository,
                          UGruppenRepository uGruppenRepository,
                          AnrechungRepository anrechungRepository,
+                         AnlageRepository anlageRepository,
                          EPlanLoader ePlanLoader
     ) {
         this.cfg = configuration;
@@ -43,6 +45,7 @@ public class EPlanLogicImp implements EPlanLogic {
         this.kollegeRep = kollegeRepository;
         this.anrechungRepository = anrechungRepository;
         this.uGruppenRepository = uGruppenRepository;
+        this.anlageRepository = anlageRepository;
         this.ePlanLoader = ePlanLoader;
         this.SPLITTER = cfg.get("REGEX_SPLITTER");
 
@@ -53,6 +56,8 @@ public class EPlanLogicImp implements EPlanLogic {
 
     @PostConstruct
     public void initialize() {
+        anlageRepository.init();
+
         LOG.info("Finalizing configuration.");
     }
 
@@ -209,6 +214,45 @@ public class EPlanLogicImp implements EPlanLogic {
             dto.setKlasse(s);
 
             final Double[] soll = Func.getZeroDouble(ARRSIZ);
+            Optional<Klasse> ok = klasseRep.findByKuerzel(s);
+            String klehrer = "";
+            if(ok.isPresent()) {
+                klehrer = ok.get().getKlassenlehrer();
+            }
+            if(ok.isEmpty()){   // klasse könnte blockklasse sein
+                int p = s.indexOf("UMO");
+                if( p > 0){
+                    String s2 = s.substring(0, p) + "U" + s.substring(p + 3);
+                    ok = klasseRep.findByKuerzel(s2);
+                    if(ok.isPresent()){
+                        klehrer = ok.get().getKlassenlehrer();
+                        s2 = s.substring(0, p) + "M" + s.substring(p + 3);
+                        ok = klasseRep.findByKuerzel(s2);
+                        if(ok.isPresent()) {
+                            klehrer += ", " + ok.get().getKlassenlehrer();
+                            s2 = s.substring(0, p) + "O" + s.substring(p + 3);
+                            ok = klasseRep.findByKuerzel(s2);
+                            if(ok.isPresent()) {
+                                klehrer += ", " + ok.get().getKlassenlehrer();
+                            }
+                        }
+                    }
+                }
+            }
+            if(ok.isPresent()){
+                dto.setKllehrer(klehrer);
+                dto.setAnlage(ok.get().getAnlage());
+                Optional<Anlage> oa = anlageRepository.findByApobkLike(ok.get().getAnlage());
+                if(oa.isPresent()){
+                    StdnTafel st = oa.get().getJahresTafeln().get(0);
+                    if(st != null){
+                        soll[0] = st.getMinStdnBB()/40;
+                        soll[1] = st.getMinStdnBU()/40;
+                        soll[2] = st.getMinStdnDF()/40;
+                    }
+                }
+            }
+
             final Double[] ist = Func.getZeroDouble(ARRSIZ);
             final Double[] kuk = Func.getZeroDouble(ARRSIZ);
             final Double[] sum = Func.getZeroDouble(ARRSIZ);

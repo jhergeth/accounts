@@ -131,7 +131,7 @@ public class Cfg {
         this.configpfad = configpfad;
     }
 
-    private String save(String name, String path, Map<String, String> map){
+    public static String save(String name, String path, Map<String, String> map){
         String jsonResult = mapToJson(map);
         try {
             try (OutputStreamWriter out =  new OutputStreamWriter( new FileOutputStream(path), StandardCharsets.UTF_8)) {
@@ -145,7 +145,7 @@ public class Cfg {
         return jsonResult;
     }
 
-    private String mapToJson(Map<String,String> map){
+    private static String mapToJson(Map<String,String> map){
         ObjectMapper mapper = new ObjectMapper();
         String jsonResult = null;
         try {
@@ -157,7 +157,7 @@ public class Cfg {
         return jsonResult;
     }
 
-    private Map<String,String> load(String name, String sPath) {
+    public static Map<String,String> load(String name, String sPath) {
         String fStr = "";
         try {
             Path path = Paths.get(sPath);
@@ -174,7 +174,7 @@ public class Cfg {
 
         return null;
     }
-    private Map<String, String> jsonToMap(String fStr) throws JsonProcessingException {
+    private static Map<String, String> jsonToMap(String fStr) throws JsonProcessingException {
         ObjectMapper mapper = new ObjectMapper();
         TypeReference<TreeMap<String,String>> typeRef = new TypeReference<>() {};
         Map<String,String> map = mapper.readValue(fStr, typeRef);
