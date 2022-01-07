@@ -21,3 +21,4 @@ out/
 /lib/javax.servlet.jar
 /lib/javax.servlet.jsp.jar
 /lib/javax.servlet.jsp.jstl.jar
+/mariadb-java-client-2.7.3.jar_/
