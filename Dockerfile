@@ -1,4 +1,4 @@
-FROM openjdk:17-alpine
+FROM openjdk:19-jdk
 WORKDIR /home/app
 COPY layers/libs /home/app/libs
 COPY layers/resources /home/app/resources
