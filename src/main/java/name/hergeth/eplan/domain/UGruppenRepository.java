@@ -36,7 +36,7 @@ public abstract class UGruppenRepository implements CrudRepository<UGruppe, Long
     public UGruppe getSJ(){ return SJ;}
 
     public void initLoad(){
-        if(SJ == null){
+        if(count() == 0){
             SJ = new UGruppe( "SJ", "Schuljahr", 40, 1.0);
             save(SJ);
             save(new UGruppe("HJ1", "1.Halbjahr", 20, 0.5));
