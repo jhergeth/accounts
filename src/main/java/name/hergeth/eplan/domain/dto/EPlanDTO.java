@@ -54,17 +54,6 @@ public class EPlanDTO {
 
     private Long parentid = 0l; //
 
-    public EPlanDTO addSubEntry(EPlanDTO sub){
-        if(subentries == null){
-            subentries = new LinkedList<EPlanDTO>();
-            this.parentid = this.id;
-        }
-        sub.parentid = this.id;
-        subentries.add(sub);
-        LOG.info("Added subentry in {}: id {} to entry {}.", this.bereich, sub.no, this.no);
-        return this;
-    }
-
     public static EPlanDTO fromEPlan(EPlan e){
         EPlanDTO ed = new EPlanDTO();
         ed.id = e.getId();

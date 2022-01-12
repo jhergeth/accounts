@@ -41,7 +41,8 @@ public class UntisGPULoader {
     public UntisGPULoader(KollegeRepository kollegeRepository,
                           KlasseRepository klasseRepository,
                           UGruppenRepository uGruppenRepository,
-                          AnrechungRepository anrechungRepository) {
+                          AnrechungRepository anrechungRepository,
+                          EPlanRepository ePlanRepository) {
         this.kollegeRepository = kollegeRepository;
         this.klasseRepository = klasseRepository;
         this.anrechungRepository = anrechungRepository;
@@ -132,7 +133,7 @@ public class UntisGPULoader {
         return lastLoad;
     }
 
-    private void readCSV(String uFile, Consumer<String[]> con) {
+    public void readCSV(String uFile, Consumer<String[]> con) {
         int lines = 0;
 
         try {

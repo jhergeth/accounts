@@ -13,8 +13,8 @@ public interface EPlanLoader {
     static final String[] KLASSE_EXCEL_COLUMMS = { "Ignore (i)", "Hauptklasse", "Name", "Langname", "Klassenlehrer", "Text 2", "Raum", "Abt.", "Text"};
 
     public List<Klasse> excelKlassenFromFile(String fName);
-    public void excelBereichFromFile(String file, Iterable<String> bereich);
-    public void excelBereichFromFile(String file, String bereich);
+    public void excelBereichFromFile(String file, String ext, Iterable<String> bereich);
+    public void excelBereichFromFile(String file, String ext,  String bereich);
 
     public Integer insertAlleUnterrichte(String bereich, List<EPlan> res, Integer id, EPlanDTO edt);
 }

@@ -2,11 +2,13 @@ package name.hergeth.eplan.service;
 
 
 import jakarta.inject.Singleton;
+import lombok.Data;
 import name.hergeth.accounts.services.StatusSrvc;
 import name.hergeth.config.Cfg;
 import name.hergeth.eplan.domain.*;
 import name.hergeth.eplan.domain.dto.EPlanDTO;
 import name.hergeth.eplan.util.Func;
+import org.apache.commons.lang3.StringUtils;
 import org.apache.poi.ss.usermodel.*;
 import org.apache.poi.xssf.usermodel.XSSFWorkbook;
 import org.slf4j.Logger;
@@ -14,6 +16,7 @@ import org.slf4j.LoggerFactory;
 
 import java.io.FileInputStream;
 import java.util.*;
+import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
 
 @Singleton
@@ -26,6 +29,8 @@ public class EPlanLoaderImpl implements EPlanLoader {
     private final EPlanRepository ePlanRepository;
     private final UGruppenRepository uGruppenRepository;
     private final StatusSrvc status;
+    private final UntisGPULoader untisGPULoader;
+    private final KlasseRepository klasseRepository;
 
     private final String SPLITTER;
     String[] colTitleArr = null;
@@ -46,10 +51,15 @@ public class EPlanLoaderImpl implements EPlanLoader {
     public EPlanLoaderImpl(Cfg cfg,
                            EPlanRepository ePlanRepository,
                            StatusSrvc status,
-                           UGruppenRepository uGruppenRepository){
+                           UGruppenRepository uGruppenRepository,
+                           UntisGPULoader untisGPULoader,
+                           KlasseRepository klasseRepository){
         this.cfg = cfg;
         this.ePlanRepository = ePlanRepository;
         this.uGruppenRepository = uGruppenRepository;
+        this.untisGPULoader = untisGPULoader;
+        this.klasseRepository = klasseRepository;
+
         SPLITTER = cfg.get("REGEX_SPLITTER");
         colTitleArr = cfg.getStrArr("EPLAN_COL_TITLES",
                 "[\"Abteilung\", \"Klasse\", \"Fakultas\", \"Fach\", \"Lehrer\", \"Raum\", \"WSt/SJ\", \"LGZ\", \"Bemerkung\", \"UZ\", \"Typ\"]"
@@ -139,18 +149,174 @@ public class EPlanLoaderImpl implements EPlanLoader {
 
 
     @Override
-    public void excelBereichFromFile(String file, Iterable<String> bereiche){
+    public void excelBereichFromFile(String file, String ext,  Iterable<String> bereiche){
         LOG.info("Load all bereiche from excel file {}", file);
         status.update("Bereiche werden eingelesen.");
         for(String ber : bereiche){
             status.update("Lese Bereich " + ber);
-            excelBereichFromFile(file, ber);
+            excelBereichFromFile(file, ext, ber);
         }
         status.update("Bereiche gelesen.");
     }
 
     @Override
-    public void excelBereichFromFile(String file, String bereich){
+    public void excelBereichFromFile(String file, String ext,  String bereich) {
+        if (StringUtils.equalsAnyIgnoreCase("XLS", "XLSX", "XLSM")) {
+            loadBereichFromExcelFile(file, bereich);
+        } else {
+            loadBereichFromTextFile(file, bereich);
+        }
+    }
+
+    @Data
+    private class Unums {
+        EPlan first = null;
+        Set<String> klassen;
+        Set<String> lehrer;
+        List<EPlan> other;
+
+        private void init(){
+            first = null;
+            klassen = new HashSet<>();
+            lehrer = new HashSet<>();
+            other = new LinkedList<>();
+        }
+        public Unums(){
+            init();
+        }
+
+        public Unums(EPlan e){
+            init();
+            add(e);
+        }
+
+        public void add(EPlan e){
+            if(first == null){
+                init();
+                first = e;
+                String uid = UUID.randomUUID().toString();
+                e.setLernGruppe(uid);
+            }
+            else{
+                other.add(e);
+            }
+            klassen.add(e.getKlasse());
+            lehrer.add(e.getLehrer());
+        }
+
+        public void adjust(){
+            double anzL = lehrer.size();
+            double anzK = klassen.size();
+            String lg = first.getLernGruppe();
+            first.setAnzLehrer(anzL);
+            first.setAnzKlassen(anzK);
+            other.stream().forEach(e -> {
+                e.setAnzKlassen(anzK);
+                e.setAnzLehrer(anzL);
+                e.setLernGruppe(lg);
+            });
+        }
+    }
+
+    private void loadBereichFromTextFile(String file, String bereich){
+        LOG.info("Load bereich {} (all) from text file {}", bereich, file);
+
+        Map<String,String> bMap = new HashMap<>();
+        bMap.put("KRS", "BAUH");
+        bMap.put("HEG", "ETIT");
+        bMap.put("DGR", "JVA");
+        bMap.put("KOH", "AV");
+        bMap.put("SCN", "AIF");
+        bMap.put("BUE", "FOS");
+        bMap.put("NOW", "ERNPFL");
+        bMap.put("GIL", "SOZKI");
+        bMap.put("SCR", "GESSOZ");
+
+        UGruppe sj = UGruppenRepository.SJ;
+
+        Map<String,EPlan> eMap = new HashMap<>();
+        Map<String,Unums> unumMap = new HashMap<>();
+        List<EPlan> eList = new LinkedList<>();
+
+        AtomicInteger cnt = new AtomicInteger(1);
+        untisGPULoader.readCSV(file, (String[] itm) -> {
+            final int GPU_UNUM = 0;
+            final int GPU_WSTD = 1;
+            final int GPU_KLA = 4;
+            final int GPU_KUK = 5;
+            final int GPU_FACH = 6;
+            final int GPU_RAUM = 7;
+            final int GPU_WWERT = 10;
+            final int GPU_GRUP = 11;
+            final int GPU_BEM = 17;
+            final int GPU_WSTK = 2;
+            final int GPU_WSTL = 3;
+
+            if(Func.parseDouble(itm[GPU_WWERT]) > 0d){
+                if(itm[GPU_KLA].length() > 0){     // Klasse angegeben
+                    String ber = "ETIT";
+                    Optional<Klasse> ok = klasseRepository.findByKuerzel(itm[GPU_KLA]);
+                    if(ok.isEmpty()){
+                        LOG.warn("Kann Klasse {} nicht finden, unum:{}", itm[GPU_KLA], itm[GPU_UNUM]);
+                    }
+                    else {
+                        ber = bMap.get(ok.get().getAbteilung());
+                        if (ber == null) {
+                            LOG.warn("Kann Bereich von Klasse {} nicht finden: {} unum:{}", itm[GPU_KLA], ok.get().getAbteilung(), itm[GPU_UNUM]);
+                            ber = "ETIT";
+                        }
+                        EPlan e = EPlan.builder()
+                                .no(cnt.getAndIncrement())
+                                //                            .schule(EPLAN.SCHULE)
+                                //                            .bereich(getCellAsString(cRow.getCell(colIdxs[0])))
+                                .bereich(ber)
+                                .klasse(itm[GPU_KLA])
+                                .fakultas(itm[GPU_FACH])
+                                .fach(itm[GPU_FACH])
+                                .lehrer(itm[GPU_KUK])
+                                .raum(itm[GPU_RAUM])
+                                .wstd(Func.parseDouble(itm[GPU_WSTD]))
+                                .lgz(1d)
+                                .ugid(sj.getId())
+                                .ugruppe(sj)
+                                .lernGruppe("")
+                                .bemerkung(itm[GPU_BEM])
+                                .type(1)
+                                .build();
+
+                        eList.add(e);
+
+                        EPlan ne = eMap.get(itm[GPU_UNUM]);  // gab es diese UNUMMER schon mal?
+                        if (ne != null) {   // ja! also ...
+                            Unums nu = unumMap.get(itm[GPU_UNUM]);
+                            if(nu == null){
+                                Unums u = new Unums(ne);
+                                u.add(e);
+                                unumMap.put(itm[GPU_UNUM], u);
+                            }
+                            else{
+                                nu.add(e);
+                            }
+                        }
+                        else{
+                            eMap.put(itm[GPU_UNUM], e);
+                        }
+                    }
+                }
+            }
+        });
+
+        // In der Map unumMap haben wir alle EPläne gesammelt, deren Unterrichtsnummer mehrfach auftrat
+        // In denen haben wir die Anzahl Kuk und Klassen summiert.
+        // Diese Daten verteilen wir jetzt auf alle EPläne mit Lerngruppen
+        unumMap.values().forEach(u -> u.adjust());
+
+        ePlanRepository.deleteAll();
+        ePlanRepository.saveAll(eList);
+
+    }
+
+    private void loadBereichFromExcelFile(String file, String bereich){
         LOG.info("Load bereich {} from excel file {}", bereich, file);
 
         List<EPlan> res = new LinkedList<>();
@@ -175,16 +341,16 @@ public class EPlanLoaderImpl implements EPlanLoader {
         ePlanRepository.saveAll(res);
     }
 
-    public Integer insertAlleUnterrichte(String bereich, List<EPlan> res, Integer id, EPlanDTO edt){
-        return insertAlleUnterrichte(bereich, res, id, fromEDTO(edt));
-    }
-
     private int renumberList(List<EPlan> lst, int start){
         AtomicReference<Integer> idx = new AtomicReference<>(start);
         lst.stream().peek(e -> {
             e.setNo(idx.getAndSet(idx.get() + 1));
         });
         return idx.get();
+    }
+
+    public Integer insertAlleUnterrichte(String bereich, List<EPlan> res, Integer id, EPlanDTO edt){
+        return insertAlleUnterrichte(bereich, res, id, fromEDTO(edt));
     }
 
     private Integer insertAlleUnterrichte(String bereich, List<EPlan> res, Integer id, String[] sarr) {
@@ -194,12 +360,12 @@ public class EPlanLoaderImpl implements EPlanLoader {
         String[] le = Func.addToSet(new HashSet<String>(), lehrer, SPLITTER).toArray(String[]::new);
         if (kl.length > 1 || le.length > 1) {
             String lernGruppe = UUID.randomUUID().toString();
-            Double susFaktor = 1.0 / le.length;
-            Double kukFaktor = 1.0 / kl.length;
+            Double anzLehrer = (double)le.length;
+            Double anzKlassen = (double)kl.length;
             for (String l : le) {
                 for (String k : kl) {
                     if (k.length() > 1) {
-                        id = insertUnterricht(bereich, res, sarr, id, k, l, lernGruppe, susFaktor, kukFaktor);
+                        id = insertUnterricht(bereich, res, sarr, id, k, l, lernGruppe, anzLehrer, anzKlassen);
                     }
                 }
             }
@@ -210,7 +376,7 @@ public class EPlanLoaderImpl implements EPlanLoader {
         return id;
     }
 
-    private int insertUnterricht(String bereich, List<EPlan> res, String[] cols, int cnt, String klasse, String lehrer, String lernGruppe, Double susFaktor, double kukFaktor) {
+    private int insertUnterricht(String bereich, List<EPlan> res, String[] cols, int cnt, String klasse, String lehrer, String lernGruppe, Double anzLehrer, Double anzKlassen) {
         if(Func.isNumeric(cols[COL_WST])){
 
             Double lgz = Func.parseDouble(cols[COL_LGZ]);
@@ -237,8 +403,8 @@ public class EPlanLoaderImpl implements EPlanLoader {
                     .ugid(ug.getId())
                     .ugruppe(ug)
                     .lernGruppe(lernGruppe)
-                    .susFaktor(susFaktor)
-                    .kukFaktor(kukFaktor)
+                    .anzLehrer(anzLehrer)
+                    .anzKlassen(anzKlassen)
                     .bemerkung(cols[COL_BEM])
                     .type(Integer.parseInt(cols[COL_TYP]))
                     .build();

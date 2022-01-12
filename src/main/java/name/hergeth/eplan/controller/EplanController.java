@@ -57,13 +57,13 @@ public class EplanController   extends BaseController {
 
     @Post(value="/bereich/all", consumes = MediaType.MULTIPART_FORM_DATA, produces = MediaType.TEXT_PLAIN)
     public Publisher<HttpResponse<String>> uploadAll(StreamingFileUpload file) {
-        Publisher<HttpResponse<String>> res = uploadFileTo(file, (p,ext) -> eplLoader.excelBereichFromFile(p, ePlanLogic.getBereiche()));
+        Publisher<HttpResponse<String>> res = uploadFileTo(file, (p,ext) -> eplLoader.excelBereichFromFile(p, ext, ePlanLogic.getBereiche()));
         return res;
     }
 
     @Post(value="/bereich/{bereich}", consumes = MediaType.MULTIPART_FORM_DATA, produces = MediaType.TEXT_PLAIN)
     public Publisher<HttpResponse<String>> uploadBereich(StreamingFileUpload file, String bereich) {
-        return uploadFileTo(file, (p,ext) -> eplLoader.excelBereichFromFile(p, bereich));
+        return uploadFileTo(file, (p,ext) -> eplLoader.excelBereichFromFile(p, ext, bereich));
     }
 
     @Post(value="/update", consumes = MediaType.APPLICATION_JSON)

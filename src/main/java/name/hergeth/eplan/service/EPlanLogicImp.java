@@ -113,13 +113,13 @@ public class EPlanLogicImp implements EPlanLogic {
             String lg = UUID.randomUUID().toString();
             Double fak = (double)eList.size();
             base.setLernGruppe(lg);
-            base.setSusFaktor(fak);
+            base.setAnzLehrer(fak);
             ePlanRep.update(base);
             while(iter.hasNext()) {
                 EPlan e = iter.next();
                 e.setLernGruppe(lg);
                 e.setWstd(base.getWstd());
-                e.setSusFaktor(fak);
+                e.setAnzLehrer(fak);
                 ePlanRep.update(e);
             }
         }
@@ -153,20 +153,20 @@ public class EPlanLogicImp implements EPlanLogic {
             EPlan e = oRowEP.get();
             String lgrp = e.getLernGruppe();
             e.setLernGruppe("");
-            e.setSusFaktor(1.0);
+            e.setAnzLehrer(1.0);
             e = ePlanRep.update(e);
 
             List<EPlan> grp = ePlanRep.findByLernGruppeOrderByNo(lgrp);
             if(grp.size() == 1){
                 EPlan f = grp.get(0);
                 f.setLernGruppe("");
-                f.setSusFaktor(1.0);
+                f.setAnzLehrer(1.0);
                 ePlanRep.update(f);
             }
             else{
                 Double fak = (double) grp.size();
                 for(EPlan f : grp){
-                    f.setSusFaktor(fak);
+                    f.setAnzLehrer(fak);
                     ePlanRep.update(f);
                 }
             }
@@ -183,11 +183,9 @@ public class EPlanLogicImp implements EPlanLogic {
             LOG.debug("Deleted entries of lerngruppe {}.", ed.getLerngruppe());
         }
         else{
-            Optional<EPlan> oe = getEPlanFromEPlanDTO(ed);
-            if(oe.isPresent()){
-                LOG.debug("Deleting entry no {}.", oe.get().getId());
-                ePlanRep.delete(oe.get());
-            }
+            List<EPlan> eList = getEPlanFromEPlanDTO(ed);
+            LOG.debug("Deleting {} entries firdt no {}.", eList.size(), eList.get(0).getId());
+            ePlanRep.deleteAll(eList);
         }
         List<EPlan> ins = new LinkedList<>();
         ePlanLoader.insertAlleUnterrichte(ed.getBereich(), ins, ed.getNo(), ed);
@@ -338,19 +336,25 @@ public class EPlanLogicImp implements EPlanLogic {
 
     private List<EPlan> getEPlanList(List<EPlanDTO> dtos){
         List<EPlan> res = new LinkedList<>();
-        for(Iterator<EPlanDTO> iter = dtos.listIterator(); iter.hasNext();){
-            EPlanDTO d = iter.next();
-            Optional<EPlan> oRowEP = getEPlanFromEPlanDTO(d);
-            if(oRowEP.isPresent()) {
+        dtos.stream().forEach(dto -> {
+            res.addAll(ePlanRep.findByLernGruppeOrderByNo(dto.getLerngruppe()));
+        });
+        return res;
+    }
+
+    public List<EPlan> getEPlanFromEPlanDTO(EPlanDTO d) {
+        List<EPlan> res = new LinkedList<>();
+        Optional<EPlan> oRowEP = ePlanRep.find(d.getId());
+        if(oRowEP.isPresent()){
+            String lg = oRowEP.get().getLernGruppe();
+            if( lg != null && lg.length() > 1){
+                res = ePlanRep.findByLernGruppeOrderByNo(lg);
+            }
+            else{
                 res.add(oRowEP.get());
             }
         }
         return res;
-    }
-
-    public Optional<EPlan> getEPlanFromEPlanDTO(EPlanDTO d) {
-        Optional<EPlan> oRowEP = ePlanRep.find(d.getId());
-        return oRowEP;
     }
 
     @Override

@@ -18,7 +18,7 @@ public interface EPlanLogic {
     public List<EPlanDTO> getEPlan(String bereich);
     public List<EPlanDTO> fromEPL(List<EPlan> el);
 
-    public Optional<EPlan> getEPlanFromEPlanDTO(EPlanDTO d);
+    public List<EPlan> getEPlanFromEPlanDTO(EPlanDTO d);
     public Optional<EPlanDTO> updateEPlan(EPlanDTO d);
     public Optional<KlassenSumDTO> getSummenByKlasse(String s);
     public List<String> getBereiche();

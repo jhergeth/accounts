@@ -49,16 +49,24 @@ public class EPlan {
 
     private Double wstd;
 
-    public Double getWstdEff(){ return wstd * ugruppe.getWFaktor(); }
+    public Double getWstdEff(){ return wstd * ugruppe.getWFaktor(); }   // effektive Wochenstunden, berücksichtigt Zeiträume (1.HJ, 1.Q, ...)
 
-    @Builder.Default private Double susFaktor = 1.0;
-    @Builder.Default private Double lgz = 1.0;
-    public Double susWStd(){ return getWstdEff() * susFaktor / lgz; }
-
-    @Builder.Default private Double kukFaktor = 1.0;
-    public Double kukWStd(){ return getWstdEff() * kukFaktor; }
-
+    /*
+        Jede Kombination aus Klassen und Lehreren erzeugen einen EPlan-Eintrag.
+        Finden mehrere EPlan-Einträge gleichzeitig statt (mehrere KuK in einer Klasse, mehrere Klassen bei einem KuK),
+        erhalten sie die gleiche Lerngruppe. Daran wird die Gleichzeitigkeit erkannt.
+        z.B.: 2 KuK in einer Klasse -> 2 EPlan-Einträge (einen für jeden KuK), anzLehrer = 2
+                -> jeder der Einträge liefert susWStd() = effWStd/2, in Summe erhalten die SuS (Klasse) also effWStd
+                -> jeder der Einträge liefert kukWStd() = effWStd, jeder KuK bekommt die gleiche Stundenzahl angerechnet
+        Analog bei zwei Klassen in einem Unterricht: anzKlassen = 2 ...
+     */
     @Builder.Default private String lernGruppe = "";
+    @Builder.Default private Double lgz = 1.0;                          // anzahl SuS-Gruppen, die den Unterricht abwechselnd bekommen
+    @Builder.Default private Double anzLehrer = 1.0;                    // anzahl Lehrer, die den Unterricht geben
+    public Double susWStd(){ return getWstdEff() /(anzLehrer * lgz); }  // effektive Wochenstunde für SuS.
+
+    @Builder.Default private Double anzKlassen = 1.0;                   // gleichzeitig unterrichteten Klassen -> Anzahl der EPlan-Einträge
+    public Double kukWStd(){ return getWstdEff() / anzKlassen; }        // KuK-WStdn / anzKlassen, aber anzKlassen Einträge!
 
     private Long ugid;
     @ManyToOne(optional = false, fetch = FetchType.EAGER, cascade = CascadeType.ALL)
