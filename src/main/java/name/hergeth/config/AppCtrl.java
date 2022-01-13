@@ -5,8 +5,8 @@ import io.micronaut.http.annotation.Get;
 import io.micronaut.security.annotation.Secured;
 import io.micronaut.security.rules.SecurityRule;
 import jakarta.inject.Inject;
-import name.hergeth.accounts.services.IStatusSrvc;
-import name.hergeth.accounts.services.StatusSrvc;
+import name.hergeth.baseservice.IStatusSrvc;
+import name.hergeth.baseservice.StatusSrvc;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 

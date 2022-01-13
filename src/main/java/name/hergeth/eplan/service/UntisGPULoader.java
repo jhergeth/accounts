@@ -7,6 +7,7 @@ import io.micronaut.context.event.ApplicationEventPublisher;
 import io.micronaut.data.repository.CrudRepository;
 import jakarta.inject.Inject;
 import jakarta.inject.Singleton;
+import name.hergeth.baseservice.StatusSrvc;
 import name.hergeth.config.Cfg;
 import name.hergeth.eplan.domain.*;
 import name.hergeth.eplan.util.Func;
@@ -20,6 +21,8 @@ import java.nio.charset.Charset;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
+import java.util.LinkedList;
+import java.util.List;
 import java.util.Optional;
 import java.util.function.Consumer;
 
@@ -35,18 +38,27 @@ public class UntisGPULoader {
     private final KlasseRepository klasseRepository;
     private final AnrechungRepository anrechungRepository;
     private final UGruppenRepository uGruppenRepository;
+    private final StatusSrvc status;
 
     private static LocalDateTime lastLoad = null;
+
+    public class LineData {
+        public int current;
+        public int max;
+        String[] elements;
+    }
 
     public UntisGPULoader(KollegeRepository kollegeRepository,
                           KlasseRepository klasseRepository,
                           UGruppenRepository uGruppenRepository,
                           AnrechungRepository anrechungRepository,
-                          EPlanRepository ePlanRepository) {
+                          StatusSrvc status
+    ) {
         this.kollegeRepository = kollegeRepository;
         this.klasseRepository = klasseRepository;
         this.anrechungRepository = anrechungRepository;
         this.uGruppenRepository = uGruppenRepository;
+        this.status = status;
 
         LOG.info("... created:");
     }
@@ -57,11 +69,11 @@ public class UntisGPULoader {
 
     public void readAnrechnungen(String uFile) {
         DateTimeFormatter f = DateTimeFormatter.ofPattern("yyyyMMdd");
-//        LocalDate dateTime = LocalDate.from(f.parse());
+        List<Anrechnung> aList = new LinkedList<>();
 
-        anrechungRepository.deleteAll();
-
-        readCSV(uFile, (String[] itm) -> {
+        readCSV(uFile, (LineData lData) -> {
+            status.update(lData.current, lData.max, "Einlesen der Anrechnungen");
+            String[] itm = lData.elements;
             LocalDate begin = itm[6].length() > 2 ? LocalDate.from(f.parse(itm[6])) : Cfg.minDate();
             LocalDate end = itm[7].length() > 2 ? LocalDate.from(f.parse(itm[7])) : Cfg.maxDate();
             Anrechnung kl = Anrechnung.builder()
@@ -74,13 +86,18 @@ public class UntisGPULoader {
                     .text(itm[8])
                     .jwert(NumberUtils.toDouble(itm[12]))
                     .build();
-            anrechungRepository.save(kl);
+            aList.add(kl);
         });
+        anrechungRepository.deleteAll();
+        anrechungRepository.saveAll(aList);
+        status.stop("Anrechnungen gelesen.");
         lastLoad = LocalDateTime.now();
     }
 
     public void readKollegen(String uFile) {
-        readCSV(uFile, (String[] itm) -> {
+        readCSV(uFile, (LineData lData) -> {
+            String[] itm = lData.elements;
+            status.update(lData.current, lData.max, "Einlesen der KollegInnen: " + itm[0]);
             Optional<Kollege> opk = kollegeRepository.findById(itm[0]);
             if (opk.isPresent()) {
                 Kollege ko = opk.get();
@@ -104,14 +121,17 @@ public class UntisGPULoader {
                 kollegeRepository.save(ko);
             }
         });
+        status.stop("KollegInnen eingelesen.");
         lastLoad = LocalDateTime.now();
     }
 
     public void readKlassen(String uFile) {
-        klasseRepository.deleteAll();
         uGruppenRepository.initLoad();
+        List<Klasse> kList = new LinkedList<>();
 
-        readCSV(uFile, (String[] itm) -> {
+        readCSV(uFile, (LineData lData) -> {
+            String[] itm = lData.elements;
+            status.update(lData.current, lData.max, "Einlesen der Klassen: " + itm[0]);
             Klasse kl = Klasse.builder()
                     .kuerzel(itm[0])
                     .langname(itm[1])
@@ -124,8 +144,11 @@ public class UntisGPULoader {
                     .bemerkung(itm[21])
                     .uGruppenId(uGruppenRepository.getSJ().getId())
                     .build();
-            klasseRepository.save(kl);
+            kList.add(kl);
         });
+        klasseRepository.deleteAll();
+        klasseRepository.saveAll(kList);
+        status.stop("Klassen eingelesen.");
         lastLoad = LocalDateTime.now();
     }
 
@@ -133,16 +156,16 @@ public class UntisGPULoader {
         return lastLoad;
     }
 
-    public void readCSV(String uFile, Consumer<String[]> con) {
+    public void readCSV(String uFile, Consumer<LineData> con) {
         int lines = 0;
-
+        LineData cData = new LineData();
         try {
-            File file = new File(uFile);
+            String line ="";
+            cData.max = countLines(uFile);
 
+            File file = new File(uFile);
             String encoding = Func.guessEncoding(new FileInputStream(file));
             LOG.info("File {} hs encoding {}", uFile, encoding);
-
-            String line ="";
 
             BufferedReader br = new BufferedReader(new FileReader(file, Charset.forName(encoding)));
             while ((line = br.readLine()) != null) {
@@ -151,11 +174,11 @@ public class UntisGPULoader {
                 for(int i = 0; i < elm.length; i++){
                     elm[i] = elm[i].replace("\"", "");
                 }
-                int absn = 0;
 
-                con.accept(elm);
+                cData.current = lines++;
+                cData.elements = elm;
+                con.accept(cData);
 
-                lines++;
                 if(lines%100 == 0){
                     LOG.info("Read {} lines from {}.", lines, uFile);
                 }
@@ -181,6 +204,45 @@ public class UntisGPULoader {
             LOG.error("Exception during {} reading: {}", uFile, ex.getMessage());
         }
         LOG.debug("Read {} items from {}.", rep.count(), uFile);
+    }
+
+    private int countLines(String filename) throws IOException {
+        InputStream is = new BufferedInputStream(new FileInputStream(filename));
+        try {
+            byte[] c = new byte[1024];
+
+            int readChars = is.read(c);
+            if (readChars == -1) {
+                // bail out if nothing to read
+                return 0;
+            }
+
+            // make it easy for the optimizer to tune this loop
+            int count = 0;
+            while (readChars == 1024) {
+                for (int i=0; i<1024;) {
+                    if (c[i++] == '\n') {
+                        ++count;
+                    }
+                }
+                readChars = is.read(c);
+            }
+
+            // count remaining characters
+            while (readChars != -1) {
+                System.out.println(readChars);
+                for (int i=0; i<readChars; ++i) {
+                    if (c[i] == '\n') {
+                        ++count;
+                    }
+                }
+                readChars = is.read(c);
+            }
+
+            return count == 0 ? 1 : count;
+        } finally {
+            is.close();
+        }
     }
 }
 

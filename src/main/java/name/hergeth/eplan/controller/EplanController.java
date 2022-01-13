@@ -7,6 +7,7 @@ import io.micronaut.http.annotation.Get;
 import io.micronaut.http.annotation.Post;
 import io.micronaut.http.multipart.StreamingFileUpload;
 import io.micronaut.validation.Validated;
+import name.hergeth.config.Cfg;
 import name.hergeth.eplan.domain.EPlan;
 import name.hergeth.eplan.domain.EPlanRepository;
 import name.hergeth.eplan.domain.dto.EPlanDTO;
@@ -30,8 +31,10 @@ public class EplanController   extends BaseController {
     private final EPlanLogic ePlanLogic;
     private final EPlanLoader eplLoader;
     private final EPlanRepository ePlanRepository;
+    private final Cfg cfg;
 
-    public EplanController(EPlanLogic eplanLogic, EPlanLoader eplLoader, EPlanRepository ePlanRepository){
+    public EplanController(Cfg cfg, EPlanLogic eplanLogic, EPlanLoader eplLoader, EPlanRepository ePlanRepository){
+        this.cfg = cfg;
         this.ePlanLogic = eplanLogic;
         this.eplLoader = eplLoader;
         this.ePlanRepository = ePlanRepository;
@@ -40,7 +43,7 @@ public class EplanController   extends BaseController {
     @Get("/bereiche")
     List<String> getBereiche(){
         LOG.info("Fetching Bereichsliste");
-        return ePlanLogic.getBereiche();
+        return cfg.getBereiche();
     }
 
     @Get("/bereich/{ber}")
@@ -57,13 +60,13 @@ public class EplanController   extends BaseController {
 
     @Post(value="/bereich/all", consumes = MediaType.MULTIPART_FORM_DATA, produces = MediaType.TEXT_PLAIN)
     public Publisher<HttpResponse<String>> uploadAll(StreamingFileUpload file) {
-        Publisher<HttpResponse<String>> res = uploadFileTo(file, (p,ext) -> eplLoader.excelBereichFromFile(p, ext, ePlanLogic.getBereiche()));
+        Publisher<HttpResponse<String>> res = uploadFileTo(file, (p,ext) -> eplLoader.alleBereicheFromFile(p, ext));
         return res;
     }
 
     @Post(value="/bereich/{bereich}", consumes = MediaType.MULTIPART_FORM_DATA, produces = MediaType.TEXT_PLAIN)
     public Publisher<HttpResponse<String>> uploadBereich(StreamingFileUpload file, String bereich) {
-        return uploadFileTo(file, (p,ext) -> eplLoader.excelBereichFromFile(p, ext, bereich));
+        return uploadFileTo(file, (p,ext) -> eplLoader.bereichFromFile(p, ext, bereich));
     }
 
     @Post(value="/update", consumes = MediaType.APPLICATION_JSON)

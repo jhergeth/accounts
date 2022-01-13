@@ -1,4 +1,4 @@
-package name.hergeth.accounts.services;
+package name.hergeth.baseservice;
 
 import jakarta.inject.Singleton;
 import lombok.Data;
@@ -34,6 +34,10 @@ public class StatusSrvc implements IStatusSrvc {
         return new Status(this);
     }
 
+    @Override
+    public void update(int d, int t , String s){
+        start(d, t, s);
+    }
     @Override
     public void start(int d, int t, String s) {
         done = d;

@@ -61,11 +61,6 @@ public class EPlanLogicImp implements EPlanLogic {
         LOG.info("Finalizing configuration.");
     }
 
-    @Override
-    public List <String> getBereiche(){
-        return List.of(cfg.getStrArr("EPLAN_BEREICHE"));
-    }
-
     /*
         EPLAN
      */

@@ -21,6 +21,5 @@ public interface EPlanLogic {
     public List<EPlan> getEPlanFromEPlanDTO(EPlanDTO d);
     public Optional<EPlanDTO> updateEPlan(EPlanDTO d);
     public Optional<KlassenSumDTO> getSummenByKlasse(String s);
-    public List<String> getBereiche();
     public List<EPlanSummen> getSummen();
 }

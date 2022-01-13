@@ -3,7 +3,7 @@ package name.hergeth.eplan.service;
 
 import jakarta.inject.Singleton;
 import lombok.Data;
-import name.hergeth.accounts.services.StatusSrvc;
+import name.hergeth.baseservice.StatusSrvc;
 import name.hergeth.config.Cfg;
 import name.hergeth.eplan.domain.*;
 import name.hergeth.eplan.domain.dto.EPlanDTO;
@@ -149,22 +149,27 @@ public class EPlanLoaderImpl implements EPlanLoader {
 
 
     @Override
-    public void excelBereichFromFile(String file, String ext,  Iterable<String> bereiche){
-        LOG.info("Load all bereiche from excel file {}", file);
-        status.update("Bereiche werden eingelesen.");
-        for(String ber : bereiche){
-            status.update("Lese Bereich " + ber);
-            excelBereichFromFile(file, ext, ber);
+    public void alleBereicheFromFile(String file, String ext){
+        LOG.info("Load all bereiche from file {}", file);
+        if (StringUtils.equalsAnyIgnoreCase(ext,"XLS", "XLSX", "XLSM")) {
+            status.start(0, cfg.getBereiche().size(), "Bereiche werden eingelesen.");
+            for(String ber : cfg.getBereiche()){
+                status.inc("Lese Bereich " + ber);
+                loadBereichFromExcelFile(file, ber);
+            }
         }
-        status.update("Bereiche gelesen.");
+        else{
+            loadBereichFromTextFile(file);
+        }
+        status.stop("Bereiche gelesen.");
     }
 
     @Override
-    public void excelBereichFromFile(String file, String ext,  String bereich) {
-        if (StringUtils.equalsAnyIgnoreCase("XLS", "XLSX", "XLSM")) {
+    public void bereichFromFile(String file, String ext, String bereich) {
+        if (StringUtils.equalsAnyIgnoreCase(ext,"XLS", "XLSX", "XLSM")) {
             loadBereichFromExcelFile(file, bereich);
         } else {
-            loadBereichFromTextFile(file, bereich);
+            loadBereichFromTextFile(file);
         }
     }
 
@@ -218,8 +223,8 @@ public class EPlanLoaderImpl implements EPlanLoader {
         }
     }
 
-    private void loadBereichFromTextFile(String file, String bereich){
-        LOG.info("Load bereich {} (all) from text file {}", bereich, file);
+    private void loadBereichFromTextFile(String file){
+        LOG.info("Load all from text file {}", file);
 
         Map<String,String> bMap = new HashMap<>();
         bMap.put("KRS", "BAUH");
@@ -239,7 +244,8 @@ public class EPlanLoaderImpl implements EPlanLoader {
         List<EPlan> eList = new LinkedList<>();
 
         AtomicInteger cnt = new AtomicInteger(1);
-        untisGPULoader.readCSV(file, (String[] itm) -> {
+        untisGPULoader.readCSV(file, (UntisGPULoader.LineData lData) -> {
+            String[] itm = lData.elements;
             final int GPU_UNUM = 0;
             final int GPU_WSTD = 1;
             final int GPU_KLA = 4;
@@ -252,6 +258,7 @@ public class EPlanLoaderImpl implements EPlanLoader {
             final int GPU_WSTK = 2;
             final int GPU_WSTL = 3;
 
+            status.update(lData.current, lData.max, "Einlesen der Unterrichte...");
             if(Func.parseDouble(itm[GPU_WWERT]) > 0d){
                 if(itm[GPU_KLA].length() > 0){     // Klasse angegeben
                     String ber = "ETIT";
@@ -313,6 +320,7 @@ public class EPlanLoaderImpl implements EPlanLoader {
 
         ePlanRepository.deleteAll();
         ePlanRepository.saveAll(eList);
+        status.stop("Unterrichte eingelesen.");
 
     }
 

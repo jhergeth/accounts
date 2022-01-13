@@ -1,4 +1,4 @@
-package name.hergeth.accounts.services;
+package name.hergeth.baseservice;
 
 public interface IStatusSrvc {
     StatusSrvc.Status getStatus();
@@ -8,6 +8,8 @@ public interface IStatusSrvc {
     void update(String s);
 
     void update(int d, String s);
+
+    void update(int d, int t, String s);
 
     void update(int d);
 

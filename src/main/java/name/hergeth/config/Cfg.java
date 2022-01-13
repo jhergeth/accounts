@@ -21,6 +21,7 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.time.LocalDate;
+import java.util.List;
 import java.util.Map;
 import java.util.TreeMap;
 
@@ -59,6 +60,11 @@ public class Cfg {
         getStrArr("EPLAN_BEREICHE",
             "[\"BauH\", \"ETIT\", \"JVA\", \"AV\", \"AIF\", \"FOS\", \"ErnPfl\", \"SozKi\", \"GesSoz\"]");
         LOG.info("Configuration finalized");
+    }
+
+
+    public List<String> getBereiche(){
+        return List.of(getStrArr("EPLAN_BEREICHE"));
     }
 
     public void save() {
