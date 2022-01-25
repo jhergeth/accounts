@@ -39,6 +39,8 @@ public class UntisGPULoader {
     private final AnrechungRepository anrechungRepository;
     private final UGruppenRepository uGruppenRepository;
     private final StatusSrvc status;
+    private final Cfg cfg;
+
 
     private static LocalDateTime lastLoad = null;
 
@@ -52,13 +54,15 @@ public class UntisGPULoader {
                           KlasseRepository klasseRepository,
                           UGruppenRepository uGruppenRepository,
                           AnrechungRepository anrechungRepository,
-                          StatusSrvc status
+                          StatusSrvc status,
+                          Cfg cfg
     ) {
         this.kollegeRepository = kollegeRepository;
         this.klasseRepository = klasseRepository;
         this.anrechungRepository = anrechungRepository;
         this.uGruppenRepository = uGruppenRepository;
         this.status = status;
+        this.cfg = cfg;
 
         LOG.info("... created:");
     }
@@ -98,7 +102,7 @@ public class UntisGPULoader {
         readCSV(uFile, (LineData lData) -> {
             String[] itm = lData.elements;
             status.update(lData.current, lData.max, "Einlesen der KollegInnen: " + itm[0]);
-            Optional<Kollege> opk = kollegeRepository.findById(itm[0]);
+            Optional<Kollege> opk = kollegeRepository.findByKuerzel(itm[0]);
             if (opk.isPresent()) {
                 Kollege ko = opk.get();
                 ko.setAbteilung(itm[36]);
@@ -126,12 +130,31 @@ public class UntisGPULoader {
     }
 
     public void readKlassen(String uFile) {
+        String uKlassen = cfg.get("KLASSEN_BLOCK_U", "ELU1, ELU2, HTU1, HTU2, BMU1");
+        String mKlassen = cfg.get("KLASSEN_BLOCK_M", "ELM1, ELM2, HTM1, HTM2, BMM1");
+        String oKlassen = cfg.get("KLASSEN_BLOCK_O", "ELO1, ELO2, HTO1, HTO2, BMO1");
+        String aKlassen = cfg.get("KLASSEN_ABSCHL", "ELA1, ELA2, MBA1, MBA2, MECA");
+
         uGruppenRepository.initLoad();
         List<Klasse> kList = new LinkedList<>();
 
         readCSV(uFile, (LineData lData) -> {
             String[] itm = lData.elements;
             status.update(lData.current, lData.max, "Einlesen der Klassen: " + itm[0]);
+
+            UGruppe ug = UGruppenRepository.SJ;
+            if(uKlassen.contains(itm[0])){
+                ug = UGruppenRepository.UB;
+            }
+            else if(mKlassen.contains(itm[0])){
+                ug = UGruppenRepository.MB;
+            }
+            else if(oKlassen.contains(itm[0])){
+                ug = UGruppenRepository.OB;
+            }
+            else if(aKlassen.contains(itm[0])){
+                ug = UGruppenRepository.H1;
+            }
             Klasse kl = Klasse.builder()
                     .kuerzel(itm[0])
                     .langname(itm[1])
@@ -142,7 +165,7 @@ public class UntisGPULoader {
                     .abteilung(itm[22])
                     .raum(itm[3])
                     .bemerkung(itm[21])
-                    .uGruppenId(uGruppenRepository.getSJ().getId())
+                    .ugruppe(ug)
                     .build();
             kList.add(kl);
         });

@@ -5,5 +5,5 @@ import io.micronaut.data.model.query.builder.sql.Dialect;
 import io.micronaut.data.repository.CrudRepository;
 
 @JdbcRepository(dialect = Dialect.MYSQL)
-public interface FachRepository extends CrudRepository<Fach, String> {
+public interface FachRepository extends CrudRepository<Fach, Long> {
 }

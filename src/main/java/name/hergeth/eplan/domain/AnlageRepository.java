@@ -12,21 +12,41 @@ import java.util.List;
 import java.util.Optional;
 
 @JdbcRepository(dialect = Dialect.MYSQL)
+@Join(value = "jahresTafeln", type = Join.Type.FETCH)
 public abstract class AnlageRepository implements CrudRepository<Anlage,Long> {
     private static final Logger LOG = LoggerFactory.getLogger(AnlageRepository.class);
 
-    @Join(value = "jahresTafeln", type = Join.Type.FETCH)
     public abstract Optional<Anlage> findByApobk(String anlage);
-    @Join(value = "jahresTafeln", type = Join.Type.FETCH)
     public abstract Optional<Anlage> findByApobkLike(String anlage);
-    @Join(value = "jahresTafeln", type = Join.Type.FETCH)
     public abstract List<String> listDistinctApobk();
 
-    @Join(value = "jahresTafeln", type = Join.Type.FETCH)
     public abstract void deleteByApobk(String anlage);
 
-    @Join(value = "jahresTafeln", type = Join.Type.FETCH)
     public abstract Anlage update(Anlage a);
+    public abstract Iterable<Anlage> save(Iterable<Anlage> al);
+
+    private final StdnTafelRepository stdnTafelRep;
+    public AnlageRepository(StdnTafelRepository stdnTafelRepository){
+        this.stdnTafelRep = stdnTafelRepository;
+    }
+
+
+    public Iterable<Anlage> speichern(Iterable<Anlage> ai){
+        deleteAll();
+
+        ai.forEach(a -> {
+            stdnTafelRep.deleteByAnlage(a.getApobk());
+            List<StdnTafel> sl = new LinkedList<>();
+            a.getJahresTafeln().forEach(t -> {
+                sl.add(stdnTafelRep.save(t));
+            });
+
+            a.setJahresTafeln(sl);
+            a.setApobk(a.getApobk());   // update apobk-entry in stundentafeln
+            save(a);
+        });
+        return findAll();
+    }
 
     public Anlage speichern(Anlage a){
         a.setApobk(a.getApobk());   // update apobk-entry in stundentafeln

@@ -10,6 +10,7 @@ import io.micronaut.validation.Validated;
 import name.hergeth.config.Cfg;
 import name.hergeth.eplan.domain.EPlan;
 import name.hergeth.eplan.domain.EPlanRepository;
+import name.hergeth.eplan.domain.Klasse;
 import name.hergeth.eplan.domain.dto.EPlanDTO;
 import name.hergeth.eplan.domain.dto.EPlanSummen;
 import name.hergeth.eplan.domain.dto.KlassenSumDTO;
@@ -22,6 +23,7 @@ import org.slf4j.LoggerFactory;
 import javax.validation.constraints.NotNull;
 import java.util.List;
 import java.util.Optional;
+import java.util.stream.Collectors;
 
 @Validated
 @Controller("/api/eplan")
@@ -55,7 +57,8 @@ public class EplanController   extends BaseController {
     @Get("/klassen/{ber}")
     List<String> getKlassen(@NotNull String ber){
         LOG.info("Fetching klassen of Bereich {}", ber);
-        return ePlanRepository.findDistinctKlasseByBereichOrderByKlasse(ber);
+        List <EPlan> eList =  ePlanRepository.findByBereich(ber);
+        return eList.stream().map( EPlan::getKlasse).map(Klasse::getKuerzel).distinct().sorted().collect(Collectors.toList());
     }
 
     @Post(value="/bereich/all", consumes = MediaType.MULTIPART_FORM_DATA, produces = MediaType.TEXT_PLAIN)
@@ -103,8 +106,7 @@ public class EplanController   extends BaseController {
     List<EPlanDTO> getLehrer(@NotNull String val){
         LOG.info("Fetching EPlan for KuK {}", val);
 
-        List<EPlan> eplan = ePlanRepository.findByLehrerOrderByNo(val);
-        return ePlanLogic.fromEPL(eplan);
+        return ePlanLogic.listDTOFromLehrer(val);
     }
 
     @Get("/klasse/{val}")

@@ -59,11 +59,11 @@ public class EPlanDTO {
         ed.id = e.getId();
         ed.no = e.getNo();
         ed.bereich = e.getBereich();
-        ed.klasse = e.getKlasse();
+        ed.klasse = e.getKlasseKrzl();
         ed.fakultas = e.getFakultas();
         ed.fach = e.getFach();
         ed.type = e.getType();
-        ed.lehrer = e.getLehrer();
+        ed.lehrer = e.getLehrerKrzl();
         ed.raum = e.getRaum();
         ed.wstd = e.getWstd();
         ed.wstdeff = e.getWstdEff();

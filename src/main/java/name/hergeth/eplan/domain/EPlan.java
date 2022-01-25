@@ -1,12 +1,15 @@
 package name.hergeth.eplan.domain;
 
 
+import io.micronaut.data.annotation.GeneratedValue;
+import io.micronaut.data.annotation.Id;
+import io.micronaut.data.annotation.MappedEntity;
+import io.micronaut.data.annotation.Relation;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
-import javax.persistence.*;
 import javax.validation.constraints.NotNull;
 
 
@@ -14,10 +17,10 @@ import javax.validation.constraints.NotNull;
 @Builder
 @NoArgsConstructor
 @AllArgsConstructor
-@Entity
+@MappedEntity
 public class EPlan {
-    @GeneratedValue
     @Id
+    @GeneratedValue
     private Long id;
 
 //    @NotNull
@@ -35,15 +38,23 @@ public class EPlan {
     @NotNull
     @Builder.Default private String version = "0.0.1";
 
-    private String klasse;
+
+
+    @Relation(value = Relation.Kind.MANY_TO_ONE, cascade = Relation.Cascade.ALL)
+    private Klasse klasse;
+
+    @Relation(value = Relation.Kind.MANY_TO_ONE, cascade = Relation.Cascade.ALL)
+    private Kollege lehrer;
+
+    @Relation(value = Relation.Kind.MANY_TO_ONE, cascade = Relation.Cascade.ALL)
+    private UGruppe ugruppe;
+
 
     private String fakultas;
 
     private String fach;
 
     @Builder.Default private Integer type = 1;  //1: berufsbezogen, 2: berufsübergreifend, 3: differenzierung
-
-    private String lehrer;
 
     @Builder.Default private String raum = "";
 
@@ -63,16 +74,23 @@ public class EPlan {
     @Builder.Default private String lernGruppe = "";
     @Builder.Default private Double lgz = 1.0;                          // anzahl SuS-Gruppen, die den Unterricht abwechselnd bekommen
     @Builder.Default private Double anzLehrer = 1.0;                    // anzahl Lehrer, die den Unterricht geben
-    public Double susWStd(){ return getWstdEff() /(anzLehrer * lgz); }  // effektive Wochenstunde für SuS.
+    public Double susWStd(){ return getWstdEff()  * klasse.getUgruppe().getWFaktor()/(anzLehrer * lgz); }  // effektive Wochenstunde für SuS.
 
     @Builder.Default private Double anzKlassen = 1.0;                   // gleichzeitig unterrichteten Klassen -> Anzahl der EPlan-Einträge
-    public Double kukWStd(){ return getWstdEff() / anzKlassen; }        // KuK-WStdn / anzKlassen, aber anzKlassen Einträge!
+    public Double kukWStd(){ return getWstdEff() * klasse.getUgruppe().getWFaktor() / anzKlassen; }        // KuK-WStdn / anzKlassen, aber anzKlassen Einträge!
 
     private Long ugid;
-    @ManyToOne(optional = false, fetch = FetchType.EAGER, cascade = CascadeType.ALL)
-//    @JoinColumn(name = "ugruppe_id", referencedColumnName = "id")
-    private UGruppe ugruppe;
+
 
     @Builder.Default private String bemerkung = "";
 
+    public String getKlasseKrzl(){
+        if(klasse != null) return klasse.getKuerzel();
+        return"__KEINE_KLASSE__";
+    }
+
+    public String getLehrerKrzl(){
+        if(lehrer != null)return lehrer.getKuerzel();
+        return "__KEIN_KOLLEGE__";
+    }
 }

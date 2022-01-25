@@ -22,4 +22,5 @@ public interface EPlanLogic {
     public Optional<EPlanDTO> updateEPlan(EPlanDTO d);
     public Optional<KlassenSumDTO> getSummenByKlasse(String s);
     public List<EPlanSummen> getSummen();
+    public List<EPlanDTO> listDTOFromLehrer(String krzl);
 }

@@ -4,6 +4,7 @@ package name.hergeth.eplan.domain;
 import lombok.*;
 
 import javax.persistence.Entity;
+import javax.persistence.GeneratedValue;
 import javax.persistence.Id;
 import javax.persistence.OneToMany;
 import javax.validation.constraints.NotNull;
@@ -17,6 +18,9 @@ import java.util.Set;
 public class Kollege {
 
     @Id
+    @GeneratedValue
+    private Long id;
+
     @NotNull
     private String kuerzel;
 
@@ -24,9 +28,9 @@ public class Kollege {
 
     private String nachname;
 
-    private String mailadresse;
+    @Builder.Default private String mailadresse = "";
 
-    private String abteilung;
+    @Builder.Default private String abteilung = "";
 
     @Builder.Default private Integer geschlecht = 1;
 

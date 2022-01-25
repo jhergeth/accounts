@@ -13,6 +13,7 @@ import name.hergeth.eplan.responses.PivotTable;
 import name.hergeth.eplan.service.EPlanLoader;
 import name.hergeth.eplan.service.UntisGPULoader;
 import name.hergeth.eplan.util.Func;
+import org.apache.commons.collections4.IterableUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.reactivestreams.Publisher;
 import org.slf4j.Logger;
@@ -20,6 +21,7 @@ import org.slf4j.LoggerFactory;
 
 import java.io.FileInputStream;
 import java.io.InputStream;
+import java.util.List;
 import java.util.Optional;
 
 import static io.micronaut.http.MediaType.MULTIPART_FORM_DATA;
@@ -61,15 +63,22 @@ public class DomainController extends BaseController{
     @Get("/anlagens")
     Iterable<String> getAnlagenNamen() {
         Iterable<String> al = anlageRepository.listDistinctApobk();
-        LOG.info("Fetching Anlagennamen");
+        LOG.info("Fetching Anlagennamen [{}]", IterableUtils.size(al));
         return al;
     }
 
     @Get("/anlagen")
     Iterable<Anlage> getAnlagen() {
         Iterable<Anlage> al = anlageRepository.findAll();
-        LOG.info("Fetching Anlagenliste");
+        LOG.info("Fetching Anlagenliste [{}]", IterableUtils.size(al));
         return al;
+    }
+
+    @Post(value = "/anlagen")
+    Iterable<Anlage> postAnlagen(@Body List<Anlage> al) {
+        Iterable<Anlage> rl = anlageRepository.speichern(al);
+        LOG.info("Posted new Anlagenliste [{}] -> [{}]", al.size(), IterableUtils.size(rl));
+        return rl;
     }
 
     @Get("/anlage/{name}")
@@ -211,6 +220,12 @@ public class DomainController extends BaseController{
                             anrechungRepository.calcAnrechnungPivot();
                         }
                     });
+                    Func.readZipStream(new FileInputStream((p)), (name, zFile) -> {
+                        if (name.equalsIgnoreCase("GPU002.TXT")) {
+                            LOG.info("Reading Unterrichte from zip {} | {}.", p, name);
+                            ePlanLoader.alleBereicheFromFile(zFile, "TXT");
+                        }
+                    });
 
                 } catch (Exception e) {
                     LOG.error("Exception during zip-file read: {} -> {}", p, e.getMessage());
@@ -267,7 +282,7 @@ public class DomainController extends BaseController{
     @Post(value="/ugruppe/duplicate")
     public HttpResponse<String> duplicateRow(Long id) {
         LOG.info("Duplicate UGruppe {}", id);
-        Optional<UGruppe> ug = uGruppenRepository.find(id);
+        Optional<UGruppe> ug = uGruppenRepository.findById(id);
         if(ug.isPresent()){
             uGruppenRepository.duplicate(ug.get());
         }

@@ -21,7 +21,7 @@ public class ScannerBuilder {
         final AtomicBoolean skipNext = new AtomicBoolean(false);
 
         String[] elms = Utils.readFirstLine(file, LOG);
-        LOG.info("First line of file is: {}", elms);
+        LOG.info("First line of file is: {}", (Object[])elms);
         LOG.info("Umlaute sind: ae oe ue ss -> ä ö ü ß");
 
         head = new String[]{

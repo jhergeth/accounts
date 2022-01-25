@@ -31,6 +31,7 @@ public class EPlanLoaderImpl implements EPlanLoader {
     private final StatusSrvc status;
     private final UntisGPULoader untisGPULoader;
     private final KlasseRepository klasseRepository;
+    private final KollegeRepository kollegeRepository;
 
     private final String SPLITTER;
     String[] colTitleArr = null;
@@ -53,12 +54,14 @@ public class EPlanLoaderImpl implements EPlanLoader {
                            StatusSrvc status,
                            UGruppenRepository uGruppenRepository,
                            UntisGPULoader untisGPULoader,
+                           KollegeRepository kollegeRepository,
                            KlasseRepository klasseRepository){
         this.cfg = cfg;
         this.ePlanRepository = ePlanRepository;
         this.uGruppenRepository = uGruppenRepository;
         this.untisGPULoader = untisGPULoader;
         this.klasseRepository = klasseRepository;
+        this.kollegeRepository = kollegeRepository;
 
         SPLITTER = cfg.get("REGEX_SPLITTER");
         colTitleArr = cfg.getStrArr("EPLAN_COL_TITLES",
@@ -69,6 +72,7 @@ public class EPlanLoaderImpl implements EPlanLoader {
         );
 
         uGruppenRepository.initLoad();;
+        kollegeRepository.init();
         this.status = status;
     }
 
@@ -205,13 +209,13 @@ public class EPlanLoaderImpl implements EPlanLoader {
             else{
                 other.add(e);
             }
-            klassen.add(e.getKlasse());
-            lehrer.add(e.getLehrer());
+            klassen.add(e.getKlasseKrzl());
+            lehrer.add(e.getLehrerKrzl());
         }
 
         public void adjust(){
             double anzL = lehrer.size();
-            double anzK = klassen.size();
+            double anzK = getNumberOfSimultaneousKlassen(klassen);
             String lg = first.getLernGruppe();
             first.setAnzLehrer(anzL);
             first.setAnzKlassen(anzK);
@@ -221,6 +225,10 @@ public class EPlanLoaderImpl implements EPlanLoader {
                 e.setLernGruppe(lg);
             });
         }
+    }
+
+    private double getNumberOfSimultaneousKlassen(Set<String> klset){
+        return getNumberOfSimultaneousKlassen(klset.toArray(new String[0]));
     }
 
     private void loadBereichFromTextFile(String file){
@@ -236,8 +244,6 @@ public class EPlanLoaderImpl implements EPlanLoader {
         bMap.put("NOW", "ERNPFL");
         bMap.put("GIL", "SOZKI");
         bMap.put("SCR", "GESSOZ");
-
-        UGruppe sj = UGruppenRepository.SJ;
 
         Map<String,EPlan> eMap = new HashMap<>();
         Map<String,Unums> unumMap = new HashMap<>();
@@ -260,7 +266,8 @@ public class EPlanLoaderImpl implements EPlanLoader {
 
             status.update(lData.current, lData.max, "Einlesen der Unterrichte...");
             if(Func.parseDouble(itm[GPU_WWERT]) > 0d){
-                if(itm[GPU_KLA].length() > 0){     // Klasse angegeben
+                if(itm[GPU_KLA].length() > 0 && itm[GPU_KUK].length() > 0 && itm[GPU_FACH].length() > 0){     // Klasse, Kollege & Fach angegeben
+                    UGruppe ug = UGruppenRepository.SJ;
                     String ber = "ETIT";
                     Optional<Klasse> ok = klasseRepository.findByKuerzel(itm[GPU_KLA]);
                     if(ok.isEmpty()){
@@ -272,26 +279,27 @@ public class EPlanLoaderImpl implements EPlanLoader {
                             LOG.warn("Kann Bereich von Klasse {} nicht finden: {} unum:{}", itm[GPU_KLA], ok.get().getAbteilung(), itm[GPU_UNUM]);
                             ber = "ETIT";
                         }
+                        ug = UGruppenRepository.SJ;
                         EPlan e = EPlan.builder()
                                 .no(cnt.getAndIncrement())
                                 //                            .schule(EPLAN.SCHULE)
                                 //                            .bereich(getCellAsString(cRow.getCell(colIdxs[0])))
                                 .bereich(ber)
-                                .klasse(itm[GPU_KLA])
+                                .klasse(ok.get())
                                 .fakultas(itm[GPU_FACH])
                                 .fach(itm[GPU_FACH])
-                                .lehrer(itm[GPU_KUK])
+                                .lehrer(kollegeRepository.getKollege(itm[GPU_KUK]))
                                 .raum(itm[GPU_RAUM])
                                 .wstd(Func.parseDouble(itm[GPU_WSTD]))
                                 .lgz(1d)
-                                .ugid(sj.getId())
-                                .ugruppe(sj)
+                                .ugid(ug.getId())
+                                .ugruppe(ug)
                                 .lernGruppe("")
                                 .bemerkung(itm[GPU_BEM])
                                 .type(1)
                                 .build();
-
                         eList.add(e);
+//                        LOG.debug("Added EPLAN: {} {} {} {} {} {}", cnt.get(), ber, itm[GPU_KLA], itm[GPU_FACH], itm[GPU_KUK], itm[GPU_WSTD] );
 
                         EPlan ne = eMap.get(itm[GPU_UNUM]);  // gab es diese UNUMMER schon mal?
                         if (ne != null) {   // ja! also ...
@@ -317,6 +325,10 @@ public class EPlanLoaderImpl implements EPlanLoader {
         // In denen haben wir die Anzahl Kuk und Klassen summiert.
         // Diese Daten verteilen wir jetzt auf alle EPläne mit Lerngruppen
         unumMap.values().forEach(u -> u.adjust());
+
+        eList.stream()
+                .filter(e -> e.getLehrerKrzl().length()<1 || e.getKlasseKrzl().length()<2 || e.getKlasse()==null || e.getLehrer() == null || e.getLehrer().getId() == 0)
+                        .forEach(e -> LOG.debug("EPlan wrong: {}", e));
 
         ePlanRepository.deleteAll();
         ePlanRepository.saveAll(eList);
@@ -369,7 +381,7 @@ public class EPlanLoaderImpl implements EPlanLoader {
         if (kl.length > 1 || le.length > 1) {
             String lernGruppe = UUID.randomUUID().toString();
             Double anzLehrer = (double)le.length;
-            Double anzKlassen = (double)kl.length;
+            Double anzKlassen = getNumberOfSimultaneousKlassen(kl);
             for (String l : le) {
                 for (String k : kl) {
                     if (k.length() > 1) {
@@ -382,6 +394,20 @@ public class EPlanLoaderImpl implements EPlanLoader {
             id = insertUnterricht(bereich, res, sarr, id, kl[0], le[0], "", 1.0, 1.0);
         }
         return id;
+    }
+
+    private double getNumberOfSimultaneousKlassen(String[] kl) {
+        double res = (double) kl.length;
+        if(kl.length > 0){
+            String peers = klasseRepository.getKlasse(kl[0]).getUgruppe().getPeers();
+            for(String k : kl){
+                String lp = klasseRepository.getKlasse(k).getUgruppe().getPeers();
+                if(!peers.equalsIgnoreCase(lp)){
+                    return res;
+                }
+            }
+        }
+        return 1.0d;
     }
 
     private int insertUnterricht(String bereich, List<EPlan> res, String[] cols, int cnt, String klasse, String lehrer, String lernGruppe, Double anzLehrer, Double anzKlassen) {
@@ -401,10 +427,10 @@ public class EPlanLoaderImpl implements EPlanLoader {
 //                            .schule(EPLAN.SCHULE)
 //                            .bereich(getCellAsString(cRow.getCell(colIdxs[0])))
                     .bereich(bereich)
-                    .klasse(klasse)
+                    .klasse(klasseRepository.getKlasse(klasse))
                     .fakultas(cols[COL_FAK])
                     .fach(cols[COL_FAC])
-                    .lehrer(lehrer)
+                    .lehrer(kollegeRepository.getKollege(lehrer))
                     .raum(cols[COL_RAU])
                     .wstd(Func.parseDouble(cols[COL_WST]))
                     .lgz(lgz)
@@ -434,7 +460,7 @@ public class EPlanLoaderImpl implements EPlanLoader {
         sarr[COL_LGZ] = Double.toString(edt.getLgz());
         sarr[COL_ABT] = edt.getBereich();
         sarr[COL_UZT] = uGruppenRepository.getSJ().getName();
-        Optional<UGruppe> oug = uGruppenRepository.find(edt.getUgid());
+        Optional<UGruppe> oug = uGruppenRepository.findById(edt.getUgid());
         if(oug.isPresent()){
             sarr[COL_UZT] = oug.get().getName();
         }

@@ -12,14 +12,14 @@ import java.util.List;
 import java.util.Optional;
 
 @JdbcRepository(dialect = Dialect.MYSQL)
+@Join(value = "ugruppe", type = Join.Type.FETCH)
+@Join(value = "klasse", type = Join.Type.FETCH)
+@Join(value = "klasse.ugruppe", type = Join.Type.FETCH)
+@Join(value = "lehrer", type = Join.Type.FETCH)
 public abstract class EPlanRepository implements CrudRepository<EPlan, Long> {
     private static final Logger LOG = LoggerFactory.getLogger(EPlanRepository.class);
 
-    @Join(value = "ugruppe", type = Join.Type.FETCH)
-    public abstract Optional<EPlan> find(Long id);
-
-    @Join(value = "ugruppe", type = Join.Type.FETCH)
-    public abstract List<EPlan> listOrderByKlasse();
+//    public abstract Optional<EPlan> findById(Long id);
 
     public abstract void deleteByBereichLike(String bereich);
     public abstract void deleteByLernGruppeLike(String lernGruppe);
@@ -27,25 +27,17 @@ public abstract class EPlanRepository implements CrudRepository<EPlan, Long> {
 
 //    public abstract void update(Long id, String lernGruppe);
 
-    @Join(value = "ugruppe", type = Join.Type.FETCH)
-    public abstract List<String> findDistinctKlasseByBereichOrderByKlasse(String bereich);
-    @Join(value = "ugruppe", type = Join.Type.FETCH)
+    public abstract List<EPlan> findByBereich(String bereich);
     public abstract List<EPlan> findByLernGruppeOrderByNo(String lernGruppe);
-    @Join(value = "ugruppe", type = Join.Type.FETCH)
     public abstract List<EPlan> findByBereichOrderByNo(String bereich);
-    @Join(value = "ugruppe", type = Join.Type.FETCH)
-    public abstract List<EPlan> findByKlasseOrderByTypeAscAndNoAsc(String klasse);
-    @Join(value = "ugruppe", type = Join.Type.FETCH)
-    public abstract List<EPlan> findByLehrerOrderByNo(String lehrer);
-    @Join(value = "ugruppe", type = Join.Type.FETCH)
+    public abstract List<EPlan> findByKlasseOrderByTypeAscAndNoAsc(Klasse klasse);
+    public abstract List<EPlan> findByLehrerOrderByNo(Kollege lehrer);
     public abstract List<EPlan> findByFachOrderByNo(String fach);
-    @Join(value = "ugruppe", type = Join.Type.FETCH)
     public abstract List<EPlan> findByBereichOrderByKlasseAscAndLehrerAscAndFachAsc(String bereich);
-    @Join(value = "ugruppe", type = Join.Type.FETCH)
     public abstract List<EPlan> findByBereichAndNoGreaterThanEqualsOrderByNo(String bereich, int start);
 
     public void duplicate(Long id){
-        Optional<EPlan> oe = find(id);
+        Optional<EPlan> oe = findById(id);
         if(oe.isPresent()){
             EPlan e = oe.get();
             duplicate(e);

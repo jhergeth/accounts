@@ -1,17 +1,21 @@
 package name.hergeth.eplan.domain;
 
+import io.micronaut.data.annotation.GeneratedValue;
+import io.micronaut.data.annotation.Id;
+import io.micronaut.data.annotation.MappedEntity;
+import io.micronaut.data.annotation.Relation;
 import lombok.*;
 
-import javax.persistence.Entity;
-import javax.persistence.Id;
-
-@Entity
+@MappedEntity
 @Data
 @Builder
 @NoArgsConstructor
 @AllArgsConstructor
 public class Klasse {
     @Id
+    @GeneratedValue
+    private Long id;
+
     @NonNull
     private String kuerzel;
 
@@ -19,21 +23,27 @@ public class Klasse {
     private String langname;
 
     @NonNull
-    private String klassenlehrer;
+    @Builder.Default private String klassenlehrer = "????";
 
     @NonNull
-    private String bigako;
+    @Builder.Default private String bigako = "????";
 
     @NonNull
-    private String abteilung;
+    @Builder.Default private String abteilung = "????";
 
-    private String raum;
+    @NonNull
+    @Builder.Default private String raum = "";
 
-    private String bemerkung;
+    @NonNull
+    @Builder.Default private String bemerkung = "";
 
-    private String anlage;
+    @NonNull
+    @Builder.Default private String anlage = "";
 
-    private String alias;
+    @NonNull
+    @Builder.Default private String alias = "";
 
-    private Long uGruppenId;
+    @Relation(value = Relation.Kind.MANY_TO_ONE, cascade = Relation.Cascade.ALL)
+    private UGruppe ugruppe;
+
 }

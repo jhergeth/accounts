@@ -49,9 +49,10 @@ public class EPlanLogicImp implements EPlanLogic {
         this.ePlanLoader = ePlanLoader;
         this.SPLITTER = cfg.get("REGEX_SPLITTER");
 
-
         LOG.info("Constructing.");
         uGruppenRepository.initLoad();
+        klasseRepository.init();;
+        kollegeRepository.init();
     }
 
     @PostConstruct
@@ -67,7 +68,7 @@ public class EPlanLogicImp implements EPlanLogic {
 
     @Override
     public void delete(Long id){
-        Optional<EPlan> oe = ePlanRep.find(id);
+        Optional<EPlan> oe = ePlanRep.findById(id);
         if(oe.isPresent()){
             String ber = oe.get().getBereich();
             ePlanRep.delete(id);
@@ -77,7 +78,7 @@ public class EPlanLogicImp implements EPlanLogic {
 
     @Override
     public void duplicate(Long id){
-        Optional<EPlan> oe = ePlanRep.find(id);
+        Optional<EPlan> oe = ePlanRep.findById(id);
         if(oe.isPresent()){
             String ber = oe.get().getBereich();
             ePlanRep.duplicate(oe.get());
@@ -87,15 +88,8 @@ public class EPlanLogicImp implements EPlanLogic {
 
     private Map<String,Double> getWFaktors(){
         return klasseRep.listOrderByKuerzel().stream()
-                .collect(Collectors.toMap(
-                        Klasse::getKuerzel,
-                        k -> {
-                            Optional<UGruppe> ou = uGruppenRepository.find(k.getUGruppenId());
-                            if(ou.isPresent()){
-                                return ou.get().getWFaktor();
-                            }
-                            return 1.0;
-                        }
+                .collect(Collectors.toMap(Klasse::getKuerzel,
+                        k -> k.getUgruppe().getWFaktor()
                 ));
     }
 
@@ -123,27 +117,31 @@ public class EPlanLogicImp implements EPlanLogic {
 
     @Override
     public List<EPlanDTO> findAllByKlasse(String klasse) {
-        List<EPlan> res = ePlanRep.findByKlasseOrderByTypeAscAndNoAsc(klasse);
-        List<EPlan> subs = new LinkedList<>();
-        List<String> lgs = res.stream()
-                .filter(e -> e.getLernGruppe().length()> 0)
-                .map( EPlan::getLernGruppe)
-                .distinct()
-                .collect(Collectors.toList());
+        Optional<Klasse> ok = klasseRep.findByKuerzel(klasse);
+        if(ok.isPresent()){
+            List<EPlan> res = ePlanRep.findByKlasseOrderByTypeAscAndNoAsc(ok.get());
+            List<EPlan> subs = new LinkedList<>();
+            List<String> lgs = res.stream()
+                    .filter(e -> e.getLernGruppe().length()> 0)
+                    .map( EPlan::getLernGruppe)
+                    .distinct()
+                    .collect(Collectors.toList());
 
-        lgs.stream()
-                .forEach(lg -> {
-                    List<EPlan> lgl = ePlanRep.findByLernGruppeOrderByNo(lg);
-                    subs.addAll(lgl.stream().filter(e -> !klasse.equalsIgnoreCase(e.getKlasse())).collect(Collectors.toList()));
-                });
+            lgs.stream()
+                    .forEach(lg -> {
+                        List<EPlan> lgl = ePlanRep.findByLernGruppeOrderByNo(lg);
+                        subs.addAll(lgl.stream().filter(e -> !klasse.equalsIgnoreCase(e.getKlasseKrzl())).collect(Collectors.toList()));
+                    });
 
-        res.addAll(subs.stream().distinct().collect(Collectors.toList()));
+            res.addAll(subs.stream().distinct().collect(Collectors.toList()));
 
-        return fromEPL(res, true);
+            return fromEPL(res, true);
+        }
+        return new LinkedList<>();
     }
 
     public List<EPlanDTO>  ungroup(EPlanDTO rowDTO){
-        Optional<EPlan> oRowEP = ePlanRep.find(rowDTO.getId());
+        Optional<EPlan> oRowEP = ePlanRep.findById(rowDTO.getId());
         if(oRowEP.isPresent()){
             EPlan e = oRowEP.get();
             String lgrp = e.getLernGruppe();
@@ -197,77 +195,79 @@ public class EPlanLogicImp implements EPlanLogic {
     @Override
     public Optional<KlassenSumDTO> getSummenByKlasse(String s) {
         final int ARRSIZ = 3;
+        Optional<Klasse> ok = klasseRep.findByKuerzel(s);
+        if(ok.isPresent()){
+            List<EPlan> res = ePlanRep.findByKlasseOrderByTypeAscAndNoAsc(ok.get());
+            if(res.size() > 0){
+                final KlassenSumDTO dto = new KlassenSumDTO();
 
-        List<EPlan> res = ePlanRep.findByKlasseOrderByTypeAscAndNoAsc(s);
-        if(res.size() > 0){
-            final KlassenSumDTO dto = new KlassenSumDTO();
+                dto.setAnlage("X9.99");
+                dto.setKllehrer("DUM");
+                dto.setKlasse(s);
 
-            dto.setAnlage("X9.99");
-            dto.setKllehrer("DUM");
-            dto.setKlasse(s);
-
-            final Double[] soll = Func.getZeroDouble(ARRSIZ);
-            Optional<Klasse> ok = klasseRep.findByKuerzel(s);
-            String klehrer = "";
-            if(ok.isPresent()) {
-                klehrer = ok.get().getKlassenlehrer();
-            }
-            if(ok.isEmpty()){   // klasse könnte blockklasse sein
-                int p = s.indexOf("UMO");
-                if( p > 0){
-                    String s2 = s.substring(0, p) + "U" + s.substring(p + 3);
-                    ok = klasseRep.findByKuerzel(s2);
-                    if(ok.isPresent()){
-                        klehrer = ok.get().getKlassenlehrer();
-                        s2 = s.substring(0, p) + "M" + s.substring(p + 3);
+                final Double[] soll = Func.getZeroDouble(ARRSIZ);
+                String klehrer = "";
+                if(ok.isPresent()) {
+                    klehrer = ok.get().getKlassenlehrer();
+                }
+                if(ok.isEmpty()){   // klasse könnte blockklasse sein
+                    int p = s.indexOf("UMO");
+                    if( p > 0){
+                        String s2 = s.substring(0, p) + "U" + s.substring(p + 3);
                         ok = klasseRep.findByKuerzel(s2);
-                        if(ok.isPresent()) {
-                            klehrer += ", " + ok.get().getKlassenlehrer();
-                            s2 = s.substring(0, p) + "O" + s.substring(p + 3);
+                        if(ok.isPresent()){
+                            klehrer = ok.get().getKlassenlehrer();
+                            s2 = s.substring(0, p) + "M" + s.substring(p + 3);
                             ok = klasseRep.findByKuerzel(s2);
                             if(ok.isPresent()) {
                                 klehrer += ", " + ok.get().getKlassenlehrer();
+                                s2 = s.substring(0, p) + "O" + s.substring(p + 3);
+                                ok = klasseRep.findByKuerzel(s2);
+                                if(ok.isPresent()) {
+                                    klehrer += ", " + ok.get().getKlassenlehrer();
+                                }
                             }
                         }
                     }
                 }
-            }
-            if(ok.isPresent()){
-                dto.setKllehrer(klehrer);
-                dto.setAnlage(ok.get().getAnlage());
-                Optional<Anlage> oa = anlageRepository.findByApobkLike(ok.get().getAnlage());
-                if(oa.isPresent()){
-                    StdnTafel st = oa.get().getJahresTafeln().get(0);
-                    if(st != null){
-                        soll[0] = st.getMinStdnBB()/40;
-                        soll[1] = st.getMinStdnBU()/40;
-                        soll[2] = st.getMinStdnDF()/40;
+                if(ok.isPresent()){
+                    dto.setKllehrer(klehrer);
+                    dto.setAnlage(ok.get().getAnlage());
+                    Optional<Anlage> oa = anlageRepository.findByApobkLike(ok.get().getAnlage());
+                    if(oa.isPresent()){
+                        StdnTafel st = oa.get().getJahresTafeln().get(0);
+                        if(st != null){
+                            soll[0] = st.getMinStdnBB()/40;
+                            soll[1] = st.getMinStdnBU()/40;
+                            soll[2] = st.getMinStdnDF()/40;
+                        }
                     }
                 }
+
+                final Double[] ist = Func.getZeroDouble(ARRSIZ);
+                final Double[] kuk = Func.getZeroDouble(ARRSIZ);
+                final Double[] sum = Func.getZeroDouble(ARRSIZ);
+                final double klWert = ok.get().getUgruppe().getWFaktor();
+
+                res.stream().forEach(e -> {
+                    int i = e.getType() - 1;
+                    if(i >= 0 && i < ARRSIZ){
+                        dto.setBereich(e.getBereich());
+                        ist[i] += e.susWStd();
+                        kuk[i] += e.kukWStd();
+                    }
+                });
+
+                sum[0] = soll[0] + soll[1] + soll[2];
+                sum[1] = ist[0] + ist[1] + ist[2];
+                sum[2] = kuk[0] + kuk[1] + kuk[2];
+                dto.setSoll(soll);
+                dto.setIst(ist);
+                dto.setKuk(kuk);
+                dto.setSum(sum);
+
+                return Optional.of(dto);
             }
-
-            final Double[] ist = Func.getZeroDouble(ARRSIZ);
-            final Double[] kuk = Func.getZeroDouble(ARRSIZ);
-            final Double[] sum = Func.getZeroDouble(ARRSIZ);
-
-            res.stream().forEach(e -> {
-                int i = e.getType() - 1;
-                if(i >= 0 && i < ARRSIZ){
-                    dto.setBereich(e.getBereich());
-                    ist[i] += e.susWStd();
-                    kuk[i] += e.kukWStd();
-                }
-            });
-
-            sum[0] = soll[0] + soll[1] + soll[2];
-            sum[1] = ist[0] + ist[1] + ist[2];
-            sum[2] = kuk[0] + kuk[1] + kuk[2];
-            dto.setSoll(soll);
-            dto.setIst(ist);
-            dto.setKuk(kuk);
-            dto.setSum(sum);
-
-            return Optional.of(dto);
         }
         return Optional.empty();
     }
@@ -275,16 +275,16 @@ public class EPlanLogicImp implements EPlanLogic {
 
     private EPlan copyDTOtoEPlan(EPlanDTO ed, EPlan e){
         e.setBereich(ed.getBereich());
-        e.setKlasse(ed.getKlasse());
+        e.setKlasse(klasseRep.getKlasse(ed.getKlasse()));
         e.setFakultas(ed.getFakultas());
         e.setFach(ed.getFach());
         e.setType(ed.getType());
-        e.setLehrer(ed.getLehrer());
+        e.setLehrer(kollegeRep.getKollege(ed.getLehrer()));
         e.setRaum(ed.getRaum());
         e.setWstd(ed.getWstd());
         e.setLernGruppe(ed.getLerngruppe());
         e.setLgz(ed.getLgz());
-        Optional<UGruppe> ou = uGruppenRepository.find(ed.getUgid());
+        Optional<UGruppe> ou = uGruppenRepository.findById(ed.getUgid());
         if(ou.isPresent()){
             e.setUgruppe(ou.get());
             e.setUgid(ou.get().getId());
@@ -339,7 +339,7 @@ public class EPlanLogicImp implements EPlanLogic {
 
     public List<EPlan> getEPlanFromEPlanDTO(EPlanDTO d) {
         List<EPlan> res = new LinkedList<>();
-        Optional<EPlan> oRowEP = ePlanRep.find(d.getId());
+        Optional<EPlan> oRowEP = ePlanRep.findById(d.getId());
         if(oRowEP.isPresent()){
             String lg = oRowEP.get().getLernGruppe();
             if( lg != null && lg.length() > 1){
@@ -362,7 +362,7 @@ public class EPlanLogicImp implements EPlanLogic {
             EPlanSummen eps = epsMap.get(kuk);
             if(eps == null){
 //                eps = new EPlanSummen(k.getKuerzel(), k, new HashMap<String,Double>(), 0.0, k.getSoll(), 0.0);
-                List<EPlan> kukEPLs = ePlanRep.findByLehrerOrderByNo(kuk);
+                List<EPlan> kukEPLs = ePlanRep.findByLehrerOrderByNo(k);
                 Map<String,Double> kukInBer = kukEPLs.stream()
                         .reduce(
                                 new HashMap<String,Double>(),
@@ -462,8 +462,8 @@ public class EPlanLogicImp implements EPlanLogic {
         Set<String> lset = new HashSet<>();
         Set<String> fset = new HashSet<>();
         for(EPlan e : epl){
-            Func.addToSet(kset, e.getKlasse(), SPLITTER);
-            Func.addToSet(lset, e.getLehrer(), SPLITTER);
+            Func.addToSet(kset, e.getKlasseKrzl(), SPLITTER);
+            Func.addToSet(lset, e.getLehrerKrzl(), SPLITTER);
             Func.addToSet(fset, e.getFach(), SPLITTER);
         }
         ed.setKlasse(Func.setToString(kset));
@@ -479,6 +479,18 @@ public class EPlanLogicImp implements EPlanLogic {
         }
         return ed;
     }
+
+    public List<EPlanDTO> listDTOFromLehrer(String krzl){
+        List<EPlanDTO> res = new LinkedList<>();
+
+        Optional<Kollege> okuk = kollegeRep.findByKuerzel(krzl);
+        if(okuk.isPresent()){
+            List<EPlan> eplan = ePlanRep.findByLehrerOrderByNo(okuk.get());
+            return fromEPL(eplan);
+        }
+        return  res;
+    }
+
 
 
 }
