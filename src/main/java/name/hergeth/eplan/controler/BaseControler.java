@@ -1,4 +1,4 @@
-package name.hergeth.eplan.controller;
+package name.hergeth.eplan.controler;
 
 
 import io.micronaut.http.HttpResponse;
@@ -16,8 +16,8 @@ import java.util.function.BiConsumer;
 
 import static io.micronaut.http.HttpStatus.CONFLICT;
 
-public class BaseController {
-    private static final Logger LOG = LoggerFactory.getLogger(BaseController.class);
+public class BaseControler {
+    private static final Logger LOG = LoggerFactory.getLogger(BaseControler.class);
 
     protected Publisher<HttpResponse<String>> uploadFileTo(StreamingFileUpload file, BiConsumer<String, String> con) {
         File tempFile;

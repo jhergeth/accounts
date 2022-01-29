@@ -32,6 +32,7 @@ public class EPlanLoaderImpl implements EPlanLoader {
     private final UntisGPULoader untisGPULoader;
     private final KlasseRepository klasseRepository;
     private final KollegeRepository kollegeRepository;
+    private final FachtypRepository fachtypRepository;
 
     private final String SPLITTER;
     String[] colTitleArr = null;
@@ -55,6 +56,7 @@ public class EPlanLoaderImpl implements EPlanLoader {
                            UGruppenRepository uGruppenRepository,
                            UntisGPULoader untisGPULoader,
                            KollegeRepository kollegeRepository,
+                           FachtypRepository fachtypRepository,
                            KlasseRepository klasseRepository){
         this.cfg = cfg;
         this.ePlanRepository = ePlanRepository;
@@ -62,6 +64,7 @@ public class EPlanLoaderImpl implements EPlanLoader {
         this.untisGPULoader = untisGPULoader;
         this.klasseRepository = klasseRepository;
         this.kollegeRepository = kollegeRepository;
+        this.fachtypRepository = fachtypRepository;
 
         SPLITTER = cfg.get("REGEX_SPLITTER");
         colTitleArr = cfg.getStrArr("EPLAN_COL_TITLES",
@@ -296,7 +299,7 @@ public class EPlanLoaderImpl implements EPlanLoader {
                                 .ugruppe(ug)
                                 .lernGruppe("")
                                 .bemerkung(itm[GPU_BEM])
-                                .type(1)
+                                .type(fachtypRepository.getTyp(ok.get().getKuerzel(), itm[GPU_FACH]))
                                 .build();
                         eList.add(e);
 //                        LOG.debug("Added EPLAN: {} {} {} {} {} {}", cnt.get(), ber, itm[GPU_KLA], itm[GPU_FACH], itm[GPU_KUK], itm[GPU_WSTD] );
@@ -351,7 +354,8 @@ public class EPlanLoaderImpl implements EPlanLoader {
         shtAdap.readRows(titleRow+1, idx, (id, sarr) -> {
             if(sarr[COL_KLA].length() > 2) {   // klasse länger als 2
                 if(titleCols[COL_UZT] < 0) sarr[COL_UZT] = "SJ";
-                id = insertAlleUnterrichte(bereich, res, id, sarr);
+                sarr[COL_TYP] = Integer.toString(fachtypRepository.getTyp(sarr[COL_KLA], sarr[COL_FAC]));
+                id = insertAlleUnterrichte(bereich, res, id, sarr, "");
             }
             return id;
         });
@@ -369,11 +373,11 @@ public class EPlanLoaderImpl implements EPlanLoader {
         return idx.get();
     }
 
-    public Integer insertAlleUnterrichte(String bereich, List<EPlan> res, Integer id, EPlanDTO edt){
-        return insertAlleUnterrichte(bereich, res, id, fromEDTO(edt));
+    public Integer insertAlleUnterrichte(String bereich, List<EPlan> res, Integer id, EPlanDTO edt, String changed){
+        return insertAlleUnterrichte(bereich, res, id, fromEDTO(edt), changed);
     }
 
-    private Integer insertAlleUnterrichte(String bereich, List<EPlan> res, Integer id, String[] sarr) {
+    private Integer insertAlleUnterrichte(String bereich, List<EPlan> res, Integer id, String[] sarr, String changed) {
         String lehrer = sarr[COL_LEH];
         String klasse = sarr[COL_KLA];
         String[] kl = Func.addToSet(new HashSet<String>(), klasse, SPLITTER).toArray(String[]::new);
@@ -385,13 +389,13 @@ public class EPlanLoaderImpl implements EPlanLoader {
             for (String l : le) {
                 for (String k : kl) {
                     if (k.length() > 1) {
-                        id = insertUnterricht(bereich, res, sarr, id, k, l, lernGruppe, anzLehrer, anzKlassen);
+                        id = insertUnterricht(bereich, res, sarr, id, k, l, lernGruppe, anzLehrer, anzKlassen, changed);
                     }
                 }
             }
             LOG.debug("Found {} [{}] klassen and {} [{}] teacher in line {}, adding {} unterrichte", kl.length, klasse, le.length, lehrer, id, le.length * kl.length);
         } else {
-            id = insertUnterricht(bereich, res, sarr, id, kl[0], le[0], "", 1.0, 1.0);
+            id = insertUnterricht(bereich, res, sarr, id, kl[0], le[0], "", 1.0, 1.0, changed);
         }
         return id;
     }
@@ -410,7 +414,7 @@ public class EPlanLoaderImpl implements EPlanLoader {
         return 1.0d;
     }
 
-    private int insertUnterricht(String bereich, List<EPlan> res, String[] cols, int cnt, String klasse, String lehrer, String lernGruppe, Double anzLehrer, Double anzKlassen) {
+    private int insertUnterricht(String bereich, List<EPlan> res, String[] cols, int cnt, String klasse, String lehrer, String lernGruppe, Double anzLehrer, Double anzKlassen, String changed) {
         if(Func.isNumeric(cols[COL_WST])){
 
             Double lgz = Func.parseDouble(cols[COL_LGZ]);
@@ -443,7 +447,12 @@ public class EPlanLoaderImpl implements EPlanLoader {
                     .type(Integer.parseInt(cols[COL_TYP]))
                     .build();
             res.add(epl);
-            LOG.info("Read Eplanentry ({}).",epl.toString());
+
+            if(changed.equalsIgnoreCase("type")){
+                fachtypRepository.setTyp(klasse, cols[COL_FAC], Integer.parseInt(cols[COL_TYP]));
+                LOG.info("Added {}.{}->{} to FachTypeRep.", klasse, cols[COL_FAC], Integer.parseInt(cols[COL_TYP]));
+            }
+            LOG.info("Added Eplanentry ({}).",epl.toString());
         }
         return cnt;
     }

@@ -170,18 +170,18 @@ public class EPlanLogicImp implements EPlanLogic {
         return new LinkedList<>();
     }
 
-    public Optional<EPlanDTO> updateEPlan(EPlanDTO ed){
+    public Optional<EPlanDTO> updateEPlan(EPlanDTO ed, String fName){
         if(ed.getLerngruppe().length() > 1){    // hatten wir schon vorher eine lerngruppe?
             ePlanRep.deleteByLernGruppeLike(ed.getLerngruppe());
             LOG.debug("Deleted entries of lerngruppe {}.", ed.getLerngruppe());
         }
         else{
             List<EPlan> eList = getEPlanFromEPlanDTO(ed);
-            LOG.debug("Deleting {} entries firdt no {}.", eList.size(), eList.get(0).getId());
+            LOG.debug("Deleting {} entries first no {}.", eList.size(), eList.get(0).getId());
             ePlanRep.deleteAll(eList);
         }
         List<EPlan> ins = new LinkedList<>();
-        ePlanLoader.insertAlleUnterrichte(ed.getBereich(), ins, ed.getNo(), ed);
+        ePlanLoader.insertAlleUnterrichte(ed.getBereich(), ins, ed.getNo(), ed, fName);
         moveBereich(ed.getBereich(), ed.getNo(), 100);
         ePlanRep.saveAll(ins);
 

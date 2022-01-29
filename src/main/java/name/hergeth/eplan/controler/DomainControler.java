@@ -1,4 +1,4 @@
-package name.hergeth.eplan.controller;
+package name.hergeth.eplan.controler;
 
 
 import io.micronaut.http.HttpResponse;
@@ -29,8 +29,8 @@ import static io.micronaut.http.MediaType.TEXT_PLAIN;
 
 @Validated
 @Controller("/api/eplan/domain")
-public class DomainController extends BaseController{
-    private static final Logger LOG = LoggerFactory.getLogger(DomainController.class);
+public class DomainControler extends BaseControler {
+    private static final Logger LOG = LoggerFactory.getLogger(DomainControler.class);
 
     private final AnrechungRepository anrechungRepository;
     private final KollegeRepository kollegeRepository;
@@ -41,14 +41,14 @@ public class DomainController extends BaseController{
     private final StdnTafelRepository stdnTafelRepository;
     private final EPlanLoader ePlanLoader;
 
-    public DomainController(AnrechungRepository anrechungRepository,
-                            KollegeRepository kollegeRepository,
-                            KlasseRepository klasseRepository,
-                            UntisGPULoader untisGPULoader,
-                            UGruppenRepository uGruppenRepository,
-                            AnlageRepository anlageRepository,
-                            StdnTafelRepository stdnTafelRepository,
-                            EPlanLoader ePlanLoader
+    public DomainControler(AnrechungRepository anrechungRepository,
+                           KollegeRepository kollegeRepository,
+                           KlasseRepository klasseRepository,
+                           UntisGPULoader untisGPULoader,
+                           UGruppenRepository uGruppenRepository,
+                           AnlageRepository anlageRepository,
+                           StdnTafelRepository stdnTafelRepository,
+                           EPlanLoader ePlanLoader
     ) {
         this.anrechungRepository = anrechungRepository;
         this.kollegeRepository = kollegeRepository;

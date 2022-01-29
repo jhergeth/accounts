@@ -19,7 +19,7 @@ public interface EPlanLogic {
     public List<EPlanDTO> fromEPL(List<EPlan> el);
 
     public List<EPlan> getEPlanFromEPlanDTO(EPlanDTO d);
-    public Optional<EPlanDTO> updateEPlan(EPlanDTO d);
+    public Optional<EPlanDTO> updateEPlan(EPlanDTO d, String fName);
     public Optional<KlassenSumDTO> getSummenByKlasse(String s);
     public List<EPlanSummen> getSummen();
     public List<EPlanDTO> listDTOFromLehrer(String krzl);

@@ -16,5 +16,5 @@ public interface EPlanLoader {
     public void alleBereicheFromFile(String file, String ext);
     public void bereichFromFile(String file, String ext, String bereich);
 
-    public Integer insertAlleUnterrichte(String bereich, List<EPlan> res, Integer id, EPlanDTO edt);
+    public Integer insertAlleUnterrichte(String bereich, List<EPlan> res, Integer id, EPlanDTO edt, String changed);
 }

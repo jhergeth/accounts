@@ -1,4 +1,4 @@
-package name.hergeth.eplan.controller;
+package name.hergeth.eplan.controler;
 
 import io.micronaut.http.HttpResponse;
 import io.micronaut.http.MediaType;
@@ -27,15 +27,15 @@ import java.util.stream.Collectors;
 
 @Validated
 @Controller("/api/eplan")
-public class EplanController   extends BaseController {
-    private static final Logger LOG = LoggerFactory.getLogger(EplanController.class);
+public class EplanControler extends BaseControler {
+    private static final Logger LOG = LoggerFactory.getLogger(EplanControler.class);
 
     private final EPlanLogic ePlanLogic;
     private final EPlanLoader eplLoader;
     private final EPlanRepository ePlanRepository;
     private final Cfg cfg;
 
-    public EplanController(Cfg cfg, EPlanLogic eplanLogic, EPlanLoader eplLoader, EPlanRepository ePlanRepository){
+    public EplanControler(Cfg cfg, EPlanLogic eplanLogic, EPlanLoader eplLoader, EPlanRepository ePlanRepository){
         this.cfg = cfg;
         this.ePlanLogic = eplanLogic;
         this.eplLoader = eplLoader;
@@ -80,7 +80,18 @@ public class EplanController   extends BaseController {
         }
         LOG.info("Got new data {}", row);
 
-        return ePlanLogic.updateEPlan(row);
+        return ePlanLogic.updateEPlan(row, "");
+    }
+
+    @Post(value="/updatetype/{fname}", consumes = MediaType.APPLICATION_JSON)
+    public Optional<EPlanDTO> uploadRowType(String fname, EPlanDTO row) {
+        if(row == null){
+            LOG.error("No data for row update!!!");
+            return null;
+        }
+        LOG.info("Cell {} changed, got new data {}", fname, row);
+
+        return ePlanLogic.updateEPlan(row, fname);
     }
 
     @Post(value="/duplicate")
