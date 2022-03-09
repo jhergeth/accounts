@@ -1,4 +1,4 @@
-package name.hergeth.eplan.responses;
+package name.hergeth.baseservice.responses;
 
 import java.util.Collection;
 

@@ -9,7 +9,7 @@ import io.micronaut.http.annotation.Post;
 import io.micronaut.http.multipart.StreamingFileUpload;
 import io.micronaut.validation.Validated;
 import name.hergeth.eplan.domain.*;
-import name.hergeth.eplan.responses.PivotTable;
+import name.hergeth.baseservice.responses.PivotTable;
 import name.hergeth.eplan.service.EPlanLoader;
 import name.hergeth.eplan.service.UntisGPULoader;
 import name.hergeth.eplan.util.Func;

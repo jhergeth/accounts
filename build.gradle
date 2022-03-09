@@ -72,7 +72,7 @@ dependencies {
     implementation 'info.debatty:java-string-similarity:2.0.0'
 
 // google: guava, gson
-//    implementation("com.google.guava:guava")
+    implementation 'com.google.guava:guava:31.0.1-jre'
     implementation 'com.google.code.gson:gson:2.8.8'
 
     implementation 'com.googlecode.ez-vcard:ez-vcard:0.11.3'
