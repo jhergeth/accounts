@@ -391,6 +391,10 @@ public class EPlanLogicImp implements EPlanLogic {
                         .diff(diff)
                         .anrechnungen(anr)
                         .anrechliste(atxt)
+                        .anzKlassenlehrer(klasseRep.countKuerzelByKlassenlehrer(kuk))
+                        .anzKlassen(ePlanRep.countDistinctKlasseByLehrer(k))
+                        .anzBereiche(ePlanRep.countDistinctKlasseAbteilungByLehrer(k))
+                        .anzBiGae(ePlanRep.countDistinctKlasseBiGaByLehrer(k))
                         .build();
                 epsMap.put(kuk, eps);
             }

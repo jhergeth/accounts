@@ -10,7 +10,7 @@ micronaut:
     multipart:
       max-file-size: 268435456
     ssl:
-      enabled: 'true'
+      enabled: 'false'
     netty:
       worker:
         threads: 8

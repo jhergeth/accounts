@@ -26,4 +26,12 @@ public class EPlanSummen {
     @Builder.Default private Double anrAnpassung = 0.0;
     @NonNull
     @Builder.Default private String anrechliste = "";
+    @NonNull
+    @Builder.Default private Long anzKlassenlehrer = 0l;
+    @NonNull
+    @Builder.Default private Long anzKlassen = 0l;
+    @NonNull
+    @Builder.Default private Long anzBereiche = 0l;
+    @NonNull
+    @Builder.Default private Long anzBiGae = 0l;
 }

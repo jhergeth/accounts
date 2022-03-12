@@ -13,6 +13,7 @@ import java.util.Optional;
 public abstract class KlasseRepository implements CrudRepository<Klasse, Long> {
     public abstract List<Klasse> listOrderByKuerzel();
     public abstract Optional<Klasse> findByKuerzel(String kuerzel);
+    public abstract Long countKuerzelByKlassenlehrer(String klassenlehrer);
 
     private Klasse unb = null;
 

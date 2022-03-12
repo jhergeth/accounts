@@ -36,6 +36,17 @@ public abstract class EPlanRepository implements CrudRepository<EPlan, Long> {
     public abstract List<EPlan> findByBereichOrderByKlasseAscAndLehrerAscAndFachAsc(String bereich);
     public abstract List<EPlan> findByBereichAndNoGreaterThanEqualsOrderByNo(String bereich, int start);
 
+    public abstract Long countDistinctKlasseByLehrer(Kollege kuerzel);
+
+    public Long countDistinctKlasseAbteilungByLehrer(Kollege kuk){
+        List<EPlan> el = findByLehrerOrderByNo(kuk);
+        return el.stream().map(e -> e.getKlasse().getAbteilung()).distinct().count();
+    }
+    public Long countDistinctKlasseBiGaByLehrer(Kollege kuk){
+        List<EPlan> el = findByLehrerOrderByNo(kuk);
+        return el.stream().map(e -> e.getKlasse().getAnlage()).distinct().count();
+    }
+
     public void duplicate(Long id){
         Optional<EPlan> oe = findById(id);
         if(oe.isPresent()){

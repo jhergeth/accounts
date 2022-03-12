@@ -18,7 +18,8 @@ application {
 }
 
 micronaut {
-    version "3.2.5"
+//    version "3.2.5"
+    version "3.3.4"
 }
 repositories {
     mavenCentral()
@@ -35,7 +36,7 @@ micronaut {
 
 dependencies {
     annotationProcessor("org.projectlombok:lombok")
-    annotationProcessor("io.micronaut.data:micronaut-data-processor")
+    annotationProcessor("io.micronaut.data:micronaut-data-processor:3.2.2")
     annotationProcessor("io.micronaut:micronaut-http-validation")
     annotationProcessor("io.micronaut.security:micronaut-security-annotations")
 
