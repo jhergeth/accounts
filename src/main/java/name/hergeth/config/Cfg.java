@@ -30,11 +30,9 @@ import java.util.TreeMap;
 public class Cfg {
     static public String SCHULE;
 
-    public static LocalDate minDate(){
-        return LocalDate.now().minusYears(1000);
-    }
+    public static LocalDate minDate(){ return LocalDate.of(1,1,1); }
     public static LocalDate maxDate(){
-        return LocalDate.now().plusYears(1000);
+        return LocalDate.of(3000,1,1);
     }
 
 

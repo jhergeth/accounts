@@ -362,7 +362,7 @@ public class EPlanLogicImp implements EPlanLogic {
             EPlanSummen eps = epsMap.get(kuk);
             if(eps == null){
 //                eps = new EPlanSummen(k.getKuerzel(), k, new HashMap<String,Double>(), 0.0, k.getSoll(), 0.0);
-                List<EPlan> kukEPLs = ePlanRep.findByLehrerOrderByNo(k);
+                List<EPlan> kukEPLs = ePlanRep.findByLehrer(k);
                 Map<String,Double> kukInBer = kukEPLs.stream()
                         .reduce(
                                 new HashMap<String,Double>(),
@@ -383,6 +383,17 @@ public class EPlanLogicImp implements EPlanLogic {
                 List<Anrechnung> aList = anrechungRepository.findByLehrerOrderByGrund(kuk);
                 String atxt = aList.stream().map(a -> {return a.getGrund() + ": " + a.getWwert();}).collect(Collectors.joining("; "));
                 Double diff = ist + anr - k.getSoll();
+
+                Long anzKlassen = kukEPLs.stream()
+                        .map(epl -> epl.getKlasse().getKuerzel())
+                        .distinct().count();
+                Long anzBereiche = kukEPLs.stream()
+                        .map(epl -> epl.getKlasse().getAbteilung())
+                        .distinct().count();
+                Long anzBiGae = kukEPLs.stream()
+                        .map(epl -> epl.getKlasse().getAnlage())
+                        .distinct().count();
+
                 eps = EPlanSummen.builder()
                         .lehrer(kuk)
                         .bereichsSummen(kukInBer)
@@ -392,9 +403,9 @@ public class EPlanLogicImp implements EPlanLogic {
                         .anrechnungen(anr)
                         .anrechliste(atxt)
                         .anzKlassenlehrer(klasseRep.countKuerzelByKlassenlehrer(kuk))
-                        .anzKlassen(ePlanRep.countDistinctKlasseByLehrer(k))
-                        .anzBereiche(ePlanRep.countDistinctKlasseAbteilungByLehrer(k))
-                        .anzBiGae(ePlanRep.countDistinctKlasseBiGaByLehrer(k))
+                        .anzKlassen(anzKlassen)
+                        .anzBereiche(anzBereiche)
+                        .anzBiGae(anzBiGae)
                         .build();
                 epsMap.put(kuk, eps);
             }

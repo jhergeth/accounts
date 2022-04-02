@@ -31,6 +31,7 @@ public abstract class EPlanRepository implements CrudRepository<EPlan, Long> {
     public abstract List<EPlan> findByLernGruppeOrderByNo(String lernGruppe);
     public abstract List<EPlan> findByBereichOrderByNo(String bereich);
     public abstract List<EPlan> findByKlasseOrderByTypeAscAndNoAsc(Klasse klasse);
+    public abstract List<EPlan> findByLehrer(Kollege lehrer);
     public abstract List<EPlan> findByLehrerOrderByNo(Kollege lehrer);
     public abstract List<EPlan> findByFachOrderByNo(String fach);
     public abstract List<EPlan> findByBereichOrderByKlasseAscAndLehrerAscAndFachAsc(String bereich);

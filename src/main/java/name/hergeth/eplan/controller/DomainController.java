@@ -254,7 +254,7 @@ public class DomainController extends BaseController{
     @Post(value = "/anrechnungen/upload", consumes = MULTIPART_FORM_DATA, produces = TEXT_PLAIN)
     public Publisher<HttpResponse<String>> uploadAn(StreamingFileUpload file) {
         Publisher<HttpResponse<String>> res = uploadFileTo(file, (p,e) -> untisGPULoader.readAnrechnungen(p));
-        anrechungRepository.calcAnrechnungPivot();
+//        anrechungRepository.calcAnrechnungPivot();
         return res;
     }
 

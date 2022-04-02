@@ -3,9 +3,9 @@ package name.hergeth.eplan.domain;
 import io.micronaut.data.jdbc.annotation.JdbcRepository;
 import io.micronaut.data.model.query.builder.sql.Dialect;
 import io.micronaut.data.repository.CrudRepository;
-import name.hergeth.config.Cfg;
 import name.hergeth.eplan.responses.PivotTable;
 
+import java.time.LocalDate;
 import java.util.List;
 import java.util.stream.Collectors;
 import java.util.stream.StreamSupport;
@@ -30,6 +30,12 @@ public abstract class AnrechungRepository implements CrudRepository<Anrechnung, 
         return anrPivot;
     }
 
+    /*
+        public Double getAnrechnungKuK(String kuk){
+            List<Anrechnung> al = findByLehrerOrderByGrund(kuk);
+            return al.stream().collect(Collectors.summingDouble(Anrechnung::getWwert));
+        }
+    */
     public Double getAnrechnungKuK(String kuk){
         if(dData == null || dData.length == 0){
             calcAnrechnungPivot();
@@ -66,9 +72,12 @@ public abstract class AnrechungRepository implements CrudRepository<Anrechnung, 
                     dData[r][c] = 0.0;
                 }
             }
+            LocalDate start = LocalDate.of(1000,1,1);
+            LocalDate end = LocalDate.of(2500,1,1);
 
             findAll().forEach(a -> {
-                if(!a.getBeginn().isAfter(Cfg.minDate()) && !a.getEnde().isBefore(Cfg.maxDate())){
+//                if(!a.getBeginn().isAfter(Cfg.minDate()) && !a.getEnde().isBefore(Cfg.maxDate())){
+                  if(a.getBeginn().isBefore(start) && a.getEnde().isAfter(end)){       // use only Anrechnungen without start or enddates
                     int r = kukl.indexOf(a.getLehrer());
                     int c = anrl.indexOf(a.getGrund())+1;
                     dData[r][c] += a.getWwert();
