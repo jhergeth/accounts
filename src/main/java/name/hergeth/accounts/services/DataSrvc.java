@@ -245,9 +245,9 @@ public class DataSrvc implements IDataSrvc {
 
         accUpdate = new AccUpdate();
 
-        if( accListCSV.size() == 0 || accListLDAP.size() == 0){
-            LOG.debug("Cannot compare empty accountlists");
-            status.update("Keine Kontenlisten vorhanden!");
+        if( accListCSV.size() == 0 ){
+            LOG.debug("Cannot compare empty csv-accountlist");
+            status.update("Keine Konten gelesen!");
             return accUpdate;
         }
         LOG.debug("Create map of account pairs.");
