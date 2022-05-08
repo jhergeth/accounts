@@ -376,6 +376,9 @@ public class EPlanLoaderImpl implements EPlanLoader {
     private Integer insertAlleUnterrichte(String bereich, List<EPlan> res, Integer id, String[] sarr) {
         String lehrer = sarr[COL_LEH];
         String klasse = sarr[COL_KLA];
+        if(klasse.length() > 5){
+            klasse = Klasse.fromBlockklasse(klasse);
+        }
         String[] kl = Func.addToSet(new HashSet<String>(), klasse, SPLITTER).toArray(String[]::new);
         String[] le = Func.addToSet(new HashSet<String>(), lehrer, SPLITTER).toArray(String[]::new);
         if (kl.length > 1 || le.length > 1) {

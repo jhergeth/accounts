@@ -28,11 +28,13 @@ public abstract class KlasseRepository implements CrudRepository<Klasse, Long> {
                     .build();
             save(unb);
         }
+        unb = findByKuerzel("????").get();
     }
 
     public Klasse getKlasse(String krzl){
         Optional<Klasse> ok = findByKuerzel(krzl);
         if(ok.isPresent())return ok.get();
+        if(unb == null)init();
         return unb;
     }
 }

@@ -140,34 +140,37 @@ public class UntisGPULoader {
 
         readCSV(uFile, (LineData lData) -> {
             String[] itm = lData.elements;
-            status.update(lData.current, lData.max, "Einlesen der Klassen: " + itm[0]);
+            String kla = itm[28].length() > 0 ? itm[28] : itm[0];
+            status.update(lData.current, lData.max, "Einlesen der Klassen: " + kla);
 
-            UGruppe ug = UGruppenRepository.SJ;
-            if(uKlassen.contains(itm[0])){
-                ug = UGruppenRepository.UB;
+            if(kList.stream().filter(k -> k.getKuerzel().equalsIgnoreCase(kla)).count() == 0){
+                UGruppe ug = UGruppenRepository.SJ;
+                if(uKlassen.contains(kla)){
+                    ug = UGruppenRepository.UB;
+                }
+                else if(mKlassen.contains(kla)){
+                    ug = UGruppenRepository.MB;
+                }
+                else if(oKlassen.contains(kla)){
+                    ug = UGruppenRepository.OB;
+                }
+                else if(aKlassen.contains(kla)){
+                    ug = UGruppenRepository.H1;
+                }
+                Klasse kl = Klasse.builder()
+                        .kuerzel(kla)
+                        .langname(itm[1])
+                        .anlage(itm[13])
+                        .alias(itm[28])
+                        .klassenlehrer(itm[29])
+                        .bigako("")        // no BiGaKo in csv export
+                        .abteilung(itm[22])
+                        .raum(itm[3])
+                        .bemerkung(itm[21])
+                        .ugruppe(ug)
+                        .build();
+                kList.add(kl);
             }
-            else if(mKlassen.contains(itm[0])){
-                ug = UGruppenRepository.MB;
-            }
-            else if(oKlassen.contains(itm[0])){
-                ug = UGruppenRepository.OB;
-            }
-            else if(aKlassen.contains(itm[0])){
-                ug = UGruppenRepository.H1;
-            }
-            Klasse kl = Klasse.builder()
-                    .kuerzel(itm[0])
-                    .langname(itm[1])
-                    .anlage(itm[13])
-                    .alias(itm[28])
-                    .klassenlehrer(itm[29])
-                    .bigako("")        // no BiGaKo in csv export
-                    .abteilung(itm[22])
-                    .raum(itm[3])
-                    .bemerkung(itm[21])
-                    .ugruppe(ug)
-                    .build();
-            kList.add(kl);
         });
         klasseRepository.deleteAll();
         klasseRepository.saveAll(kList);

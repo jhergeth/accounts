@@ -35,7 +35,7 @@ micronaut:
       default:
         enabled: true
         context:
-          server: 'ldaps://ldap.learn.berufskolleg-geilenkirchen.de'
+          server: 'ldaps://ldap.bkgk.de'
           managerDn: 'cn=admin,dc=bkest,dc=schule'
           managerPassword: 'pHtSL4MhUlaTBaevsmka'
         search:

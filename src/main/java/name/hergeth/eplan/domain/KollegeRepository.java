@@ -27,6 +27,7 @@ public abstract class KollegeRepository implements CrudRepository<Kollege, Long>
     public Kollege getKollege(String krzl){
         Optional<Kollege> ok = findByKuerzel(krzl);
         if(ok.isPresent())return ok.get();
+        if(unb == null)init();
         return unb;
     }
 }

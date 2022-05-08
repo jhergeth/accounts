@@ -46,4 +46,12 @@ public class Klasse {
     @Relation(value = Relation.Kind.MANY_TO_ONE, cascade = Relation.Cascade.ALL)
     private UGruppe ugruppe;
 
+    public static String fromBlockklasse(String k){
+        if(k.contains("UMO")){
+            String start = k.substring(0, k.indexOf("UMO"));
+            String end = k.substring(k.indexOf("UMO")+3);
+            return start + "U" + end + "," + start + "M" + end + "," + start + "O" + end;
+        }
+        return k;
+    }
 }
