@@ -39,7 +39,7 @@ micronaut:
           managerDn: 'cn=admin,dc=bkest,dc=schule'
           managerPassword: 'pHtSL4MhUlaTBaevsmka'
         search:
-          base: "ou=Lehrer,dc=bkest,dc=schule"
+          base: "dc=bkest,dc=schule"
           filter: "cn={0}"
         groups:
           enabled: true

@@ -103,12 +103,13 @@ public class DataSrvc implements IDataSrvc {
                 scanner.apply(accListCSV, ar);
                 status.inc("Reading accounts from file " + oname);
             }, LOG);
-            accListCSV.forEach(a -> fixAccount(a));
 
             LOG.debug("Found "+ lines +" accounts");
             status.update(lines, "Read accounts from file " + oname);
+
             areSuSAccounts = ScannerBuilder.wasSuS();
             if(areSuSAccounts){
+                accListCSV.forEach(a -> fixLogin(a));
                 cfg.set("susAccountsLoaded", LocalDateTime.now().toString());
                 loadedAccounts = loadType.SUS_LOADED;
             }
@@ -117,6 +118,9 @@ public class DataSrvc implements IDataSrvc {
                 loadedAccounts = loadType.KUK_LOADED;
             }
             cfg.save();
+
+            accListCSV.forEach(a -> fixAccount(a));
+
             return true;
         }
         return false;
@@ -127,15 +131,8 @@ public class DataSrvc implements IDataSrvc {
             acc.setAnzeigeName(acc.getVorname() + ' ' + acc.getNachname());
         }
 
-        String vor = Utils.flattenToAscii(Utils.replaceUmlaut(acc.getVorname()));
-        String nach = Utils.flattenToAscii(Utils.replaceUmlaut(acc.getNachname()));
-        vor = vor.replaceAll("\\s","") ;
-        nach = nach.replaceAll("\\s","") ;
-        String login = nach.substring(0,Math.min(8,nach.length())) + vor.substring(0, Math.min(4,vor.length()));
-        login = login.toLowerCase(Locale.ROOT);
-        acc.setLoginName(login);
         if(defaultUserMailDomain.contains("@")){
-            acc.setEmail(login + defaultUserMailDomain);
+            acc.setEmail(acc.getLoginName() + defaultUserMailDomain);
         }
 
         acc.setHomePhone(fixPhoneNumber(acc.getHomePhone()));
@@ -155,6 +152,16 @@ public class DataSrvc implements IDataSrvc {
             LOG.info("Could not parse phonenumber {}.", no);
             return "";
         }
+    }
+
+    private void fixLogin(Account acc){
+        String vor = Utils.flattenToAscii(Utils.replaceUmlaut(acc.getVorname()));
+        String nach = Utils.flattenToAscii(Utils.replaceUmlaut(acc.getNachname()));
+        vor = vor.replaceAll("\\s","") ;
+        nach = nach.replaceAll("\\s","") ;
+        String login = nach.substring(0,Math.min(8,nach.length())) + vor.substring(0, Math.min(4,vor.length()));
+        login = login.toLowerCase(Locale.ROOT);
+        acc.setLoginName(login);
     }
 
     //

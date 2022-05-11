@@ -86,7 +86,7 @@ public class Account {
         bGeburtstag = !this.geburtstag.equalsIgnoreCase(n.geburtstag);
         bAnzeigeName = !this.anzeigeName.equals(n.anzeigeName);
         bLoginName = !this.loginName.equalsIgnoreCase(n.loginName);
-        bEmail = !this.email.equalsIgnoreCase(n.email);
+        bEmail = this.email.length() > 0 && n.email.length() > 0 && !this.email.equalsIgnoreCase(n.email)  ;
         bMaxSize = !this.maxSize.equalsIgnoreCase(n.maxSize);
 
         return bKlasse||bNachname||bVorname||bGeburtstag||bAnzeigeName||bLoginName||bEmail||bMaxSize;
