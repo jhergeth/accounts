@@ -69,6 +69,7 @@ public class DataSrvc implements IDataSrvc {
     private String accKuKSize = null;
     private String accUserPW = null;
     private double STRINGDIST = 0.0;
+    private String LDAP_BASE = null;
 
     private LDAPUserApi usrLDAPCmd = null;
     private NCUserApi usrNCCmd = null;
@@ -661,6 +662,7 @@ public class DataSrvc implements IDataSrvc {
     private void initCmd() {
         SCHULJAHR = cfg.get("Schuljahr", "2122");
         DEFKUKPASSW = cfg.get("defKuKPassword", "1BKGKlehrer-");
+        LDAP_BASE = cfg.get("LDAP_Base", "dc=bkest,dc=schule");
         defaultUserMailDomain = cfg.get("DefaultUserMailDomain", "@a133f.de");
         STRINGDIST = Double.parseDouble(cfg.get("StringDistance", "0.95"));
         initMoodle();
@@ -682,7 +684,7 @@ public class DataSrvc implements IDataSrvc {
 
         Consumer<Meta> handleErrors = m -> status.stop("ERROR " + m.getStatusCode() + ": " + m.getMessage());
         try {
-            usrLDAPCmd = new LDAPUserApi(serverLDAP, usrLDAP, pwLDAP, SCHULJAHR);
+            usrLDAPCmd = new LDAPUserApi(serverLDAP, usrLDAP, pwLDAP, SCHULJAHR, LDAP_BASE);
             usrLDAPCmd.atError(handleErrors);
         } catch (LdapException e) {
             e.printStackTrace();

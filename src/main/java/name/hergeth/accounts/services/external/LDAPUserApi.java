@@ -30,25 +30,32 @@ public class LDAPUserApi {
     private static final Logger LOG = LoggerFactory.getLogger(LDAPUserApi.class);
     private LdapConnection con = null;
 
-    private final String BASE_DN = "dc=bkest,dc=schule";
-    private final String SEARCH_USER = "(objectClass=inetOrgPerson)";
-    private final String SEARCH_GROUP = "(objectClass=groupOfNames)";
-    private final String BASE_KONTEN_DN = "ou=Konten,dc=bkest,dc=schule";
-    private final String BASE_KUK_DN = "ou=Lehrer,dc=bkest,dc=schule";
-    private final String DUMMY_USER_DN = "cn=___dummy___,ou=System,dc=bkest,dc=schule";
-    private final String DUMMY_USER_CN = "___dummy___";
+    private String BASE_DN = "dc=bkest,dc=schule";
+    private String SEARCH_USER = "(objectClass=inetOrgPerson)";
+    private String SEARCH_GROUP = "(objectClass=groupOfNames)";
+    private String BASE_KONTEN_DN = "ou=Konten," + BASE_DN;
+    private String BASE_KUK_DN = "ou=Lehrer,"+ BASE_DN;
+    private String DUMMY_USER_DN = "cn=___dummy___,ou=System,"+ BASE_DN;
+    private String DUMMY_USER_CN = "___dummy___";
+    private String BASE_GROUP_DN = "ou=Klassen,"+ BASE_DN;
+    private String SYSTEM_GROUP_DN = "ou=System,"+ BASE_DN;
     private String SJ = "";
 
     private Consumer<Meta> errorHndler = null;
 
-    public LDAPUserApi(String srv, String user, String pw, String sj) throws LdapException {
+    public LDAPUserApi(String srv, String user, String pw, String sj, String base) throws LdapException {
         con = new LdapNetworkConnection( srv, 636 ,true);
         con.bind( user, pw);
         SJ = sj;
-        createOU("Konten", BASE_DN);
+        BASE_DN = base;
+        createOU("Konten", base);
+        BASE_KONTEN_DN = "ou=Konten," + BASE_DN;
         createOU("Klassen", BASE_DN);
+        BASE_GROUP_DN = "ou=Klassen,"+ BASE_DN;
         createOU("System", BASE_DN);
+        SYSTEM_GROUP_DN = "ou=System,"+ BASE_DN;
 
+        DUMMY_USER_DN = "cn=___dummy___,ou=System,"+ BASE_DN;
         try {
             Entry entry = new DefaultEntry(
                     DUMMY_USER_DN,
@@ -199,13 +206,11 @@ public class LDAPUserApi {
     }
 
     public boolean createGroup(String group) {
-        String BASE_GROUP_DN = "ou=Klassen,dc=bkest,dc=schule";
         String dn = "cn=" + group + "," + BASE_GROUP_DN;
         return intCreateGroup(group, dn);
     }
 
     public boolean createSysGroup(String group) {
-        String SYSTEM_GROUP_DN = "ou=System,dc=bkest,dc=schule";
         String dn = "cn=" + group + "," + SYSTEM_GROUP_DN;
         return intCreateGroup(group, dn);
     }

@@ -6,7 +6,6 @@ import org.apache.commons.io.FileUtils;
 import org.apache.commons.io.IOUtils;
 import org.slf4j.Logger;
 
-import javax.mail.internet.AddressException;
 import javax.mail.internet.InternetAddress;
 import java.io.*;
 import java.nio.charset.StandardCharsets;
@@ -171,7 +170,7 @@ public class Utils {
         try {
             InternetAddress emailAddr = new InternetAddress(email);
             emailAddr.validate();
-        } catch (AddressException ex) {
+        } catch (Exception ex) {
             result = false;
         }
         return result;
