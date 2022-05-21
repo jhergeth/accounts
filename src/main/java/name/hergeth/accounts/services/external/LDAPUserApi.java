@@ -360,8 +360,18 @@ public class LDAPUserApi {
         return false;
     }
 
+    public List<String> getRoles(String cn){
+
+    }
     public List<String> getExternalUsers() {
         return getLDAPStrings(SEARCH_USER, "cn");
+    }
+
+    public List<String> getTeacher() {
+        return getLDAPStrings(SEARCH_USER, "cn", BASE_KUK_DN);
+    }
+    public List<String> getSuS() {
+        return getLDAPStrings(SEARCH_USER, "cn", BASE_KONTEN_DN);
     }
 
     public List<String> getExternalGroups() {
@@ -384,13 +394,13 @@ public class LDAPUserApi {
         return new ArrayList<>();
     }
 
+    public List<Account> getExternalAccounts(){
+        return getExternalAccounts(true);
+    }
+
     public List<Account> getExternalAccounts(boolean sus){
         String search = "(&"+SEARCH_USER+")";
         return getExtAccounts(search, (sus ? BASE_KONTEN_DN : BASE_KUK_DN));
-    }
-
-    public List<Account> getExternalAccounts(){
-        return getExtAccounts("(&"+SEARCH_USER+")", BASE_KONTEN_DN);
     }
 
     private List<Account> getExtAccounts(String search, String base) {
@@ -431,19 +441,23 @@ public class LDAPUserApi {
 
 
     private List<String> getLDAPStrings(String filter, String attr) {
-            return getLDAPEntries(filter, attr, e -> {
-                String res = "";
-                try {
-                    res = e.get(attr).getString();
-                } catch (LdapInvalidAttributeValueException ldapInvalidAttributeValueException) {
-                    ldapInvalidAttributeValueException.printStackTrace();
-                }
-                return res;
-            });
+        return getLDAPStrings(filter, attr, BASE_DN);
     }
 
-    private List<Entry> getLDAPStrings(String filter) {
-        return getLDAPEntries(filter, null, e -> e );
+    private List<String> getLDAPStrings(String filter, String attr, String base) {
+        return getLDAPEntries(filter, base, attr, e -> {
+            String res = "";
+            try {
+                res = e.get(attr).getString();
+            } catch (LdapInvalidAttributeValueException ldapInvalidAttributeValueException) {
+                ldapInvalidAttributeValueException.printStackTrace();
+            }
+            return res;
+        });
+    }
+
+    private List<Entry> getLDAPEntries(String filter, String attr) {
+        return getLDAPEntries(filter, attr, e -> e );
     }
 
     private String getAttribute(Entry e, String attr){

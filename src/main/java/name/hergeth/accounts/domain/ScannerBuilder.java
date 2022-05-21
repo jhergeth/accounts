@@ -39,12 +39,12 @@ public class ScannerBuilder {
                     if (!skipNext.get()) {    // not first line with col headers
                         Account a = Account.builder()
                                 .anzeigeName(strings[match[0]] + ", " + strings[match[1]])
-                                .id(strings[match[3]])
+                                .id(strings[match[3]].toLowerCase())
                                 .klasse("KuK")
                                 .nachname(strings[match[0]])
                                 .vorname(strings[match[1]])
                                 .email(strings[match[2]])
-                                .loginName(strings[match[3]])
+                                .loginName(strings[match[3]].toLowerCase())
                                 .geburtstag(strings[match[4]])
                                 .maxSize(kukSize)
 
