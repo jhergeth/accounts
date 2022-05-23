@@ -5,6 +5,7 @@ import io.micronaut.http.annotation.Body;
 import io.micronaut.http.annotation.Controller;
 import io.micronaut.http.annotation.Get;
 import io.micronaut.http.annotation.Post;
+import name.hergeth.accounts.controler.response.AccAccounts;
 import name.hergeth.accounts.domain.Account;
 import name.hergeth.accounts.services.AccPair;
 import name.hergeth.accounts.services.IDataSrvc;
@@ -45,7 +46,7 @@ public class DataReadCtrl {
     }
 
     @Post(value = "/getextacc", consumes = MediaType.APPLICATION_JSON) //used
-    public List<Account> getExtAcc(@Body String[] klassen) {
+    public AccAccounts getExtAcc(@Body String[] klassen) {
         return dataSrvc.getLDAPAccounts(klassen);
     }
 

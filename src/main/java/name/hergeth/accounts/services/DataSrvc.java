@@ -4,6 +4,7 @@ import com.google.i18n.phonenumbers.PhoneNumberUtil;
 import com.google.i18n.phonenumbers.Phonenumber;
 import info.debatty.java.stringsimilarity.JaroWinkler;
 import jakarta.inject.Singleton;
+import name.hergeth.accounts.controler.response.AccAccounts;
 import name.hergeth.accounts.controler.response.AccUpdate;
 import name.hergeth.accounts.domain.AccList;
 import name.hergeth.accounts.domain.Account;
@@ -67,7 +68,7 @@ public class DataSrvc implements IDataSrvc {
     private String DEFKUKPASSW = null;
     private String accSuSSize = null;
     private String accKuKSize = null;
-    private String accUserPW = null;
+    private String USER_PW = null;
     private double STRINGDIST = 0.0;
     private String LDAP_BASE = null;
 
@@ -137,6 +138,11 @@ public class DataSrvc implements IDataSrvc {
 
         acc.setHomePhone(fixPhoneNumber(acc.getHomePhone()));
         acc.setCellPhone(fixPhoneNumber(acc.getCellPhone()));
+
+        String uid = acc.getId();
+        uid = uid.replace("{", "");
+        uid = uid.replace("}", "");
+        acc.setId(uid);
     }
 
     private String fixPhoneNumber(String no){
@@ -201,7 +207,7 @@ public class DataSrvc implements IDataSrvc {
         return res;
     }
 
-    public List<Account> getLDAPAccounts(String[] klassen){
+    public AccAccounts getLDAPAccounts(String[] klassen){
         LOG.debug("Get accounts for "+ klassen.length + " klassen.");
         if(accListLDAP == null){
             initLDAP();
@@ -212,7 +218,8 @@ public class DataSrvc implements IDataSrvc {
         });
         LOG.debug("Found {} accounts.", res.size());
         res.sort(Account::sortKlasse);
-        return res;
+
+        return new AccAccounts(res, USER_PW + klassen[0]);
     }
 
     public boolean setPassword(Map<String,String> data){
@@ -447,7 +454,7 @@ public class DataSrvc implements IDataSrvc {
         for(Account a: sAcc.getToCreate()){
             boolean res = false;
             if(areSuSAccounts){
-                res = usrLDAPCmd.createSUSKonto(a,"bkest" + SCHULJAHR + a.getKlasse());
+                res = usrLDAPCmd.createSUSKonto(a,USER_PW + a.getKlasse());
             }
             else{
                 res = usrLDAPCmd.createKUKKonto(a,DEFKUKPASSW);
@@ -668,6 +675,7 @@ public class DataSrvc implements IDataSrvc {
     //
     private void initCmd() {
         SCHULJAHR = cfg.get("Schuljahr", "2122");
+        USER_PW = cfg.get("accUserPW", "bkest" + SCHULJAHR);
         DEFKUKPASSW = cfg.get("defKuKPassword", "1BKGKlehrer-");
         LDAP_BASE = cfg.get("LDAP_Base", "dc=bkest,dc=schule");
         defaultUserMailDomain = cfg.get("DefaultUserMailDomain", "@a133f.de");
@@ -685,7 +693,7 @@ public class DataSrvc implements IDataSrvc {
     }
 
     private void initLDAP(){
-        String serverLDAP = cfg.get("accLDAPURL", "ldap.learn.berufskolleg-geilenkirchen.de");
+        String serverLDAP = cfg.get("accLDAPURL", "ldap.learn.bkgk.de");
         String usrLDAP = cfg.get("accLDAPAcc", "cn=admin,dc=bkest,dc=schule");
         String pwLDAP = cfg.get("accLDAPPW", "pHtSL4MhUlaTBaevsmka");
 
@@ -699,14 +707,13 @@ public class DataSrvc implements IDataSrvc {
     }
 
     private void initNC(){
-        String serverNC = cfg.get("accNCURL", "https://learn.berufskolleg-geilenkirchen.de");
+        String serverNC = cfg.get("accNCURL", "https://learn.bkgk.de");
         String usrNC = cfg.get("accNCAcc", "admin");
         String pwNC = cfg.get("accNCPW", "Bv3YI7RY8WMCEXVCRgON"); // Bv3YI7RY8WMCEXVCRgON
 //        String pwNC = configuration.get("accNCPW", "dW4ZB-szLx9-oWEjr-xQrLq-bbqsN"); // Bv3YI7RY8WMCEXVCRgON
         SKLASSENDIR = cfg.get("KlassenDir", "KLASSEN") + "/SJ" + SCHULJAHR;
         accSuSSize = cfg.get("accSuSSize", "256 MB");
         accKuKSize = cfg.get("accKuKSize", "10 GB");
-        accUserPW = cfg.get("accUserPW", "bkest" + SCHULJAHR);
         Consumer<Meta> handleErrors = m -> status.stop("ERROR " + m.getStatusCode() + ": " + m.getMessage());
 
         try {

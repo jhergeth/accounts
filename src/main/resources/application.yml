@@ -44,7 +44,7 @@ micronaut:
         groups:
           enabled: true
           filter: "member={0}"
-          base: "ou=System,dc=bkest,dc=schule"
+          base: "ou=ROLLEN,dc=bkest,dc=schule"
 
     authentication: bearer
     token:

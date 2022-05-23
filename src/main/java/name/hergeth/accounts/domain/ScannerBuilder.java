@@ -26,7 +26,8 @@ public class ScannerBuilder {
 
         head = new String[]{
                 "Nachname", "Vorname", "E-Mail (Dienstlich)", "Kürzel", "Geburtsdatum", "Telefon (Festnetz)",   // 0 - 5
-                "Telefon (Mobil)", "Anrede", "E-Mail", "Ortsname", "Postleitzahl", "Straße", "Geschlecht"       // 6 - 12
+                "Telefon (Mobil)", "Anrede", "E-Mail", "Ortsname", "Postleitzahl", "Straße", "Geschlecht",       // 6 - 12
+                "eindeutige Nummer (GUID)"      // 13 -
         };
         match = new int[head.length];
         if (buildMatcher(head, elms, match)) {
@@ -38,8 +39,8 @@ public class ScannerBuilder {
                 public Boolean apply(AccList accounts, String[] strings) {
                     if (!skipNext.get()) {    // not first line with col headers
                         Account a = Account.builder()
-                                .anzeigeName(strings[match[0]] + ", " + strings[match[1]])
-                                .id(strings[match[3]].toLowerCase())
+                                .anzeigeName(strings[match[1]] + " " + strings[match[0]])
+                                .id(strings[match[13]])
                                 .klasse("KuK")
                                 .nachname(strings[match[0]])
                                 .vorname(strings[match[1]])
@@ -114,6 +115,9 @@ public class ScannerBuilder {
                 } else if (i == 11) {
                     LOG.warn("Patching {} to {}", head[i], elms[12]);
                     match[i] = 12;
+                } else if (i == 13) {
+                    LOG.warn("Patching {} to {}", head[i], elms[3]);
+                    match[i] = 3;
                 } else {
                     LOG.info("Could not find {} in header: {}", head[i], elms);
                     return false;

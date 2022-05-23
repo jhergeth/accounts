@@ -1,5 +1,6 @@
 package name.hergeth.accounts.services;
 
+import name.hergeth.accounts.controler.response.AccAccounts;
 import name.hergeth.accounts.controler.response.AccUpdate;
 import name.hergeth.accounts.domain.Account;
 import name.hergeth.accounts.domain.ListPlus;
@@ -24,7 +25,7 @@ public interface IDataSrvc {
     public List<String> getCSVLogins();
     public List<String> getCSVKlassen();
     public List<String> getLDAPKlassen();
-    public List<Account> getLDAPAccounts(String[] klassen);
+    public AccAccounts getLDAPAccounts(String[] klassen);
     public int putMoodleAccounts(String[] klassen);
     public int readVCards();
 }

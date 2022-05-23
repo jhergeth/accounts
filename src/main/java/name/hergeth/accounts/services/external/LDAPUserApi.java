@@ -33,12 +33,12 @@ public class LDAPUserApi {
     private String BASE_DN = "dc=bkest,dc=schule";
     private String SEARCH_USER = "(objectClass=inetOrgPerson)";
     private String SEARCH_GROUP = "(objectClass=groupOfNames)";
-    private String BASE_KONTEN_DN = "ou=Konten," + BASE_DN;
-    private String BASE_KUK_DN = "ou=Lehrer,"+ BASE_DN;
+    private String BASE_KONTEN_DN = "ou=SUS," + BASE_DN;
+    private String BASE_KUK_DN = "ou=KUK,"+ BASE_DN;
     private String DUMMY_USER_DN = "cn=___dummy___,ou=System,"+ BASE_DN;
     private String DUMMY_USER_CN = "___dummy___";
     private String BASE_GROUP_DN = "ou=Klassen,"+ BASE_DN;
-    private String SYSTEM_GROUP_DN = "ou=System,"+ BASE_DN;
+    private String SYSTEM_GROUP_DN = "ou=ROLLEN,"+ BASE_DN;
     private String SJ = "";
 
     private Consumer<Meta> errorHndler = null;
@@ -48,12 +48,12 @@ public class LDAPUserApi {
         con.bind( user, pw);
         SJ = sj;
         BASE_DN = base;
-        createOU("Konten", base);
-        BASE_KONTEN_DN = "ou=Konten," + BASE_DN;
+        createOU("SUS", base);
+        BASE_KONTEN_DN = "ou=SUS," + BASE_DN;
         createOU("Klassen", BASE_DN);
         BASE_GROUP_DN = "ou=Klassen,"+ BASE_DN;
-        createOU("System", BASE_DN);
-        SYSTEM_GROUP_DN = "ou=System,"+ BASE_DN;
+        createOU("ROLLEN", BASE_DN);
+        SYSTEM_GROUP_DN = "ou=ROLLEN,"+ BASE_DN;
 
         DUMMY_USER_DN = "cn=___dummy___,ou=System,"+ BASE_DN;
         try {
@@ -112,6 +112,9 @@ public class LDAPUserApi {
             if(Utils.isValidEmailAddress(a.getEmail())){
                 email = a.getEmail();
             }
+            String uid = a.getId();
+            uid = uid.replace("{", "");
+            uid = uid.replace("}", "");
             entry = new DefaultEntry(
                     dn,
                     "objectClass: top",
@@ -124,7 +127,7 @@ public class LDAPUserApi {
             entry.add( "mail", email);
             entry.add( "displayName", a.getAnzeigeName());
             entry.add( "employeeNumber", a.getId());
-            entry.add( "uid", a.getId());
+            entry.add( "uid", uid);
             entry.add( "businessCategory", a.getKlasse());
             entry.add( "pager", a.getGeburtstag());
             entry.add( "destinationIndicator", a.getMaxSize());
@@ -310,12 +313,12 @@ public class LDAPUserApi {
                 String val = null;
                 for(Value v : atr){
                     val = v.toString();
-                    if(val != null && val.indexOf("ou=System")<0)
+                    if(val != null && val.indexOf("ou=ROLLEN")<0)
                         break;
                     val = null;
                 }
                 if(val != null){
-                    // user has 'seeAlso' attribute
+                    // user has 'seeAlso' attribute with group in ROLLEN
                     Dn oGDn = new Dn(val);  // remove user from different group
                     addU2G = new DefaultModification( ModificationOperation.REMOVE_ATTRIBUTE , "member", usr.getName());
                     con.modify( oGDn, addU2G );
@@ -361,8 +364,9 @@ public class LDAPUserApi {
     }
 
     public List<String> getRoles(String cn){
-
+        return getLDAPStrings(cn, "seeAlso");
     }
+
     public List<String> getExternalUsers() {
         return getLDAPStrings(SEARCH_USER, "cn");
     }
