@@ -128,15 +128,18 @@ dockerBuild {
             "jhergeth/${System.env.DOCKER_IMAGE ?: project.name}:$project.version",
             "jhergeth/${System.env.DOCKER_IMAGE ?: project.name}:latest"
     ]
+//    inputDir = project.projectDir
+
 }
 // https://github.com/micronaut-projects/micronaut-gradle-plugin/issues/214
-task fixIssue214(type: Copy){
+ task fixIssue214(type: Copy){
     from "Dockerfile"
     into "${buildDir}/docker"
 }
-dockerBuild.dockerFile.set(file("${buildDir}/docker/Dockerfile"))
+//dockerBuild.dockerFile.set(file("${buildDir}/Dockerfile"))
+// dockerBuild.dockerFile.set(file("./Dockerfile"))
 // ^^^
-dockerBuild.dependsOn fixIssue214 // wire the generateJava task into the DAG
+//dockerBuild.dependsOn fixIssue214 // wire the generateJava task into the DAG
 
 task fetchUI(type: Copy){
     from "C:\\USR\\DEV\\accvue\\dist"

@@ -32,8 +32,11 @@ public class Account {
     @Builder.Default
     private String loginName = "";
 
-//    @NonNull
+    //    @NonNull
     private String email;
+
+    //    @NonNull
+    private String email2;
 
 //    @NonNull
     private String maxSize;

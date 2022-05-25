@@ -108,7 +108,7 @@ public class LDAPUserApi {
         String dn = "cn=" + a.getLoginName() + "," + bdn;
         try {
             int fsp = a.getAnzeigeName().indexOf(" ");
-            String email = a.getLoginName() + "@bkest.invalid";
+            String email = a.getLoginName() + "@mail.invalid";
             if(Utils.isValidEmailAddress(a.getEmail())){
                 email = a.getEmail();
             }
@@ -125,6 +125,7 @@ public class LDAPUserApi {
             entry.add( "sn", a.getNachname());
             entry.add( "givenName", a.getVorname());
             entry.add( "mail", email);
+            entry.add( "mail", a.getEmail2());
             entry.add( "displayName", a.getAnzeigeName());
             entry.add( "employeeNumber", a.getId());
             entry.add( "uid", uid);

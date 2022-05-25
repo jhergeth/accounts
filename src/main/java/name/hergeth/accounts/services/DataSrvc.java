@@ -143,6 +143,8 @@ public class DataSrvc implements IDataSrvc {
         uid = uid.replace("{", "");
         uid = uid.replace("}", "");
         acc.setId(uid);
+
+        acc.setEmail2(acc.getLoginName() + "@bkgk.de");
     }
 
     private String fixPhoneNumber(String no){
