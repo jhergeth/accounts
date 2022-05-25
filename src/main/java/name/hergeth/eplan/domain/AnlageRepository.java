@@ -23,7 +23,7 @@ public abstract class AnlageRepository implements CrudRepository<Anlage,Long> {
     public abstract void deleteByApobk(String anlage);
 
     public abstract Anlage update(Anlage a);
-    public abstract Iterable<Anlage> save(Iterable<Anlage> al);
+//    public abstract Iterable<Anlage> save(Iterable<Anlage> al);
 
     private final StdnTafelRepository stdnTafelRep;
     public AnlageRepository(StdnTafelRepository stdnTafelRepository){

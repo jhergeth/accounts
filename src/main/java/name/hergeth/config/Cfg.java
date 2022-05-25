@@ -13,6 +13,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import javax.annotation.PostConstruct;
+import java.io.File;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.OutputStreamWriter;
@@ -69,6 +70,25 @@ public class Cfg {
         save("configuration", configpfad, conf);
     }
 
+    public void saveFile(String name, File file){
+        byte[] data = new byte[0];
+        try {
+            data = com.google.common.io.Files.toByteArray(file);
+        } catch (IOException e) {
+            LOG.error("Could not read data from to {} ({}).", file.getAbsolutePath(), name, e.getLocalizedMessage());
+        }
+        saveFile(name, data);
+    }
+
+    public void saveFile(String name, byte[] file) {
+        String path = dataPath + "/" + name;
+        try {
+            com.google.common.io.Files.write(file, new File(path));
+        } catch (IOException e) {
+            LOG.error("Could not write data [{}] to {} ({}).", name, path, e.getLocalizedMessage());
+        }
+    }
+
     public void save(Map<String,String> src) {
         conf = new TreeMap(src);
         save();
@@ -96,9 +116,9 @@ public class Cfg {
         conf.put(k, v);
     }
 
-    public String get(String k){
-        return conf.get(k);
-    }
+//    public String get(String k){
+//        return conf.get(k);
+//    }
 
     public String get(String k, String d){
         String res = conf.get(k);
@@ -125,6 +145,10 @@ public class Cfg {
             e.printStackTrace();
         }
         return sArr;
+    }
+
+    public String getFilePath(String k){
+        return dataPath + "/" + get(k, k);
     }
 
     public String getConfigpfad() {

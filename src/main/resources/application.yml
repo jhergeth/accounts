@@ -155,7 +155,15 @@ liquibase:
 #        hbm2ddl:
 #          auto: update
 #        show_sql: true
-
+jpa:
+  default:
+    packages-to-scan:
+      - 'name.hergeth.vert.domain.persist'
+    properties:
+      hibernate:
+        hbm2ddl:
+          auto: update
+        show_sql: false
 
 logger:
   levels:

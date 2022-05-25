@@ -63,7 +63,7 @@ public class EPlanLoaderImpl implements EPlanLoader {
         this.klasseRepository = klasseRepository;
         this.kollegeRepository = kollegeRepository;
 
-        SPLITTER = cfg.get("REGEX_SPLITTER");
+        SPLITTER = cfg.get("REGEX_SPLITTER",",(?=([^\\\"]*\\\"[^\\\"]*\\\")*(?![^\\\"]*\\\"))");
         colTitleArr = cfg.getStrArr("EPLAN_COL_TITLES",
                 "[\"Abteilung\", \"Klasse\", \"Fakultas\", \"Fach\", \"Lehrer\", \"Raum\", \"WSt/SJ\", \"LGZ\", \"Bemerkung\", \"UZ\", \"Typ\"]"
         );

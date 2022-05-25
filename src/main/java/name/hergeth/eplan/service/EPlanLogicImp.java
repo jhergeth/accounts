@@ -47,7 +47,7 @@ public class EPlanLogicImp implements EPlanLogic {
         this.uGruppenRepository = uGruppenRepository;
         this.anlageRepository = anlageRepository;
         this.ePlanLoader = ePlanLoader;
-        this.SPLITTER = cfg.get("REGEX_SPLITTER");
+        this.SPLITTER = cfg.get("REGEX_SPLITTER",",(?=([^\\\"]*\\\"[^\\\"]*\\\")*(?![^\\\"]*\\\"))");
 
         LOG.info("Constructing.");
         uGruppenRepository.initLoad();

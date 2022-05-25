@@ -1,4 +1,4 @@
-package name.hergeth.eplan.responses;
+package name.hergeth.responses;
 
 import lombok.AllArgsConstructor;
 import lombok.Data;
@@ -13,4 +13,10 @@ public class ArrayResponse<t> {
     t[] data;
     Integer pos;
     Integer total_count;
+
+    public ArrayResponse(t[] data){
+        this.data = data;
+        pos = 0;
+        total_count = data.length;
+    }
 }

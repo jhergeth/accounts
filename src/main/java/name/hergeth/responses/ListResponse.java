@@ -1,4 +1,6 @@
-package name.hergeth.eplan.responses;
+package name.hergeth.responses;
+
+import com.google.common.collect.Iterables;
 
 import java.util.List;
 
@@ -7,23 +9,23 @@ import java.util.List;
     https://docs.webix.com/desktop__plain_dynamic_loading.html
 */
 public class ListResponse<t> {
-    List<t> data;
+    Iterable<t> data;
     Integer pos;
     Integer total_count;
 
-    public ListResponse(List<t> data){
+    public ListResponse(Iterable<t> data){
         this.data = data;
         this.pos = 0;
-        this.total_count = data.size();
+        this.total_count = Iterables.size(data);
     }
 
-    public ListResponse(List<t> data, Integer pos, Integer total_count){
+    public ListResponse(Iterable<t> data, Integer pos, Integer total_count){
         this.data = data;
         this.pos = pos;
         this.total_count = total_count;
     }
 
-    public List<t> getData() {
+    public Iterable<t> getData() {
         return data;
     }
 
