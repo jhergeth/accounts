@@ -587,7 +587,7 @@ public class VertLogicImp implements VertLogic, ApplicationEventListener<Databas
     }
 
     private List<VertVertretung> fillAbsenzGruende() {
-        List<VertVertretung> lList = vertRepository.getVertretungen().findCurrentVertretungen(new Zeitraum("all"), null);
+        List<VertVertretung> lList = vertRepository.getVertretungen().findCurrentVertretungen(new Zeitraum("woche"), null);
         // Lehrerabwesenheiten holen
         // und als Gründe in die Vertretungen eintragen
         List<VertAbsenz> aList = vertRepository.listAbsenzByArt("L");
@@ -613,6 +613,7 @@ public class VertLogicImp implements VertLogic, ApplicationEventListener<Databas
                     VertAbsenz a = aRes.get(0);
                     v.setAbsText(a.getText());
                 }
+//                LOG.info("Vertretung: {} {}te {} -> LehrerAbw# {}",tag.format(DateTimeFormatter.ISO_DATE), std, kuk, aRes.size());
             }
         }
         return lList;
@@ -747,14 +748,14 @@ public class VertLogicImp implements VertLogic, ApplicationEventListener<Databas
 //                qStr = "SELECT b FROM Absenz as b WHERE (b.grund IN (" + sPrak + "))";
 //                List<Absenz> bList = vertRepository.getFilteredQuery(Absenz.class, qStr, 10000, 0);
                 List<VertAbsenz> bList = vertRepository.getAbsenzen().findAllBy(
-                        a -> sPrak.contains(a.getGrund())
+                        a -> a.getGrund().length() > 0 && sPrak.contains(a.getGrund())
                 );
 
                 // Lehrerabwesenheiten holen
 //                qStr = "SELECT b FROM Absenz as b WHERE b.art='L'";
 //                List<Absenz> lList = vertRepository.getFilteredQuery(Absenz.class, qStr, 10000, 0);
                 List<VertAbsenz> lList = vertRepository.getAbsenzen().findAllBy(
-                        a -> a.getArt().compareToIgnoreCase("L") == 0
+                        a -> a.getArt().compareToIgnoreCase("L") == 0 && woche.overlaps(a.getBeginn(), a.getEnde())
                 );
 
 

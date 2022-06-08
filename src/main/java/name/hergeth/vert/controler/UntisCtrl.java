@@ -29,7 +29,7 @@ import javax.validation.Valid;
 import javax.validation.constraints.NotNull;
 import java.util.List;
 
-@Controller("/untis")
+@Controller("/api/vert/untis")
 public class UntisCtrl {
 
     private static final Logger LOG = LoggerFactory.getLogger(UntisCtrl.class);
@@ -69,8 +69,9 @@ public class UntisCtrl {
         return new ListResponse<VertVertretung>(vList , 0, vList.size());
     }
 
-    @Get(value = "/vert/{woche}{?args*}")
-    public ListResponse<VertVertretung> vert(String woche, @Valid SortingAndOrderArguments args) {
+//    @Get(value = "/vert/{woche}{?args*}")
+    @Get(value = "/vert/{woche}")
+    public ListResponse<VertVertretung> vert(String woche) {
         List<VertVertretung> vList = vertLogic.findVertretungen(woche);
         return new ListResponse<VertVertretung>(vList , 0, vList.size());
     }
@@ -248,7 +249,7 @@ public class UntisCtrl {
         Anzeige der Freisetzungen
      */
     @Get(value = "/frei/{woche}")
-    public ListResponse<VertVertretung> listFreisetzungen(@Valid String woche) {
+    public ListResponse<VertVertretung> listFreisetzungen(@NotNull String woche) {
         List<VertVertretung> vList = vertLogic.getFreisetzungenMitGrund(woche);
         return new ListResponse<VertVertretung>(vList , 0, vList.size());
 

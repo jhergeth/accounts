@@ -20,7 +20,7 @@ import java.util.Set;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
-@Controller("/tmpl")
+@Controller("/api/vert/tmpl")
 public class TemplCtrl {
     @JsonIgnore
     private static final Logger LOG = LoggerFactory.getLogger(TemplCtrl.class);
@@ -32,6 +32,7 @@ public class TemplCtrl {
     public TemplCtrl(Cfg vmConfig) {
         this.vmConfig = vmConfig;
         tmplDir = new File(vmConfig.get("mailtemplatedir", "./MailTmpl"));
+        LOG.info("Template controller initialized.");
     }
 
     @Get("/dir")

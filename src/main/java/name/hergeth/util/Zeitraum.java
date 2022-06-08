@@ -156,6 +156,14 @@ public class Zeitraum {
         return (d.equals(start) || d.isAfter(start)) && d.isBefore(end);
     }
 
+    public boolean inPeriodIncluding(LocalDate d){
+        return (d.equals(start) || d.isAfter(start)) && (d.equals(end) || d.isBefore(end));
+    }
+
+    public boolean overlaps(LocalDate s, LocalDate e){
+        return (e.equals(start) || e.isAfter(start)) && (s.equals(end) || s.isBefore(end));
+    }
+
     public String getStartUpdate(){ return getFDateTime(startUpdate); }
     public String getEndUpdate(){ return getFDateTime(endUpdate); }
     private String getFDateTime(LocalDateTime t){

@@ -23,7 +23,7 @@ import java.util.Map;
 import java.util.Optional;
 
 
-@Controller("/stdpl")
+@Controller("/api/vert/stdpl")
 public class StdplMailCtrl {
     private static final Logger LOG = LoggerFactory.getLogger(StdplMailCtrl.class);
 

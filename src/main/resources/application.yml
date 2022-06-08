@@ -66,46 +66,50 @@ micronaut:
       - pattern: /auth/**
         access:
           - isAnonymous()
-      - pattern: /api/acc/write/newpasswort
-        http-method: POST
-        access:
-          - ROLE_TEACHER
-      - pattern: /api/konfig/**
-        http-method: GET
-        access:
-          - ROLE_ADMIN
-      - pattern: /api/konfig/**
-        http-method: POST
-        access:
-          - ROLE_ADMIN
-      - pattern: /api/acc/write/**
-        http-method: GET
-        access:
-          - ROLE_ACCOUNTMANAGER
-      - pattern: /api/acc/write/**
-        http-method: POST
-        access:
-          - ROLE_ACCOUNTMANAGER
-      - pattern: /api/acc/read/**
-        http-method: GET
-        access:
-          - isAuthenticated()
-      - pattern: /api/acc/read/**
-        http-method: POST
-        access:
-          - isAuthenticated()
-      - pattern: /api/eplan/bereiche
-        http-method: GET
-        access:
-          - isAuthenticated()
-      - pattern: /api/eplan/**
-        http-method: POST
-        access:
-          - isAuthenticated()
+#      - pattern: /api/acc/write/newpasswort
+#        http-method: POST
+#        access:
+#          - ROLE_TEACHER
+#      - pattern: /api/konfig/**
+#        http-method: GET
+#        access:
+#          - ROLE_ADMIN
+#      - pattern: /api/konfig/**
+#        http-method: POST
+#        access:
+#          - ROLE_ADMIN
+#      - pattern: /api/acc/write/**
+#        http-method: GET
+#        access:
+#          - ROLE_ACCOUNTMANAGER
+#      - pattern: /api/acc/write/**
+#        http-method: POST
+#        access:
+#          - ROLE_ACCOUNTMANAGER
+#      - pattern: /api/acc/read/**
+#        http-method: GET
+#        access:
+#          - isAuthenticated()
+#      - pattern: /api/acc/read/**
+#        http-method: POST
+#        access:
+#          - isAuthenticated()
+#      - pattern: /api/eplan/bereiche
+#        http-method: GET
+#        access:
+#          - isAuthenticated()
+#      - pattern: /api/eplan/**
+#        http-method: POST
+#        access:
+      #          - isAuthenticated()
       - pattern: /**
         http-method: GET
         access:
           - isAnonymous()
+      - pattern: /**
+        http-method: POST
+        access:
+          - isAuthenticated()
 
 datasources:
   default:

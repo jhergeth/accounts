@@ -16,6 +16,6 @@ public class VertPaarComparator implements Comparator<VertPaar> {
         if(v1.getStunde() != v2.getStunde())
             return v1.getStunde() - v2.getStunde();
 
-        return 0;
+        return v1.getAbsLehrer().compareTo(v2.getAbsLehrer());
     }
 }

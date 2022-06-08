@@ -23,7 +23,7 @@ import java.util.*;
 import java.util.stream.Collectors;
 import java.util.stream.StreamSupport;
 
-@Controller("/mail")
+@Controller("/api/vert/mail")
 public class MailCtrl {
     @JsonIgnore
     private static final Logger LOG = LoggerFactory.getLogger(MailCtrl.class);

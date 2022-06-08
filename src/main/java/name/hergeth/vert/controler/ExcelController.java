@@ -35,7 +35,7 @@ import java.util.List;
 import java.util.Map;
 
 @Validated
-@Controller("/excel")
+@Controller("/api/vert/excel")
 public class ExcelController {
     private static final Logger LOG = LoggerFactory.getLogger(ExcelController.class);
 

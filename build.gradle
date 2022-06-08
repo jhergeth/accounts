@@ -162,6 +162,7 @@ java {
 
 
 shadowJar {
+    zip64 true
     mergeServiceFiles()
 }
 
