@@ -32,7 +32,7 @@ micronaut:
   security:
     enabled: true
     ldap:
-      default:
+      BKEST:
         enabled: true
         context:
           server: 'ldaps://ldap.kc.bkgk.de'
@@ -45,7 +45,19 @@ micronaut:
           enabled: true
           filter: "member={0}"
           base: "ou=ROLLEN,dc=bkest,dc=schule"
-
+      default:
+        enabled: true
+        context:
+          server: 'ldaps://ldap.hergeth.cloud'
+          managerDn: 'cn=readonly,dc=hergeth,dc=cloud'
+          managerPassword: 'QkpQhz5V3yd0CaOF3Lr1'
+        search:
+          base: "dc=hergeth,dc=cloud"
+          filter: "cn={0}"
+        groups:
+          enabled: true
+          filter: "member={0}"
+          base: "ou=ROLLEN,dc=hergeth,dc=cloud"
     authentication: bearer
     token:
       jwt:

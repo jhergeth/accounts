@@ -300,7 +300,8 @@ public class UntisGPULoader implements DatabaseLoader {
             File file = new File(strFile);
             String line ="";
 
-            BufferedReader br = new BufferedReader(new FileReader(file));
+//            BufferedReader br = new BufferedReader(new FileReader(file));
+            BufferedReader br = new BufferedReader(new InputStreamReader(new FileInputStream(file), "Cp1252"));
             while ((line = br.readLine()) != null) {
                 String[] elm = line.split(",(?=([^\"]*\"[^\"]*\")*[^\"]*$)", -1);
 

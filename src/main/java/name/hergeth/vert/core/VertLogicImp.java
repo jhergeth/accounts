@@ -235,9 +235,43 @@ public class VertLogicImp implements VertLogic, ApplicationEventListener<Databas
     @Transactional
     public List<VertAbsenz> getAbsenzen(@NotNull String typ) {
         return vertRepository.getAbsenzen().findAllBy(
-            a -> typ.equalsIgnoreCase(a.getArt())
+                a -> typ.equalsIgnoreCase(a.getArt())
         );
     }
+
+    @Override
+    @Transactional
+    public List<VertAbsenz> getAbsenzen(@NotNull String typ, String zeit) {
+        Zeitraum zr = new Zeitraum(zeit);
+        return vertRepository.getAbsenzen().findAllBy(
+                a -> isValidAbsenz(a, typ, new Zeitraum(zeit))
+        );
+    }
+
+    private boolean isValidAbsenz(VertAbsenz a, String typ, Zeitraum zr) {
+        return isValidAbsenz(a, typ)
+                && zr.overlaps(a.getBeginn(), a.getEnde());
+    }
+    private boolean isValidAbsenz(VertAbsenz a, String typ) {
+        return typ.toLowerCase().contains(a.getArt().toLowerCase());
+    }
+    private int simpleAbsenzOrder(VertAbsenz a1, VertAbsenz a2) {
+        int r = a1.getBeginn().compareTo(a2.getBeginn());
+        if(r == 0){
+            r = a1.getIEStunde() - a2.getIEStunde();
+        }
+        if (r == 0) {
+            r = a1.getEnde().compareTo(a2.getEnde());
+        }
+        if(r == 0){
+            r = a1.getILStunde() - a2.getILStunde();
+        }
+        if(r == 0){
+            r = a1.getGrund().compareTo(a2.getGrund());
+        }
+        return r;
+    }
+
 
     /*
         Vertretungen

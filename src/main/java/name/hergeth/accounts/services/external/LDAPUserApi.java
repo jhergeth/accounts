@@ -44,6 +44,7 @@ public class LDAPUserApi {
     private Consumer<Meta> errorHndler = null;
 
     public LDAPUserApi(String srv, String user, String pw, String sj, String base) throws LdapException {
+        LOG.info("Trying to open LDAP connection to:{} with acc:{} and PW:{}", srv, user, pw);
         con = new LdapNetworkConnection( srv, 636 ,true);
         con.bind( user, pw);
         SJ = sj;

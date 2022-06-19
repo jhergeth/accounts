@@ -28,6 +28,7 @@ import javax.annotation.Nullable;
 import javax.validation.Valid;
 import javax.validation.constraints.NotNull;
 import java.util.List;
+import java.util.Optional;
 
 @Controller("/api/vert/untis")
 public class UntisCtrl {
@@ -165,6 +166,20 @@ public class UntisCtrl {
     @Get(value = "/absenz{?args*}")
     public ListResponse<VertAbsenz> listAbsenzen(@Valid SortingAndOrderArguments args) {
         List<VertAbsenz> aList = vertLogic.getAbsenzen("K");
+        ListResponse<VertAbsenz> mlr = new ListResponse<>(aList, 0, aList.size());
+        return mlr;
+    }
+
+    @Get(value = "/absenz/{zeitraum}{?ot*}")
+    public ListResponse<VertAbsenz> getAbsenzen(String zeitraum, Optional<String> ot) {
+        String typ;
+        if(ot.isPresent()){
+            typ = ot.get();
+        }
+        else{
+            typ = "LRK";    // get all Absenztypen (Lehrer, Klasse, Raum)
+        }
+        List<VertAbsenz> aList = vertLogic.getAbsenzen(typ, zeitraum);
         ListResponse<VertAbsenz> mlr = new ListResponse<>(aList, 0, aList.size());
         return mlr;
     }

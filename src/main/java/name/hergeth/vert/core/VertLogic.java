@@ -26,6 +26,8 @@ public interface VertLogic {
 
     List<VertAbsenz> getAbsenzen(@NotNull String typ);
 
+    List<VertAbsenz> getAbsenzen(@NotNull String typ, String zeit);
+
     ListResponse<VertMailLog> getLog(@NotNull SortingAndOrderArguments args);
 
     @Transactional

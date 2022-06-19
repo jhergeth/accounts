@@ -1,5 +1,6 @@
 package name.hergeth.util;
 
+import io.micronaut.core.annotation.Introspected;
 import io.micronaut.core.annotation.Nullable;
 
 import javax.validation.constraints.Pattern;
@@ -7,6 +8,7 @@ import javax.validation.constraints.Positive;
 import javax.validation.constraints.PositiveOrZero;
 import java.util.Optional;
 
+@Introspected
 public class SortingAndOrderArguments {
     @Nullable
     @PositiveOrZero
