@@ -32,10 +32,10 @@ micronaut:
   security:
     enabled: true
     ldap:
-      BKEST:
+      default:
         enabled: true
         context:
-          server: 'ldaps://ldap.kc.bkgk.de'
+          server: 'ldaps://ldap.learn.berufskolleg-geilenkirchen.de'
           managerDn: 'cn=admin,dc=bkest,dc=schule'
           managerPassword: 'pHtSL4MhUlaTBaevsmka'
         search:
@@ -44,8 +44,8 @@ micronaut:
         groups:
           enabled: true
           filter: "member={0}"
-          base: "ou=ROLLEN,dc=bkest,dc=schule"
-      default:
+          base: "ou=System,dc=bkest,dc=schule"
+      TEST:
         enabled: true
         context:
           server: 'ldaps://ldap.hergeth.cloud'

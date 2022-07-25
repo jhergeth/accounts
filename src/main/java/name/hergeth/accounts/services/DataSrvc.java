@@ -23,7 +23,6 @@ import name.hergeth.util.VCardAdapter;
 import org.apache.commons.collections4.MapIterator;
 import org.apache.commons.collections4.map.HashedMap;
 import org.apache.commons.lang3.ArrayUtils;
-import org.apache.directory.api.ldap.model.exception.LdapException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -699,13 +698,7 @@ public class DataSrvc implements IDataSrvc {
         String usrLDAP = cfg.get("accLDAPAcc", "cn=admin,dc=bkest,dc=schule");
         String pwLDAP = cfg.get("accLDAPPW", "pHtSL4MhUlaTBaevsmka");
 
-        Consumer<Meta> handleErrors = m -> status.stop("ERROR " + m.getStatusCode() + ": " + m.getMessage());
-        try {
-            usrLDAPCmd = new LDAPUserApi(serverLDAP, usrLDAP, pwLDAP, SCHULJAHR, LDAP_BASE);
-            usrLDAPCmd.atError(handleErrors);
-        } catch (LdapException e) {
-            e.printStackTrace();
-        }
+        usrLDAPCmd = new LDAPUserApi(serverLDAP, usrLDAP, pwLDAP, SCHULJAHR, LDAP_BASE);
     }
 
     private void initNC(){
