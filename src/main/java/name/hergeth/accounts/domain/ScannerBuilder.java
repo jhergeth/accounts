@@ -116,8 +116,8 @@ public class ScannerBuilder {
                     LOG.warn("Patching {} to {}", head[i], elms[12]);
                     match[i] = 12;
                 } else if (i == 13) {
-                    LOG.warn("Patching {} to {}", head[i], elms[3]);
-                    match[i] = 3;
+                    LOG.warn("Patching {} to {}", head[i], elms[match[3]]);
+                    match[i] = match[3];
                 } else {
                     LOG.info("Could not find {} in header: {}", head[i], elms);
                     return false;

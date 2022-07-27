@@ -35,16 +35,16 @@ micronaut:
       default:
         enabled: true
         context:
-          server: 'ldaps://ldap.learn.berufskolleg-geilenkirchen.de'
+          server: 'ldaps://ldap.bkgk.de'
           managerDn: 'cn=admin,dc=bkest,dc=schule'
-          managerPassword: 'pHtSL4MhUlaTBaevsmka'
+          managerPassword: '0gNPvhPRoRWGfYKhypBX'
         search:
           base: "dc=bkest,dc=schule"
           filter: "cn={0}"
         groups:
           enabled: true
           filter: "member={0}"
-          base: "ou=System,dc=bkest,dc=schule"
+          base: "dc=bkest,dc=schule"
       TEST:
         enabled: true
         context:
@@ -57,7 +57,7 @@ micronaut:
         groups:
           enabled: true
           filter: "member={0}"
-          base: "ou=ROLLEN,dc=hergeth,dc=cloud"
+          base: "dc=hergeth,dc=cloud"
     authentication: bearer
     token:
       jwt:

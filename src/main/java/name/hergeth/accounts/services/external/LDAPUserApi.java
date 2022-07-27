@@ -7,7 +7,6 @@ import com.unboundid.util.ssl.HostNameTrustManager;
 import com.unboundid.util.ssl.JVMDefaultTrustManager;
 import com.unboundid.util.ssl.SSLUtil;
 import name.hergeth.accounts.domain.Account;
-import name.hergeth.accounts.services.external.io.Meta;
 import name.hergeth.util.Utils;
 import org.apache.commons.lang3.ArrayUtils;
 import org.slf4j.Logger;
@@ -22,7 +21,6 @@ import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
 import java.util.LinkedList;
 import java.util.List;
-import java.util.function.Consumer;
 import java.util.function.Function;
 
 public class LDAPUserApi {
@@ -30,18 +28,26 @@ public class LDAPUserApi {
     private LDAPConnection con = null;
     private Cleaner cleaner = null;
 
+    private final String OU_KUK = "KUK";
+    private final String OU_SUS = "SUS";
+    private final String OU_ROLES = "ROLLEN";
+    private final String OU_KLASSEN = "Klassen";
+    private final String OU_SYSTEM = "System";
+
     private String BASE_DN = "dc=bkest,dc=schule";
     private String SEARCH_USER = "(objectClass=inetOrgPerson)";
     private String SEARCH_GROUP = "(objectClass=groupOfNames)";
-    private String BASE_KONTEN_DN = "ou=SUS," + BASE_DN;
-    private String BASE_KUK_DN = "ou=KUK,"+ BASE_DN;
-    private String DUMMY_USER_CN = "___dummy___";
-    private String DUMMY_USER_DN = "cn=" + DUMMY_USER_CN + ",ou=System,"+ BASE_DN;
-    private String BASE_GROUP_DN = "ou=Klassen,"+ BASE_DN;
-    private String SYSTEM_GROUP_DN = "ou=ROLLEN,"+ BASE_DN;
-    private String SJ = "";
 
-    private Consumer<Meta> errorHndler = null;
+    private String BASE_SUS_DN = "ou="+OU_SUS+"," + BASE_DN;
+    private String BASE_KUK_DN = "ou="+OU_KUK+","+ BASE_DN;
+    private String BASE_KLASSEN_DN = "ou="+OU_KLASSEN+","+ BASE_DN;
+    private String BASE_ROLES_DN = "ou="+OU_ROLES+","+ BASE_DN;
+    private String BASE_SYSTEM_DN = "ou="+OU_SYSTEM+","+ BASE_DN;
+    private String DUMMY_USER_CN = "___dummy___";
+    private String DUMMY_USER_DN = "cn=" + DUMMY_USER_CN + " ," +  BASE_SYSTEM_DN;
+    private String ADMIN_USER_CN = "Administrator";
+    private String ADMIN_USER_DN = "cn=" + ADMIN_USER_CN + " ," +  BASE_SYSTEM_DN;
+    private String SJ = "";
 
     public LDAPUserApi(String serverAddress, String user, String pw, String sj, String base) {
         LOG.info("Trying to open LDAP connection to:{} with acc:{} and PW:{}", serverAddress, user, pw);
@@ -69,44 +75,62 @@ public class LDAPUserApi {
 
         SJ = sj;
         BASE_DN = base;
-//        BASE_KUK_DN = "ou=KUK,"+ BASE_DN;
-        BASE_KUK_DN = "ou=Lehrer,"+ BASE_DN;
-//        createOU("SUS", base);
-//        BASE_KONTEN_DN = "ou=SUS," + BASE_DN;
-        createOU("Konten", base);
-        BASE_KONTEN_DN = "ou=Konten," + BASE_DN;
-        createOU("Klassen", BASE_DN);
-        BASE_GROUP_DN = "ou=Klassen,"+ BASE_DN;
-//        createOU("ROLLEN", BASE_DN);
-//        SYSTEM_GROUP_DN = "ou=ROLLEN,"+ BASE_DN;
-        createOU("System", BASE_DN);
-        SYSTEM_GROUP_DN = "ou=System,"+ BASE_DN;
+        BASE_SUS_DN = "ou="+OU_SUS+"," + BASE_DN;
+        BASE_KUK_DN = "ou="+OU_KUK+","+ BASE_DN;
+        DUMMY_USER_CN = "___dummy___";
+        BASE_KLASSEN_DN = "ou="+OU_KLASSEN+","+ BASE_DN;
+        BASE_ROLES_DN = "ou="+OU_ROLES+","+ BASE_DN;
+        BASE_SYSTEM_DN = "ou="+OU_SYSTEM+","+ BASE_DN;
+        DUMMY_USER_DN = "cn=" + DUMMY_USER_CN + " ," + BASE_SYSTEM_DN;
+        ADMIN_USER_DN = "cn=" + ADMIN_USER_CN + " ," +  BASE_SYSTEM_DN;
+    }
 
-        DUMMY_USER_DN = "cn=" + DUMMY_USER_CN + ",ou=System,"+ BASE_DN;
+    public void initEmptyLDAP() {
+        createOU(OU_SUS, BASE_DN);
+        createOU(OU_KUK, BASE_DN);
+        createOU(OU_KLASSEN, BASE_DN);
+        createOU(OU_ROLES, BASE_DN);
+        createOU(OU_SYSTEM, BASE_DN);
+
+        createSystemUser(DUMMY_USER_DN, "1234567890xyz");
+        createSystemUser(ADMIN_USER_DN, "1Aachen9");
+
+        createSysGroup("ALL");     // create user group
+        createSysGroup("LEHRERINNEN");     // create user group
+        createSysGroup("SUS");     // create user group
+        createSysGroup("SUS-" + SJ);     // create user group
+        connectGroupToGroup("SUS-" + SJ, "SUS");
+
+        initAdminRole("ROLE_ADMIN");
+        initAdminRole("ROLE_ACCOUNTMANAGER");
+        initAdminRole("ROLE_EPLAN");
+        initAdminRole("ROLE_EPLANMANAGER");
+        initAdminRole("ROLE_VERTRETUNG");
+    }
+
+    private boolean createSystemUser(String user, String pw) {
         try {
             Entry entry = new Entry(
-                    "dn: " + DUMMY_USER_DN,
+                    "dn: " + user,
                     "objectClass: top",
                     "objectClass: person",
                     "objectClass: organizationalPerson",
                     "objectClass: inetOrgPerson",
-                    "cn: " + DUMMY_USER_CN,
-                    "sn: " + DUMMY_USER_CN
+                    "cn: " + user,
+                    "sn: " + user
             );
             entry.addAttribute( "roomNumber", LocalDate.now().format(DateTimeFormatter.ISO_LOCAL_DATE));   // created
-            entry.addAttribute("userPassword", Utils.generateSSHA("1234567890xyz".getBytes(StandardCharsets.UTF_8)));
-            con.add(entry);
+            entry.addAttribute("userPassword", Utils.generateSSHA(pw.getBytes(StandardCharsets.UTF_8)));
+            LDAPResult res = con.add(entry);
+            return res.getResultCode() == ResultCode.SUCCESS;
         } catch (NoSuchAlgorithmException | LDIFException | LDAPException e) {
             LOG.error("Got Exception during LDAP-Create dummy user: {}", e.getMessage());
         }
-
-        createSysGroup("ALL");     // create user group
-        createSysGroup("LEHRERINNEN");     // create user group
-        createSysGroup("SUS-" + SJ);     // create user group
+        return false;
     }
 
     public boolean createSUSKonto(Account a, String pw) {
-        boolean res =  createLDAPUser(a, BASE_KONTEN_DN, pw);
+        boolean res =  createLDAPUser(a, BASE_SUS_DN, pw);
         if(res){
             connectUserAndGroup(a.getLoginName(), "ALL");
             connectUserAndGroup(a.getLoginName(), "SUS-"+SJ);
@@ -121,10 +145,6 @@ public class LDAPUserApi {
             connectUserAndGroup(a.getLoginName(), "LEHRERINNEN");
         }
         return res;
-    }
-
-    public void atError(Consumer<Meta> ehdl){
-        errorHndler = ehdl;
     }
 
     private boolean createLDAPUser(Account a, String bdn, String pw) {
@@ -230,14 +250,24 @@ public class LDAPUserApi {
         return true;
     }
 
-    public boolean createGroup(String group) {
-        String dn = "cn=" + group + "," + BASE_GROUP_DN;
+    public boolean createKlassenGroup(String group) {
+        String dn = "cn=" + group + "," + BASE_KLASSEN_DN;
         return intCreateGroup(group, dn);
     }
 
     public boolean createSysGroup(String group) {
-        String dn = "cn=" + group + "," + SYSTEM_GROUP_DN;
+        String dn = "cn=" + group + "," + BASE_SYSTEM_DN;
         return intCreateGroup(group, dn);
+    }
+
+    public boolean createRole(String group) {
+        String dn = "cn=" + group + "," + BASE_ROLES_DN;
+        return intCreateGroup(group, dn);
+    }
+
+    private void initAdminRole(String r){
+        createRole(r);
+        connectUserToGroup(ADMIN_USER_CN, r);
     }
 
     private boolean intCreateGroup(String group, String dn) {
@@ -324,41 +354,45 @@ public class LDAPUserApi {
             String otherg = getAttrWithValue(ue, "seeAlso", "Klassen");
             if(otherg != null) {
                 // user has 'seeAlso' attribute with different group in Klassen
-                ModifyRequest mod = new ModifyRequest(
-                        "dn: " + ue,
-                        "changetype: remove",
-                        "remove: seeAlso",
-                        "seeAlso: " + otherg);
-                con.modify(mod);
-                LOG.info("Removed {} from 'seeAlso' at User {}.", otherg, u);
-
-                mod = new ModifyRequest(
-                        "dn: " + otherg,
-                        "changetype: remove",
-                        "remove: member",
-                        "member: " + ue);
-                con.modify(mod);
-                LOG.info("Removed {} from 'seeAlso' at User {}.", otherg, u);
+                disconnectUserAndGroup(ue, otherg);
             }
-            ModifyRequest mod = new ModifyRequest(
-                    "dn: "+ue,
-                    "changetype: add",
-                    "add: seeAlso",
-                    "seeAlso: " + ge);
-            con.modify( mod );
-            LOG.info("Added {} to 'seeAlso' at User {}.", ge, u);
-            mod = new ModifyRequest(
-                    "dn: "+ge,
-                    "changetype: add",
-                    "add: member",
-                    "member: " + ue);
-            con.modify( mod );
-            LOG.info("Added {} to 'member' at Group {}.", ue, g);
+            connectUserToGroup(ue, ge);
         } catch (LDIFException | LDAPException ldifException) {
             ldifException.printStackTrace();
         }
-
         return false;
+    }
+
+    private void connectUserToGroup(String u1, String g2){
+        LOG.info("Connecting user {} with group {}.", u1, g2);
+        try {
+            String g1e = getFirstDN(u1, SEARCH_USER);
+            String g2e = getFirstDN(g2, SEARCH_GROUP);
+            connectWithGroup(g1e, g2e);
+        }catch(Exception e){
+            LOG.error("Could not put {} into {}.", u1, g2);
+        }
+    }
+
+    private void connectGroupToGroup(String g1, String g2){
+        LOG.info("Connecting group {} with group {}.", g1, g2);
+        try {
+            String g1e = getFirstDN(g1, SEARCH_GROUP);
+            String g2e = getFirstDN(g2, SEARCH_GROUP);
+            connectWithGroup(g1e, g2e);
+        }catch(Exception e){
+            LOG.error("Could not put {} into {}.", g1, g2);
+        }
+    }
+
+    private void connectWithGroup(String ue, String ge) throws LDIFException, LDAPException {
+        Modification modification = new Modification(ModificationType.ADD,"seeAlso", ge);
+        LDAPResult result = con.modify(ue, modification);
+        LOG.info("Added {} to 'seeAlso' at User {} ({}).", ge, ue, result.getDiagnosticMessage());
+
+        modification = new Modification(ModificationType.ADD,"member", ue);
+        result = con.modify(ge, modification);
+        LOG.info("Added {} to 'member' at User {} ({}).", ue, ge, result.getDiagnosticMessage());
     }
 
     public boolean disconnectUserAndGroup(String u, String g){
@@ -396,15 +430,20 @@ public class LDAPUserApi {
     private boolean attrHasValue(String dn, String attr, String val){
         SearchResultEntry e = getFirstResult(dn);
         String[] vals = e.getAttributeValues(attr);
-        return ArrayUtils.contains(vals, val);
+        if(vals != null){
+            return ArrayUtils.contains(vals, val);
+        }
+        return false;
     }
 
     private String getAttrWithValue(String dn, String attr, String val){
         SearchResultEntry e = getFirstResult(dn);
         String[] vals = e.getAttributeValues(attr);
-        for(String v : vals){
-            if(v.contains(val)){
-                return v;
+        if( vals != null){
+            for(String v : vals){
+                if(v.contains(val)){
+                    return v;
+                }
             }
         }
         return null;
@@ -422,7 +461,7 @@ public class LDAPUserApi {
         return getLDAPStrings(SEARCH_USER, "cn", BASE_KUK_DN);
     }
     public List<String> getSuS() {
-        return getLDAPStrings(SEARCH_USER, "cn", BASE_KONTEN_DN);
+        return getLDAPStrings(SEARCH_USER, "cn");
     }
 
     public List<String> getExternalGroups() {
@@ -441,7 +480,7 @@ public class LDAPUserApi {
         String grp = null;
         grp = getFirstDN(klasse, SEARCH_GROUP);
         if(grp != null){
-            return getExtAccounts("(&"+SEARCH_USER+"(seeAlso="+grp+"))", BASE_KONTEN_DN);
+            return getExtAccounts("(&"+SEARCH_USER+"(seeAlso="+grp+"))", BASE_SUS_DN);
         }
         return new ArrayList<>();
     }
@@ -452,27 +491,16 @@ public class LDAPUserApi {
 
     public List<Account> getExternalAccounts(boolean sus){
         String search = "(&"+SEARCH_USER+")";
-        return getExtAccounts(search, (sus ? BASE_KONTEN_DN : BASE_KUK_DN));
+        return getExtAccounts(search, (sus ? BASE_SUS_DN : BASE_KUK_DN));
     }
 
     private List<Account> getExtAccounts(String search, String base) {
         //(&(objectClass=inetOrgPerson)(seeAlso="cn=2020.ITM1,ou=Klassen,dc=bkest,dc=schule"))
         LOG.info("Searching LDAP for users with: " + search);
-        List<Account> accs = getLDAPEntries(search, base,null, e -> {
+        List<Account> accs = getLDAPEntries(search, base, e -> {
             String uid = getAttribute(e, "uid");
             Account res = null;
             if (uid != null && uid.length() > 1) {
-/*                res = new Account(
-                        getAttribute(e, "uid"),
-                        getAttribute(e, "businessCategory"),        // Klasse
-                        getAttribute(e, "sn"),
-                        getAttribute(e, "givenName"),
-                        getAttribute(e, "pager"),
-                        getAttribute(e, "displayName"),
-                        getAttribute(e, "cn"),
-                        getAttribute(e, "mail"),
-                        getAttribute(e, "destinationIndicator")
-                );*/
                 res = Account.builder()
                         .id(getAttribute(e, "uid"))
                         .klasse(getAttribute(e, "businessCategory"))
@@ -497,13 +525,13 @@ public class LDAPUserApi {
     }
 
     private List<String> getLDAPStrings(String filter, String attr, String base) {
-        return getLDAPEntries(filter, base, attr, e -> {
+        return getLDAPEntries(filter, base,e -> {
             return e.getAttribute(attr).getValue();
         });
     }
 
-    private List<SearchResultEntry> getLDAPEntries(String filter, String attr) {
-        return getLDAPEntries(filter, attr, e -> e );
+    private List<SearchResultEntry> getLDAPEntries(String filter) {
+        return getLDAPEntries(filter, e -> e );
     }
 
     private String getAttribute(SearchResultEntry e, String attr){
@@ -514,11 +542,11 @@ public class LDAPUserApi {
         return "";
     }
 
-    private <T> List<T> getLDAPEntries(String filter, String attr, Function<SearchResultEntry,T> func) {
-        return getLDAPEntries(filter, BASE_DN, attr, func);
+    private <T> List<T> getLDAPEntries(String filter, Function<SearchResultEntry,T> func) {
+        return getLDAPEntries(filter, BASE_DN, func);
     }
 
-    private <T> List<T> getLDAPEntries(String filter, String base, String attr, Function<SearchResultEntry,T> func) {
+    private <T> List<T> getLDAPEntries(String filter, String base, Function<SearchResultEntry,T> func) {
         List<T> res = new ArrayList<>();
 
         try{
@@ -535,7 +563,13 @@ public class LDAPUserApi {
     }
 
     private String getFirstDN(String cn, String filter){
-        SearchResultEntry sre = getFirstResult(cn, filter);
+        SearchResultEntry sre = null;
+        if(cn.contains("=")){
+            sre = getFirstResult(cn);
+        }
+        else{
+            sre = getFirstResult(cn, filter);
+        }
         if(sre != null){
             return sre.getDN();
         }
@@ -543,17 +577,28 @@ public class LDAPUserApi {
     }
 
     private SearchResultEntry getFirstResult(String cn){
-        return searchLDAP("(cn=" + cn + ")");
+        try {
+            SearchResultEntry e = con.getEntry(cn);
+            if(e != null){
+                LOG.info("Found entry when searching for {}, returning {}.", cn, e.getDN());
+                return e;
+            }
+        } catch (LDAPException e) {
+            LOG.error("Got Exception during LDAP-getEntry: {}", e.getMessage());
+            e.printStackTrace();
+        }
+        return null;
     }
+
     private SearchResultEntry getFirstResult(String cn, String f){
-        return searchLDAP("(&" + f + "(cn=" + cn + "))");
+        return searchLDAP("(&" + f + "(cn="+cn+")" + ")");
     }
 
     private SearchResultEntry searchLDAP(String filter) {
         try {
             SearchResult searchResult = con.search(BASE_DN, SearchScope.SUB, filter);
-            System.out.println(searchResult.getEntryCount() + " entries returned.");
             for (SearchResultEntry e : searchResult.getSearchEntries()) {
+                LOG.info("Found {} entries when searching for {}, returning {}.", searchResult.getEntryCount(), filter, e.getDN());
                 return e;
             }
         } catch (LDAPSearchException e) {

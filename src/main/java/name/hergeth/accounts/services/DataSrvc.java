@@ -84,6 +84,7 @@ public class DataSrvc implements IDataSrvc {
         this.loadedAccounts = loadType.NONE_LOADED;
 
         initCmd();
+        usrLDAPCmd.initEmptyLDAP();
     }
 
     //
@@ -445,7 +446,7 @@ public class DataSrvc implements IDataSrvc {
             if (!klassenLDAP.contains(eKlasse)) {
                 LOG.debug("Klasse {} not in external system.", eKlasse);
   //              status.update("Creating group " + eKlasse);
-                usrLDAPCmd.createGroup(eKlasse);     // create user group
+                usrLDAPCmd.createKlassenGroup(eKlasse);     // create user group
                 klassenLDAP.add(eKlasse);
             }
             usrLDAPCmd.connectUserAndGroup(a.getLoginName(), eKlasse);
@@ -469,7 +470,7 @@ public class DataSrvc implements IDataSrvc {
                     if (!klassenLDAP.contains(eKlasse)) {
                         LOG.debug("Klasse {} not in external system.", eKlasse);
 //                    status.update("Creating group " + eKlasse);
-                        usrLDAPCmd.createGroup(eKlasse);     // create user group
+                        usrLDAPCmd.createKlassenGroup(eKlasse);     // create user group
                         klassenLDAP.add(eKlasse);
                     }
                     usrLDAPCmd.connectUserAndGroup(a.getLoginName(), eKlasse);
@@ -715,6 +716,7 @@ public class DataSrvc implements IDataSrvc {
             usrNCCmd = new NCUserApi(serverNC, usrNC, pwNC);
             fileCmd = new NCFileApi(serverNC, usrNC, pwNC);
             fileCmd.atError(handleErrors);
+            fileCmd.mkdir(SKLASSENDIR);
         } catch (MalformedURLException e) {
             e.printStackTrace();
         }
