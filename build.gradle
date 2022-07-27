@@ -1,7 +1,7 @@
 plugins {
     id("com.github.johnrengelman.shadow") version "7.1.0"
     id("io.micronaut.application") version "3.4.0"
-    id 'pl.allegro.tech.build.axion-release' version '1.13.6'
+    id 'pl.allegro.tech.build.axion-release' version '1.13.13'
 }
 
 scmVersion {
@@ -22,7 +22,7 @@ repositories {
 }
 
 micronaut {
-    version "3.4.4"
+    version "3.5.1"
     runtime("netty")
     testRuntime("junit5")
     processing {
