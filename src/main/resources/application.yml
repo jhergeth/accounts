@@ -192,7 +192,7 @@ logger:
 #    'io.micronaut.configuration.security.ldap': DEBUG
 
 accounts:
-  configpfad: 'config/accounts.json'
+  configpfad: 'resources/config/accounts.json'
 
 eplan:
   bereiche: ["BauH", "ETIT", "JVA", "AV", "AIF", "FOS", "ErnPfl", "SozKi", "GesSoz"]
