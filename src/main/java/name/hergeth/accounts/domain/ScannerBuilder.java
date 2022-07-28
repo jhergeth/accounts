@@ -6,124 +6,73 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.io.File;
+import java.util.LinkedList;
+import java.util.List;
 import java.util.concurrent.atomic.AtomicBoolean;
-import java.util.function.BiFunction;
+import java.util.function.Consumer;
+import java.util.function.Predicate;
 
 @Bean
 public class ScannerBuilder {
     private static final Logger LOG = LoggerFactory.getLogger(ScannerBuilder.class);
 
-    static boolean isSuS = false;
-    static int[] match = null;
+    int[] match = null;
 
-    static public BiFunction<AccList, String[], Boolean> buildScanner(File file, String kukSize, String susSize) {
+    private class Columns {
+        String name;
+        String[] head = null;
+        Consumer<String[]> func = null;
+        Predicate<int[]> test = null;
+        public Columns(String name, String[] head, Predicate<int[]> test, Consumer<String[]> func){
+            this.name = name;
+            this.head = head;
+            this.func = func;
+            this.test = test;
+        }
+    };
+    List<Columns> colDefs = null;
+
+    public ScannerBuilder(){
+        colDefs = new LinkedList<>();
+    }
+
+    public void addColDef(String name, String[] head, Predicate<int[]> test, Consumer<String[]> func){
+        colDefs.add(new Columns(name, head, test, func));
+    }
+    public Consumer<String[]> buildScanner(File file) {
         String[] head = null;
         final AtomicBoolean skipNext = new AtomicBoolean(false);
 
         String[] elms = Utils.readFirstLine(file, LOG);
-        LOG.info("First line of file is: {}", (Object[])elms);
+        LOG.info("First line of file is: {}", (Object[]) elms);
         LOG.info("Umlaute sind: ae oe ue ss -> ä ö ü ß");
 
-        head = new String[]{
-                "Nachname", "Vorname", "E-Mail (Dienstlich)", "Kürzel", "Geburtsdatum", "Telefon (Festnetz)",   // 0 - 5
-                "Telefon (Mobil)", "Anrede", "E-Mail", "Ortsname", "Postleitzahl", "Straße", "Geschlecht",       // 6 - 12
-                "eindeutige Nummer (GUID)"      // 13 -
-        };
-        match = new int[head.length];
-        if (buildMatcher(head, elms, match)) {
-            LOG.info("Reading file as KuK-File.");
-            skipNext.set(true);
-            isSuS = false;
-            return new BiFunction<AccList, String[], Boolean>() {
-                @Override
-                public Boolean apply(AccList accounts, String[] strings) {
-                    if (!skipNext.get()) {    // not first line with col headers
-                        Account a = Account.builder()
-                                .anzeigeName(strings[match[1]] + " " + strings[match[0]])
-                                .id(strings[match[13]])
-                                .klasse("KuK")
-                                .nachname(strings[match[0]])
-                                .vorname(strings[match[1]])
-                                .email(strings[match[2]])
-                                .loginName(strings[match[3]].toLowerCase())
-                                .geburtstag(strings[match[4]])
-                                .maxSize(kukSize)
-
-                                .homePhone(strings[match[5]])
-                                .cellPhone(strings[match[6]])
-                                .homeEMail(strings[match[8]])
-                                .homeOrt(strings[match[9]])
-                                .homePLZ(strings[match[10]])
-                                .homeStrasse(strings[match[11]])
-                                .anrede(strings[match[7]])
-
-                                .build();
-                        accounts.add(a);
-                    } else {
-                        skipNext.set(false);
+        for (Columns col : colDefs) {
+            match = new int[col.head.length];
+            buildMatcher(col.head, elms, match);
+            if (col.test.test(match)) {
+                LOG.info("Using scanner {} for input.", col.name);
+                return (String[] line) -> {
+                    String[] sort = new String[line.length];
+                    for(int i = 0; i < line.length; i++){
+                        if(i >= match.length || match[i] < 0){
+                            sort[i] = "";
+                        }
+                        else{
+                            sort[i] = line[match[i]];
+                        }
                     }
-                    return true;
-                }
-            };
-        }
-        head = new String[]{
-                "GUID", "Klasse", "Nachname", "Vorname", "Geburtsdatum", "E-Mail"
-        };
-        match = new int[head.length];
-        if (buildMatcher(head, elms, match)) {
-            LOG.info("Reading file as SuS-File.");
-            isSuS = true;
-            skipNext.set(true);
-            return new BiFunction<AccList, String[], Boolean>() {
-                @Override
-                public Boolean apply(AccList accounts, String[] strings) {
-                    if (!skipNext.get()) {    // not first line with col headers
-                        Account a = Account.builder()
-                                .id(strings[match[0]])
-                                .klasse(strings[match[1]])
-                                .nachname(strings[match[2]])
-                                .vorname(strings[match[3]])
-                                .geburtstag(strings[match[4]])
-                                .email(strings[match[5]])
-                                .maxSize(susSize)
-                                .build();
-                        accounts.add(a);
-                    } else {
-                        skipNext.set(false);
-                    }
-                    return true;
-                }
-            };
+                    col.func.accept(sort);
+                };
+            }
         }
         LOG.info("No matching scanner found!");
         return null;
     }
 
-    public static boolean wasSuS() {
-        return isSuS;
-    }
-
-    private static boolean buildMatcher(String[] head, String[] elms, int[] match) {
-        int mCnt = 0;
-
+    private void buildMatcher(String[] head, String[] elms, int[] match) {
         for (int i = 0; i < match.length; i++) {
             match[i] = Utils.inArray(elms, head[i]);
-            if (match[i] == -1) {
-                if (i == 3) {       // FIXME charset issue in String constants
-                    LOG.warn("Patching {} to {}", head[i], elms[4]);
-                    match[i] = 4;
-                } else if (i == 11) {
-                    LOG.warn("Patching {} to {}", head[i], elms[12]);
-                    match[i] = 12;
-                } else if (i == 13) {
-                    LOG.warn("Patching {} to {}", head[i], elms[match[3]]);
-                    match[i] = match[3];
-                } else {
-                    LOG.info("Could not find {} in header: {}", head[i], elms);
-                    return false;
-                }
-            }
         }
-        return true;
     }
 }

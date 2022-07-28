@@ -33,8 +33,9 @@ import java.text.DateFormat;
 import java.text.SimpleDateFormat;
 import java.time.LocalDateTime;
 import java.util.*;
-import java.util.function.BiFunction;
+import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.function.Consumer;
+import java.util.function.Predicate;
 import java.util.stream.Collectors;
 
 
@@ -92,36 +93,97 @@ public class DataSrvc implements IDataSrvc {
     //
     public boolean loadData(File file, String oname){
         initCmd();
-
         int lines = 0;
         status.start(0, Utils.countLines(file, LOG), "Reading data from file " + oname);
 
         accListCSV = new AccList();
-        BiFunction<AccList, String[], Boolean> scanner = ScannerBuilder.buildScanner(file, accKuKSize, accSuSSize);
+        ScannerBuilder sb = new ScannerBuilder();
+        String[] h = {
+                "Nachname", "Vorname", "E-Mail (Dienstlich)", "Kürzel", "Geburtsdatum", "Telefon (Festnetz)",   // 0 - 5
+                "Telefon (Mobil)", "Anrede", "E-Mail", "Ortsname", "Postleitzahl", "Straße", "Geschlecht",       // 6 - 12
+                "eindeutige Nummer (GUID)"      // 13 -
+        };
+        Predicate<int[]> p = (int[] match) -> {
+            boolean res =  match[0] >= 0 && match[1] >= 0 && match[2] >= 0 && match[3] >= 0 && match[4] >= 0 &&
+                    match[5] >= 0 && match[6] >= 0 && match[7] >= 0 && match[8] >= 0 && match[9] >= 0 &&
+                    match[10] >= 0 && match[11] >= 0 && match[13] >= 0;
+            if(res){
+                cfg.set("kukAccountsLoaded", LocalDateTime.now().toString());
+                loadedAccounts = loadType.KUK_LOADED;
+            }
+            return res;
+        };
+        Consumer<String[]> c = (String[] elms) -> {
+            Account a = Account.builder()
+                    .anzeigeName(elms[1] + " " + elms[0])
+                    .id(elms[13])
+                    .klasse("KuK")
+                    .nachname(elms[0])
+                    .vorname(elms[1])
+                    .email(elms[2])
+                    .loginName(elms[3].toLowerCase())
+                    .geburtstag(elms[4])
+                    .maxSize(accKuKSize)
 
+                    .homePhone(elms[5])
+                    .cellPhone(elms[6])
+                    .homeEMail(elms[8])
+                    .homeOrt(elms[9])
+                    .homePLZ(elms[10])
+                    .homeStrasse(elms[11])
+                    .anrede(elms[7])
+
+                    .build();
+            fixAccount(a);
+            accListCSV.add(a);
+        };
+        sb.addColDef("KuK File", h, p, c);
+
+        h = new String[]{
+                "GUID", "Klasse", "Nachname", "Vorname", "Geburtsdatum", "E-Mail"
+        };
+        p = (int[] match) -> {
+            boolean res = match[0] >= 0 && match[1] >= 0 && match[2] >= 0 && match[3] >= 0 && match[4] >= 0 &&
+                    match[5] >= 0;
+            if(res){
+                cfg.set("susAccountsLoaded", LocalDateTime.now().toString());
+                loadedAccounts = loadType.SUS_LOADED;
+            }
+            return res;
+        };
+        c = (String[] elms) -> {
+            Account a = Account.builder()
+                    .id(elms[0])
+                    .klasse(elms[1])
+                    .nachname(elms[2])
+                    .vorname(elms[3])
+                    .geburtstag(elms[4])
+                    .email(elms[5])
+                    .maxSize(accSuSSize)
+                    .build();
+            fixLogin(a);
+            fixAccount(a);
+            accListCSV.add(a);
+        };
+        sb.addColDef("SuS File", h, p, c);
+
+        Consumer<String[]> scanner = sb.buildScanner(file);
+
+        AtomicBoolean skipLine = new AtomicBoolean(true);
         if(scanner != null){
             lines = Utils.readLines(file, ar -> {
-                scanner.apply(accListCSV, ar);
-                status.inc("Reading accounts from file " + oname);
+                if(skipLine.get()){
+                    skipLine.set(false);
+                }
+                else{
+                    scanner.accept(ar);
+                    status.inc("Reading accounts from file " + oname);
+                }
             }, LOG);
 
             LOG.debug("Found "+ lines +" accounts");
             status.update(lines, "Read accounts from file " + oname);
-
-            areSuSAccounts = ScannerBuilder.wasSuS();
-            if(areSuSAccounts){
-                accListCSV.forEach(a -> fixLogin(a));
-                cfg.set("susAccountsLoaded", LocalDateTime.now().toString());
-                loadedAccounts = loadType.SUS_LOADED;
-            }
-            else{
-                cfg.set("kukAccountsLoaded", LocalDateTime.now().toString());
-                loadedAccounts = loadType.KUK_LOADED;
-            }
             cfg.save();
-
-            accListCSV.forEach(a -> fixAccount(a));
-
             return true;
         }
         return false;
@@ -242,7 +304,7 @@ public class DataSrvc implements IDataSrvc {
 
     public boolean loadExtAccounts(){
         initLDAP();
-        accListLDAP = new AccList(usrLDAPCmd.getExternalAccounts(areSuSAccounts));
+        accListLDAP = new AccList(usrLDAPCmd.getExternalAccounts(loadedAccounts == loadType.SUS_LOADED));
         LOG.debug("Read "+ accListLDAP.size() +" user accounts from LDAP system.");
         status.update("Read " + accListLDAP.size() + " Accounts from LDAP.");
         return true;
