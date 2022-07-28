@@ -58,6 +58,7 @@ micronaut:
           enabled: true
           filter: "member={0}"
           base: "dc=hergeth,dc=cloud"
+
     authentication: bearer
     token:
       jwt:
