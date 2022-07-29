@@ -94,15 +94,25 @@ public class DataSrvc implements IDataSrvc {
     public boolean loadData(File file, String oname){
         initCmd();
         int lines = 0;
+
+        String kukHeader = cfg.get("loadKuKHeader",
+                "Nachname,Vorname,E-Mail (Dienstlich),Kürzel,Geburtsdatum,Telefon (Festnetz),Telefon (Mobil),Anrede,E-Mail,Ortsname,Postleitzahl,Straße,Geschlecht,eindeutige Nummer (GUID)");
+        String susHeader = cfg.get("loadSuSHeader",
+                "GUID,Klasse,Nachname,Vorname,Geburtsdatum,E-Mail");
+        cfg.save();
+
         status.start(0, Utils.countLines(file, LOG), "Reading data from file " + oname);
 
         accListCSV = new AccList();
         ScannerBuilder sb = new ScannerBuilder();
+/*
         String[] h = {
                 "Nachname", "Vorname", "E-Mail (Dienstlich)", "Kürzel", "Geburtsdatum", "Telefon (Festnetz)",   // 0 - 5
                 "Telefon (Mobil)", "Anrede", "E-Mail", "Ortsname", "Postleitzahl", "Straße", "Geschlecht",       // 6 - 12
                 "eindeutige Nummer (GUID)"      // 13 -
         };
+*/
+        String[] h = kukHeader.split(",");
         Predicate<int[]> p = (int[] match) -> {
             boolean res =  match[0] >= 0 && match[1] >= 0 && match[2] >= 0 && match[3] >= 0 && match[4] >= 0 &&
                     match[5] >= 0 && match[6] >= 0 && match[7] >= 0 && match[8] >= 0 && match[9] >= 0 &&
@@ -139,9 +149,12 @@ public class DataSrvc implements IDataSrvc {
         };
         sb.addColDef("KuK File", h, p, c);
 
+/*
         h = new String[]{
                 "GUID", "Klasse", "Nachname", "Vorname", "Geburtsdatum", "E-Mail"
         };
+*/
+        h = susHeader.split(",");
         p = (int[] match) -> {
             boolean res = match[0] >= 0 && match[1] >= 0 && match[2] >= 0 && match[3] >= 0 && match[4] >= 0 &&
                     match[5] >= 0;
